@@ -1,0 +1,565 @@
+
+     Program PWSCF v.7.2 starts on 30Jan2026 at  0:57:25 
+
+     This program is part of the open-source Quantum ESPRESSO suite
+     for quantum simulation of materials; please cite
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+         "P. Giannozzi et al., J. Chem. Phys. 152 154105 (2020);
+          URL http://www.quantum-espresso.org", 
+     in publications or presentations arising from this work. More details at
+     http://www.quantum-espresso.org/quote
+
+     Parallel version (MPI & OpenMP), running on      16 processor cores
+     Number of MPI processes:                 4
+     Threads/MPI process:                     4
+
+     MPI processes distributed on     1 nodes
+     2609 MiB available memory on the printing compute node when the environment starts
+
+     Reading input from irontfa.in
+
+     Current dimensions of program PWSCF are:
+     Max number of different atomic species (ntypx) = 10
+     Max number of k-points (npk) =  40000
+     Max angular momentum in pseudopotentials (lmaxx) =  4
+     file O.pbe-n-kjpaw_psl.1.0.0.UPF: wavefunction(s)  2S 2P renormalized
+     file Fe.pbesol-spn-kjpaw_psl.1.0.0.UPF: wavefunction(s)  3P 3D renormalized
+     file F.pbe-n-kjpaw_psl.1.0.0.UPF: wavefunction(s)  2S 2P renormalized
+     file C.pbe-n-kjpaw_psl.1.0.0.UPF: wavefunction(s)  2S 2P renormalized
+
+     IMPORTANT: XC functional enforced from input :
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+     Any further DFT definition will be discarded
+     Please, verify this is what you really want
+
+     Message from routine setup:
+     using ibrav=0 with symmetry is DISCOURAGED, use correct ibrav instead
+
+     R & G space division:  proc/nbgrp/npool/nimage =       4
+     Subspace diagonalization in iterative solution of the eigenvalue problem:
+     one sub-group per band group will be used
+     ELPA distributed-memory algorithm (size of sub-group:  2*  2 procs)
+
+
+     Parallelization info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Min        3557    2088    558               229691   103638   14324
+     Max        3559    2089    559               229693   103641   14327
+     Sum       14233    8353   2233               918769   414555   57303
+
+     Using Slab Decomposition
+
+
+
+     bravais-lattice index     =            0
+     lattice parameter (alat)  =      24.6199  a.u.
+     unit-cell volume          =    8679.7222 (a.u.)^3
+     number of atoms/cell      =          124
+     number of atomic types    =            4
+     number of electrons       =       808.00
+     number of Kohn-Sham states=          485
+     kinetic-energy cutoff     =      50.0000  Ry
+     charge density cutoff     =     340.0000  Ry
+     scf convergence threshold =      1.0E-06
+     mixing beta               =       0.7000
+     number of iterations used =            8  plain     mixing
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+
+     celldm(1)=  24.619919  celldm(2)=   0.000000  celldm(3)=   0.000000
+     celldm(4)=   0.000000  celldm(5)=   0.000000  celldm(6)=   0.000000
+
+     crystal axes: (cart. coord. in units of alat)
+               a(1) = (   0.866025  -0.500000   0.000000 )  
+               a(2) = (   0.000000   1.000000   0.000000 )  
+               a(3) = (   0.000000   0.000000   0.671607 )  
+
+     reciprocal axes: (cart. coord. in units 2 pi/alat)
+               b(1) = (  1.154701  0.000000  0.000000 )  
+               b(2) = (  0.577350  1.000000 -0.000000 )  
+               b(3) = ( -0.000000  0.000000  1.488966 )  
+
+
+     PseudoPot. # 1 for O  read from file:
+     ./O.pbe-n-kjpaw_psl.1.0.0.UPF
+     MD5 check sum: e99d9cef9b487d1ca56f5b95ecd0fd7a
+     Pseudo is Projector augmented-wave + core cor, Zval =  6.0
+     Generated using &quot;atomic&quot; code by A. Dal Corso  v.6.3
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1095 points,  4 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 2 for Fe read from file:
+     ./Fe.pbesol-spn-kjpaw_psl.1.0.0.UPF
+     MD5 check sum: e30d5f36a6f0cb983ee41abee56170da
+     Pseudo is Projector augmented-wave + core cor, Zval = 16.0
+     Generated using &quot;atomic&quot; code by A. Dal Corso  v.6.3
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1191 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 3 for F  read from file:
+     ./F.pbe-n-kjpaw_psl.1.0.0.UPF
+     MD5 check sum: 66d718ea72839a4268ab2a9540e8cdd4
+     Pseudo is Projector augmented-wave + core cor, Zval =  7.0
+     Generated using &quot;atomic&quot; code by A. Dal Corso  v.6.3
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1105 points,  4 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 4 for C  read from file:
+     ./C.pbe-n-kjpaw_psl.1.0.0.UPF
+     MD5 check sum: 5f16ad9a65e90284d1d834d4ab3b0f7d
+     Pseudo is Projector augmented-wave + core cor, Zval =  4.0
+     Generated using &quot;atomic&quot; code by A. Dal Corso  v.6.3
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1073 points,  4 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+     Q(r) pseudized with 0 coefficients 
+
+
+     atomic species   valence    mass     pseudopotential
+        O              6.00    15.99900     O ( 1.00)
+        Fe            16.00    55.84500     Fe( 1.00)
+        F              7.00    18.99800     F ( 1.00)
+        C              4.00    12.01060     C ( 1.00)
+
+      6 Sym. Ops. (no inversion) found ( 3 have fractional translation)
+
+
+                                    s                        frac. trans.
+
+      isym =  1     identity                                     
+
+ cryst.   s( 1) = (     1          0          0      )
+                  (     0          1          0      )
+                  (     0          0          1      )
+
+ cart.    s( 1) = (  1.0000000  0.0000000  0.0000000 )
+                  (  0.0000000  1.0000000  0.0000000 )
+                  (  0.0000000  0.0000000  1.0000000 )
+
+
+      isym =  2     120 deg rotation - cryst. axis [0,0,1]       
+
+ cryst.   s( 2) = (     0          1          0      )
+                  (    -1         -1          0      )
+                  (     0          0          1      )
+
+ cart.    s( 2) = ( -0.5000000 -0.8660254  0.0000000 )
+                  (  0.8660254 -0.5000000  0.0000000 )
+                  (  0.0000000  0.0000000  1.0000000 )
+
+
+      isym =  3     120 deg rotation - cryst. axis [0,0,-1]      
+
+ cryst.   s( 3) = (    -1         -1          0      )
+                  (     1          0          0      )
+                  (     0          0          1      )
+
+ cart.    s( 3) = ( -0.5000000  0.8660254  0.0000000 )
+                  ( -0.8660254 -0.5000000  0.0000000 )
+                  (  0.0000000  0.0000000  1.0000000 )
+
+
+      isym =  4     inv. 180 deg rotation - cart. axis [0,1,0]   
+
+ cryst.   s( 4) = (     1          1          0      )    f =(  0.0000000 )
+                  (     0         -1          0      )       ( -0.0000000 )
+                  (     0          0          1      )       ( -0.5000000 )
+
+ cart.    s( 4) = (  1.0000000  0.0000000  0.0000000 )    f =(  0.0000000 )
+                  (  0.0000000 -1.0000000  0.0000000 )       ( -0.0000000 )
+                  (  0.0000000  0.0000000  1.0000000 )       ( -0.3358036 )
+
+
+      isym =  5     inv. 180 deg rotation - cryst. axis [1,-1,0] 
+
+ cryst.   s( 5) = (    -1          0          0      )    f =(  0.0000000 )
+                  (     1          1          0      )       (  0.0000000 )
+                  (     0          0          1      )       ( -0.5000000 )
+
+ cart.    s( 5) = ( -0.5000000  0.8660254  0.0000000 )    f =(  0.0000000 )
+                  (  0.8660254  0.5000000  0.0000000 )       ( -0.0000000 )
+                  (  0.0000000  0.0000000  1.0000000 )       ( -0.3358036 )
+
+
+      isym =  6     inv. 180 deg rotation - cryst. axis [2,1,0]  
+
+ cryst.   s( 6) = (     0         -1          0      )    f =(  0.0000000 )
+                  (    -1          0          0      )       (  0.0000000 )
+                  (     0          0          1      )       ( -0.5000000 )
+
+ cart.    s( 6) = ( -0.5000000 -0.8660254  0.0000000 )    f =(  0.0000000 )
+                  ( -0.8660254  0.5000000  0.0000000 )       (  0.0000000 )
+                  (  0.0000000  0.0000000  1.0000000 )       ( -0.3358036 )
+
+
+   Cartesian axes
+
+     site n.     atom                  positions (alat units)
+         1           Fe  tau(   1) = (   0.2886751   0.5000000   0.3344604  )
+         2           Fe  tau(   2) = (   0.2886751   0.5000000   0.6702640  )
+         3           Fe  tau(   3) = (   0.5773503  -0.0000000   0.3230431  )
+         4           Fe  tau(   4) = (   0.5773503  -0.0000000   0.6588467  )
+         5           F   tau(   5) = (   0.1773360   0.1966550   0.2303277  )
+         6           F   tau(   6) = (   0.0816402   0.2519050   0.5661313  )
+         7           F   tau(   7) = (   0.6070492   0.4447500   0.5661313  )
+         8           F   tau(   8) = (   0.1773360   0.8033450   0.5661313  )
+         9           F   tau(   9) = (   0.6070492   0.5552500   0.2303277  )
+        10           F   tau(  10) = (   0.0816402   0.7480950   0.2303277  )
+        11           F   tau(  11) = (   0.3194335   0.1464250   0.1602589  )
+        12           F   tau(  12) = (   0.8331164  -0.1501500   0.4960625  )
+        13           F   tau(  13) = (   0.5795009   0.2965750   0.4960625  )
+        14           F   tau(  14) = (   0.3194335  -0.1464250   0.4960625  )
+        15           F   tau(  15) = (   0.5795009  -0.2965750   0.1602589  )
+        16           F   tau(  16) = (   0.8331164   0.1501500   0.1602589  )
+        17           F   tau(  17) = (   0.1922230   0.1965500   0.0658914  )
+        18           F   tau(  18) = (   0.0741058   0.2647450   0.4016950  )
+        19           F   tau(  19) = (   0.5996966   0.4318050   0.4016950  )
+        20           F   tau(  20) = (   0.1922230   0.8034500   0.4016950  )
+        21           F   tau(  21) = (   0.5996966   0.5681950   0.0658914  )
+        22           F   tau(  22) = (   0.0741058   0.7352550   0.0658914  )
+        23           F   tau(  23) = (   0.1406252   0.2149200   0.1394928  )
+        24           F   tau(  24) = (   0.1158136   0.2292450   0.4752964  )
+        25           F   tau(  25) = (   0.6095866   0.4856750   0.4752964  )
+        26           F   tau(  26) = (   0.1406252   0.7850800   0.4752964  )
+        27           F   tau(  27) = (   0.6095866   0.5143250   0.1394928  )
+        28           F   tau(  28) = (   0.1158136   0.7707550   0.1394928  )
+        29           F   tau(  29) = (   0.2617042   0.1669650   0.2425912  )
+        30           F   tau(  30) = (   0.0137438   0.3101250   0.5783948  )
+        31           F   tau(  31) = (   0.5905774   0.3568400   0.5783948  )
+        32           F   tau(  32) = (   0.2617042   0.8330350   0.5783948  )
+        33           F   tau(  33) = (   0.5905774   0.6431600   0.2425912  )
+        34           F   tau(  34) = (   0.0137438   0.6898750   0.2425912  )
+        35           F   tau(  35) = (   0.2838225   0.1587450   0.0784437  )
+        36           F   tau(  36) = (   0.8615914  -0.1748300   0.4142473  )
+        37           F   tau(  37) = (   0.5866369   0.3335750   0.4142473  )
+        38           F   tau(  38) = (   0.2838225  -0.1587450   0.4142473  )
+        39           F   tau(  39) = (   0.5866369  -0.3335750   0.0784437  )
+        40           F   tau(  40) = (   0.8615914   0.1748300   0.0784437  )
+        41           F   tau(  41) = (   0.5315837   0.3179700   0.0606394  )
+        42           F   tau(  42) = (   0.0095782   0.6193500   0.3964430  )
+        43           F   tau(  43) = (   0.3248634   0.1986200   0.3964430  )
+        44           F   tau(  44) = (   0.5315837   0.6820300   0.3964430  )
+        45           F   tau(  45) = (   0.3248634   0.8013800   0.0606394  )
+        46           F   tau(  46) = (   0.0095782   0.3806500   0.0606394  )
+        47           F   tau(  47) = (   0.6711350   0.3293500   0.1500773  )
+        48           F   tau(  48) = (   0.8156833   0.2458950   0.4858809  )
+        49           F   tau(  49) = (   0.2452324   0.0834550   0.4858809  )
+        50           F   tau(  50) = (   0.6711350  -0.3293500   0.4858809  )
+        51           F   tau(  51) = (   0.2452324  -0.0834550   0.1500773  )
+        52           F   tau(  52) = (   0.8156833  -0.2458950   0.1500773  )
+        53           F   tau(  53) = (   0.5230534   0.3251750   0.2253712  )
+        54           F   tau(  54) = (   0.0200831   0.6155650   0.5611748  )
+        55           F   tau(  55) = (   0.3228889   0.2096100   0.5611748  )
+        56           F   tau(  56) = (   0.5230534   0.6748250   0.5611748  )
+        57           F   tau(  57) = (   0.3228889   0.7903900   0.2253712  )
+        58           F   tau(  58) = (   0.0200831   0.3844350   0.2253712  )
+        59           F   tau(  59) = (   0.4794923   0.3171250   0.1354229  )
+        60           F   tau(  60) = (   0.0348922   0.5738150   0.4712265  )
+        61           F   tau(  61) = (   0.3516410   0.2433100   0.4712265  )
+        62           F   tau(  62) = (   0.4794923   0.6828750   0.4712265  )
+        63           F   tau(  63) = (   0.3516410   0.7566900   0.1354229  )
+        64           F   tau(  64) = (   0.0348922   0.4261850   0.1354229  )
+        65           F   tau(  65) = (   0.6138475   0.3331550   0.2305560  )
+        66           F   tau(  66) = (   0.8476224   0.1981850   0.5663596  )
+        67           F   tau(  67) = (   0.2705810   0.1349700   0.5663596  )
+        68           F   tau(  68) = (   0.6138475  -0.3331550   0.5663596  )
+        69           F   tau(  69) = (   0.2705810  -0.1349700   0.2305560  )
+        70           F   tau(  70) = (   0.8476224  -0.1981850   0.2305560  )
+        71           F   tau(  71) = (   0.6303972   0.3218300   0.0659384  )
+        72           F   tau(  72) = (   0.8295398   0.2068550   0.4017420  )
+        73           F   tau(  73) = (   0.2721138   0.1149750   0.4017420  )
+        74           F   tau(  74) = (   0.6303972  -0.3218300   0.4017420  )
+        75           F   tau(  75) = (   0.2721138  -0.1149750   0.0659384  )
+        76           F   tau(  76) = (   0.8295398  -0.2068550   0.0659384  )
+        77           O   tau(  77) = (   0.2971073   0.3652450   0.2455262  )
+        78           O   tau(  78) = (   0.1677578   0.4399250   0.5813298  )
+        79           O   tau(  79) = (   0.4011603   0.4253200   0.5813298  )
+        80           O   tau(  80) = (   0.2971073   0.6347550   0.5813298  )
+        81           O   tau(  81) = (   0.4011603   0.5746800   0.2455262  )
+        82           O   tau(  82) = (   0.1677578   0.5600750   0.2455262  )
+        83           O   tau(  83) = (   0.3127997   0.3651350   0.0721306  )
+        84           O   tau(  84) = (   0.1598163   0.4534600   0.4079342  )
+        85           O   tau(  85) = (   0.3934094   0.4116750   0.4079342  )
+        86           O   tau(  86) = (   0.3127997   0.6348650   0.4079342  )
+        87           O   tau(  87) = (   0.3934094   0.5883250   0.0721306  )
+        88           O   tau(  88) = (   0.1598163   0.5465400   0.0721306  )
+        89           O   tau(  89) = (   0.5964404   0.1211550   0.0680204  )
+        90           O   tau(  90) = (   0.6727285   0.0771100   0.4038240  )
+        91           O   tau(  91) = (   0.4628819   0.0440450   0.4038240  )
+        92           O   tau(  92) = (   0.5964404  -0.1211550   0.4038240  )
+        93           O   tau(  93) = (   0.4628819  -0.0440450   0.0680204  )
+        94           O   tau(  94) = (   0.6727285  -0.0771100   0.0680204  )
+        95           O   tau(  95) = (   0.5874424   0.1287500   0.2417316  )
+        96           O   tau(  96) = (   0.6838050   0.0731150   0.5775352  )
+        97           O   tau(  97) = (   0.4608035   0.0556350   0.5775352  )
+        98           O   tau(  98) = (   0.5874424  -0.1287500   0.5775352  )
+        99           O   tau(  99) = (   0.4608035  -0.0556350   0.2417316  )
+       100           O   tau( 100) = (   0.6838050  -0.0731150   0.2417316  )
+       101           C   tau( 101) = (   0.2435783   0.2182000   0.1533884  )
+       102           C   tau( 102) = (   0.0671776   0.3200450   0.4891920  )
+       103           C   tau( 103) = (   0.5552695   0.3981550   0.4891920  )
+       104           C   tau( 104) = (   0.2435783   0.7818000   0.4891920  )
+       105           C   tau( 105) = (   0.5552695   0.6018450   0.1533884  )
+       106           C   tau( 106) = (   0.0671776   0.6799550   0.1533884  )
+       107           C   tau( 107) = (   0.2893997   0.3306050   0.1574449  )
+       108           C   tau( 108) = (   0.1416125   0.4159300   0.4932485  )
+       109           C   tau( 109) = (   0.4350132   0.4146750   0.4932485  )
+       110           C   tau( 110) = (   0.2893997   0.6693950   0.4932485  )
+       111           C   tau( 111) = (   0.4350132   0.5853250   0.1574449  )
+       112           C   tau( 112) = (   0.1416125   0.5840700   0.1574449  )
+       113           C   tau( 113) = (   0.5771020   0.2834600   0.1472297  )
+       114           C   tau( 114) = (   0.8229580   0.1415150   0.4830333  )
+       115           C   tau( 115) = (   0.3319908   0.1419450   0.4830333  )
+       116           C   tau( 116) = (   0.5771020  -0.2834600   0.4830333  )
+       117           C   tau( 117) = (   0.3319908  -0.1419450   0.1472297  )
+       118           C   tau( 118) = (   0.8229580  -0.1415150   0.1472297  )
+       119           C   tau( 119) = (   0.5873904   0.1625800   0.1530123  )
+       120           C   tau( 120) = (   0.7131286   0.0899850   0.4888159  )
+       121           C   tau( 121) = (   0.4315318   0.0725950   0.4888159  )
+       122           C   tau( 122) = (   0.5873904  -0.1625800   0.4888159  )
+       123           C   tau( 123) = (   0.4315318  -0.0725950   0.1530123  )
+       124           C   tau( 124) = (   0.7131286  -0.0899850   0.1530123  )
+
+   Crystallographic axes
+
+     site n.     atom                  positions (cryst. coord.)
+         1           Fe  tau(   1) = (  0.3333333  0.6666667  0.4980000  )
+         2           Fe  tau(   2) = (  0.3333333  0.6666667  0.9980000  )
+         3           Fe  tau(   3) = (  0.6666667  0.3333333  0.4810000  )
+         4           Fe  tau(   4) = (  0.6666667  0.3333333  0.9810000  )
+         5           F   tau(   5) = (  0.2047700  0.2990400  0.3429500  )
+         6           F   tau(   6) = (  0.0942700  0.2990400  0.8429500  )
+         7           F   tau(   7) = (  0.7009600  0.7952300  0.8429500  )
+         8           F   tau(   8) = (  0.2047700  0.9057300  0.8429500  )
+         9           F   tau(   9) = (  0.7009600  0.9057300  0.3429500  )
+        10           F   tau(  10) = (  0.0942700  0.7952300  0.3429500  )
+        11           F   tau(  11) = (  0.3688500  0.3308500  0.2386200  )
+        12           F   tau(  12) = (  0.9620000  0.3308500  0.7386200  )
+        13           F   tau(  13) = (  0.6691500  0.6311500  0.7386200  )
+        14           F   tau(  14) = (  0.3688500  0.0380000  0.7386200  )
+        15           F   tau(  15) = (  0.6691500  0.0380000  0.2386200  )
+        16           F   tau(  16) = (  0.9620000  0.6311500  0.2386200  )
+        17           F   tau(  17) = (  0.2219600  0.3075300  0.0981100  )
+        18           F   tau(  18) = (  0.0855700  0.3075300  0.5981100  )
+        19           F   tau(  19) = (  0.6924700  0.7780400  0.5981100  )
+        20           F   tau(  20) = (  0.2219600  0.9144300  0.5981100  )
+        21           F   tau(  21) = (  0.6924700  0.9144300  0.0981100  )
+        22           F   tau(  22) = (  0.0855700  0.7780400  0.0981100  )
+        23           F   tau(  23) = (  0.1623800  0.2961100  0.2077000  )
+        24           F   tau(  24) = (  0.1337300  0.2961100  0.7077000  )
+        25           F   tau(  25) = (  0.7038900  0.8376200  0.7077000  )
+        26           F   tau(  26) = (  0.1623800  0.8662700  0.7077000  )
+        27           F   tau(  27) = (  0.7038900  0.8662700  0.2077000  )
+        28           F   tau(  28) = (  0.1337300  0.8376200  0.2077000  )
+        29           F   tau(  29) = (  0.3021900  0.3180600  0.3612100  )
+        30           F   tau(  30) = (  0.0158700  0.3180600  0.8612100  )
+        31           F   tau(  31) = (  0.6819400  0.6978100  0.8612100  )
+        32           F   tau(  32) = (  0.3021900  0.9841300  0.8612100  )
+        33           F   tau(  33) = (  0.6819400  0.9841300  0.3612100  )
+        34           F   tau(  34) = (  0.0158700  0.6978100  0.3612100  )
+        35           F   tau(  35) = (  0.3277300  0.3226100  0.1168000  )
+        36           F   tau(  36) = (  0.9948800  0.3226100  0.6168000  )
+        37           F   tau(  37) = (  0.6773900  0.6722700  0.6168000  )
+        38           F   tau(  38) = (  0.3277300  0.0051200  0.6168000  )
+        39           F   tau(  39) = (  0.6773900  0.0051200  0.1168000  )
+        40           F   tau(  40) = (  0.9948800  0.6722700  0.1168000  )
+        41           F   tau(  41) = (  0.6138200  0.6248800  0.0902900  )
+        42           F   tau(  42) = (  0.0110600  0.6248800  0.5902900  )
+        43           F   tau(  43) = (  0.3751200  0.3861800  0.5902900  )
+        44           F   tau(  44) = (  0.6138200  0.9889400  0.5902900  )
+        45           F   tau(  45) = (  0.3751200  0.9889400  0.0902900  )
+        46           F   tau(  46) = (  0.0110600  0.3861800  0.0902900  )
+        47           F   tau(  47) = (  0.7749600  0.7168300  0.2234600  )
+        48           F   tau(  48) = (  0.9418700  0.7168300  0.7234600  )
+        49           F   tau(  49) = (  0.2831700  0.2250400  0.7234600  )
+        50           F   tau(  50) = (  0.7749600  0.0581300  0.7234600  )
+        51           F   tau(  51) = (  0.2831700  0.0581300  0.2234600  )
+        52           F   tau(  52) = (  0.9418700  0.2250400  0.2234600  )
+        53           F   tau(  53) = (  0.6039700  0.6271600  0.3355700  )
+        54           F   tau(  54) = (  0.0231900  0.6271600  0.8355700  )
+        55           F   tau(  55) = (  0.3728400  0.3960300  0.8355700  )
+        56           F   tau(  56) = (  0.6039700  0.9768100  0.8355700  )
+        57           F   tau(  57) = (  0.3728400  0.9768100  0.3355700  )
+        58           F   tau(  58) = (  0.0231900  0.3960300  0.3355700  )
+        59           F   tau(  59) = (  0.5536700  0.5939600  0.2016400  )
+        60           F   tau(  60) = (  0.0402900  0.5939600  0.7016400  )
+        61           F   tau(  61) = (  0.4060400  0.4463300  0.7016400  )
+        62           F   tau(  62) = (  0.5536700  0.9597100  0.7016400  )
+        63           F   tau(  63) = (  0.4060400  0.9597100  0.2016400  )
+        64           F   tau(  64) = (  0.0402900  0.4463300  0.2016400  )
+        65           F   tau(  65) = (  0.7088100  0.6875600  0.3432900  )
+        66           F   tau(  66) = (  0.9787500  0.6875600  0.8432900  )
+        67           F   tau(  67) = (  0.3124400  0.2911900  0.8432900  )
+        68           F   tau(  68) = (  0.7088100  0.0212500  0.8432900  )
+        69           F   tau(  69) = (  0.3124400  0.0212500  0.3432900  )
+        70           F   tau(  70) = (  0.9787500  0.2911900  0.3432900  )
+        71           F   tau(  71) = (  0.7279200  0.6857900  0.0981800  )
+        72           F   tau(  72) = (  0.9578700  0.6857900  0.5981800  )
+        73           F   tau(  73) = (  0.3142100  0.2720800  0.5981800  )
+        74           F   tau(  74) = (  0.7279200  0.0421300  0.5981800  )
+        75           F   tau(  75) = (  0.3142100  0.0421300  0.0981800  )
+        76           F   tau(  76) = (  0.9578700  0.2720800  0.0981800  )
+        77           O   tau(  77) = (  0.3430700  0.5367800  0.3655800  )
+        78           O   tau(  78) = (  0.1937100  0.5367800  0.8655800  )
+        79           O   tau(  79) = (  0.4632200  0.6569300  0.8655800  )
+        80           O   tau(  80) = (  0.3430700  0.8062900  0.8655800  )
+        81           O   tau(  81) = (  0.4632200  0.8062900  0.3655800  )
+        82           O   tau(  82) = (  0.1937100  0.6569300  0.3655800  )
+        83           O   tau(  83) = (  0.3611900  0.5457300  0.1074000  )
+        84           O   tau(  84) = (  0.1845400  0.5457300  0.6074000  )
+        85           O   tau(  85) = (  0.4542700  0.6388100  0.6074000  )
+        86           O   tau(  86) = (  0.3611900  0.8154600  0.6074000  )
+        87           O   tau(  87) = (  0.4542700  0.8154600  0.1074000  )
+        88           O   tau(  88) = (  0.1845400  0.6388100  0.1074000  )
+        89           O   tau(  89) = (  0.6887100  0.4655100  0.1012800  )
+        90           O   tau(  90) = (  0.7768000  0.4655100  0.6012800  )
+        91           O   tau(  91) = (  0.5344900  0.3112900  0.6012800  )
+        92           O   tau(  92) = (  0.6887100  0.2232000  0.6012800  )
+        93           O   tau(  93) = (  0.5344900  0.2232000  0.1012800  )
+        94           O   tau(  94) = (  0.7768000  0.3112900  0.1012800  )
+        95           O   tau(  95) = (  0.6783200  0.4679100  0.3599300  )
+        96           O   tau(  96) = (  0.7895900  0.4679100  0.8599300  )
+        97           O   tau(  97) = (  0.5320900  0.3216800  0.8599300  )
+        98           O   tau(  98) = (  0.6783200  0.2104100  0.8599300  )
+        99           O   tau(  99) = (  0.5320900  0.2104100  0.3599300  )
+       100           O   tau( 100) = (  0.7895900  0.3216800  0.3599300  )
+       101           C   tau( 101) = (  0.2812600  0.3588300  0.2283900  )
+       102           C   tau( 102) = (  0.0775700  0.3588300  0.7283900  )
+       103           C   tau( 103) = (  0.6411700  0.7187400  0.7283900  )
+       104           C   tau( 104) = (  0.2812600  0.9224300  0.7283900  )
+       105           C   tau( 105) = (  0.6411700  0.9224300  0.2283900  )
+       106           C   tau( 106) = (  0.0775700  0.7187400  0.2283900  )
+       107           C   tau( 107) = (  0.3341700  0.4976900  0.2344300  )
+       108           C   tau( 108) = (  0.1635200  0.4976900  0.7344300  )
+       109           C   tau( 109) = (  0.5023100  0.6658300  0.7344300  )
+       110           C   tau( 110) = (  0.3341700  0.8364800  0.7344300  )
+       111           C   tau( 111) = (  0.5023100  0.8364800  0.2344300  )
+       112           C   tau( 112) = (  0.1635200  0.6658300  0.2344300  )
+       113           C   tau( 113) = (  0.6663800  0.6166500  0.2192200  )
+       114           C   tau( 114) = (  0.9502700  0.6166500  0.7192200  )
+       115           C   tau( 115) = (  0.3833500  0.3336200  0.7192200  )
+       116           C   tau( 116) = (  0.6663800  0.0497300  0.7192200  )
+       117           C   tau( 117) = (  0.3833500  0.0497300  0.2192200  )
+       118           C   tau( 118) = (  0.9502700  0.3336200  0.2192200  )
+       119           C   tau( 119) = (  0.6782600  0.5017100  0.2278300  )
+       120           C   tau( 120) = (  0.8234500  0.5017100  0.7278300  )
+       121           C   tau( 121) = (  0.4982900  0.3217400  0.7278300  )
+       122           C   tau( 122) = (  0.6782600  0.1765500  0.7278300  )
+       123           C   tau( 123) = (  0.4982900  0.1765500  0.2278300  )
+       124           C   tau( 124) = (  0.8234500  0.3217400  0.2278300  )
+
+     number of k points=     4  Marzari-Vanderbilt smearing, width (Ry)=  0.0050
+                       cart. coord. in units 2pi/alat
+        k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+        k(    2) = (   0.0000000   0.0000000  -0.7444828), wk =   0.2500000
+        k(    3) = (  -0.2886751  -0.5000000   0.0000000), wk =   0.7500000
+        k(    4) = (  -0.2886751  -0.5000000  -0.7444828), wk =   0.7500000
+
+                       cryst. coord.
+        k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.2500000
+        k(    2) = (   0.0000000   0.0000000  -0.5000000), wk =   0.2500000
+        k(    3) = (   0.0000000  -0.5000000   0.0000000), wk =   0.7500000
+        k(    4) = (   0.0000000  -0.5000000  -0.5000000), wk =   0.7500000
+
+     Dense  grid:   918769 G-vectors     FFT dimensions: ( 150, 150, 100)
+
+     Smooth grid:   414555 G-vectors     FFT dimensions: ( 120, 120,  80)
+
+     Dynamical RAM for                 wfc:      95.87 MB
+
+     Dynamical RAM for     wfc (w. buffer):     479.37 MB
+
+     Dynamical RAM for           str. fact:      14.02 MB
+
+     Dynamical RAM for           local pot:       0.00 MB
+
+     Dynamical RAM for          nlocal pot:     204.00 MB
+
+     Dynamical RAM for                qrad:       5.92 MB
+
+     Dynamical RAM for          rho,v,vnew:      23.39 MB
+
+     Dynamical RAM for               rhoin:       7.80 MB
+
+     Dynamical RAM for            rho*nmix:      56.08 MB
+
+     Dynamical RAM for           G-vectors:      13.93 MB
+
+     Dynamical RAM for          h,s,v(r/c):      10.77 MB
+
+     Dynamical RAM for          <psi|beta>:       7.64 MB
+
+     Dynamical RAM for                 psi:     191.75 MB
+
+     Dynamical RAM for                hpsi:     191.75 MB
+
+     Dynamical RAM for                spsi:     191.75 MB
+
+     Dynamical RAM for      wfcinit/wfcrot:     211.78 MB
+
+     Dynamical RAM for           addusdens:     904.25 MB
+
+     Dynamical RAM for          addusforce:    1403.97 MB
+
+     Dynamical RAM for         addusstress:     704.47 MB
+
+     Estimated static dynamical RAM per process >     787.41 MB
+
+     Estimated max dynamical RAM per process >       2.19 GB
+
+     Estimated total dynamical RAM >       8.78 GB
+
+     Check: negative core charge=   -0.000007
+
+     Initial potential from superposition of free atoms
+
+     starting charge     807.9973, renormalised to     808.0000
+
+     negative rho (up, down):  2.748E-04 0.000E+00
+     Starting wfcs are  520 randomized atomic wfcs
+     Checking if some PAW data can be deallocated... 
+       PAW data deallocated on    2 nodes for type:  1
+       PAW data deallocated on    3 nodes for type:  2
+       PAW data deallocated on    1 nodes for type:  3
+       PAW data deallocated on    3 nodes for type:  4
+
+     total cpu time spent up to now is     1190.3 secs
+
+     per-process dynamical memory:   865.4 Mb
+
+     Self-consistent Calculation
+
+     iteration #  1     ecut=    50.00 Ry     beta= 0.70
+     Davidson diagonalization with overlap
+
+---- Real-time Memory Report at c_bands before calling an iterative solver
+           852 MiB given to the printing process from OS
+           845 MiB allocation reported by mallinfo(arena+hblkhd)
+           483 MiB available memory on the node where the printing process lives
+------------------
