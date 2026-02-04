@@ -6,6 +6,7 @@
 
 #### Installing the required packages
 conda env create -f environment.yaml
+
 conda activate pfas
 
 #### Updating the environment.yaml files
