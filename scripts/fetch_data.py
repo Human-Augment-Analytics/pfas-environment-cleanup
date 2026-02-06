@@ -18,8 +18,9 @@ OUT_CSV = "data/pfas_adsorption_candidates.csv"
 PROPS_CSV = "data/pubchem_properties.csv"
 
 PUBCHEM_PROPS = [
-    "IsomericSMILES", # These might be the same with the CanonicalSMILES
+    "SMILES",
     "CanonicalSMILES",
+    "ConnectivitySMILES",
     "InChIKey",
     "MolecularFormula",
     "MolecularWeight",
@@ -30,6 +31,8 @@ PUBCHEM_PROPS = [
     "HBondDonorCount",
     "HBondAcceptorCount",
     "RotatableBondCount",
+    "IUPACName",
+    "Title",
 ]
 
 ALLOWED_ELEMENTS = set(["C", "H", "O", "N", "F", "S", "P", "Cl", "Br", "I"])
@@ -141,6 +144,11 @@ def request_with_backoff(method: str, url: str, *, max_tries: int = 8, timeout: 
         raise last_exc
     raise RuntimeError("request_with_backoff failed without exception")
 
+def ensure_parent_dir(path: str):
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+        
 def load_done_cids_from_csv(path: str) -> Set[int]:
     """Return set of CIDs already written to a CSV (for resume)."""
     if not os.path.exists(path):
@@ -376,6 +384,9 @@ def build_candidate_table(queries: List[QuerySpec]) -> pd.DataFrame:
 
 
 def main():
+    ensure_parent_dir(OUT_CSV)
+    ensure_parent_dir(PROPS_CSV)
+    
     # 1) Collect candidates (CID lists) by bucket
     candidates = build_candidate_table(QUERIES)
     if candidates.empty:
@@ -391,6 +402,11 @@ def main():
 
     # 3) Merge bucket info back (many buckets per CID possible)
     merged = candidates.merge(props_df, on="CID", how="left")
+    merged["compound_name"] = (
+        merged.get("Title")
+        .fillna(merged.get("IUPACName"))
+        .fillna("")
+    )
 
     # 4) Deduplicate & filter
     merged = merged.dropna(subset=["InChIKey", "SMILES"], how="any")
