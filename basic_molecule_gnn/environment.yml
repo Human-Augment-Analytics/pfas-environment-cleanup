@@ -1,0 +1,17 @@
+name: pfas_gnn_cpu
+channels:
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.10
+  - pytorch=2.2
+  - cpuonly
+  - rdkit
+  - numpy
+  - pandas
+  - scikit-learn
+  - matplotlib
+  - pip
+  - pip:
+      - torch-geometric
+      - tqdm
