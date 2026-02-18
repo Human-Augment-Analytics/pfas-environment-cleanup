@@ -1,17 +1,18 @@
-name: pfas_gnn_cpu
+name: pfas_gnn_env
 channels:
-  - conda-forge
+  - pyg
   - pytorch
+  - defaults
 dependencies:
   - python=3.10
-  - pytorch=2.2
-  - cpuonly
-  - rdkit
-  - numpy
-  - pandas
-  - scikit-learn
-  - matplotlib
+  - pytorch
+  - torchvision
+  - torchaudio
+  - cpuonly     
+  - pyg
+  - numpy             
   - pip
   - pip:
-      - torch-geometric
-      - tqdm
+      - networkx
+      - matplotlib
+      - pandas
