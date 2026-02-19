@@ -33,9 +33,6 @@ val_idx, test_idx = train_test_split(
 )
 
 
-
-
-
 class GCNModel(nn.Module):
     def __init__(self, in_channels, hidden_dim):
         super().__init__()
@@ -46,7 +43,7 @@ class GCNModel(nn.Module):
 
     def forward(self, data):
         # Message passing
-        x, edge_index, batch = data.x, data.edge_index, data.batch
+        x, edge_index, batch = data.x.float(), data.edge_index, data.batch
 
         x = self.conv1(x, edge_index)
         x = F.relu(x)
@@ -70,7 +67,7 @@ class GATModel(torch.nn.Module):
         self.lin = torch.nn.Linear(hidden_dim, 1)
 
     def forward(self, data):
-        x, edge_index, batch = data.x, data.edge_index, data.batch
+        x, edge_index, batch = data.x.float(), data.edge_index, data.batch
 
         x = self.conv1(x, edge_index)
         x = F.elu(x)
@@ -99,7 +96,7 @@ def train(model, loader, optimizer, criterion):
         optimizer.zero_grad()
 
         out = model(data)
-        loss = criterion(out, data.y.view(-1))
+        loss = criterion(out, data.y.view(-1).float())
         loss.backward()
         optimizer.step()
 
@@ -143,12 +140,14 @@ def run_experiment(model_name, device):
 
     best_val = float('inf')
     best_model_state = None
-    patience = 30
+    patience = 50
     counter = 0
+
+    print(f"Results for ")
 
     for epoch in range(300):
         loss = train(model, train_loader, optimizer, criterion)
-        val_mae, _, _ = evaluate(model, val_loader)
+        val_mae = evaluate(model, val_loader, device)
 
         if epoch % 10 == 0:
             print(f"Epoch {epoch:03d} | Loss: {loss:0.4f}  |  Validation MAE: {val_mae:0.4f}")
@@ -161,26 +160,45 @@ def run_experiment(model_name, device):
             counter += 1
         
         if counter >= patience:
-            print("Early stopping triggers")
+            print(f"Early stopping triggered: {patience} iterations with no improvement")
             break
 
     model.load_state_dict(best_model_state)
 
-    test_mae = evaluate(model, test_loader)
+    test_mae = evaluate(model, test_loader, device)
     return best_val, test_mae
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 models = ["GCN", "GAT"]
 
+
+import numpy as np
+
+seeds = [0, 1, 2, 3, 4, 7, 42, 1234, 777]
+
 for model_name in models:
-    val_mae, test_mae = run_experiment(model_name, device)
-
-    print("-" * 30)
+    tst_scores = []
+    val_scores = []
+    print("=" * 45)
     print(f"Model: {model_name}")
-    print(f"Best Validation MAE: {val_mae:.4f}")
-    print(f"Test MAE: {test_mae:.4f}")
 
+    for seed in seeds:
+        torch.manual_seed(seed)
+        print(f"Seed: {seed}")
+
+        val_mae, test_mae = run_experiment(model_name, device)
+
+        print(f"Best Validation MAE: {val_mae:.4f}")
+        print(f"Test MAE: {test_mae:.4f}")
+        print("-" * 25)
+        val_scores.append(val_mae)
+        tst_scores.append(test_mae)
+
+    print(f"Best Val MAE Results: {val_scores}")
+    print(f"Best Test MAE results: {tst_scores} ")
+    print(f"Mean Val MAE: {np.mean(val_scores)} | Std: {np.std(val_scores)}")
+    print(f"Mean Test MAE: {np.mean(tst_scores)} | Std: {np.std(tst_scores)}")
 
 # import matplotlib.pyplot as plt
 
