@@ -116,4 +116,5 @@ dependencies:
   - xorg-libxdmcp=1.1.5
   - zlib-ng=2.3.2
   - zstd=1.5.7
+  - paramiko=4.0.0
 prefix: /opt/homebrew/anaconda3/envs/pfas

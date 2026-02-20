@@ -22,6 +22,16 @@ Fetch the data from the PACE ICE cluster from the directory `/storage/ice-shared
 cd pfas-environment-cleanup
 python3 scripts/fetch_data.py
 ```
+
+If you would like to fetch the data from the ICE cluster:
+
+```
+cd pfas-environment-cleanup
+python3 scripts/fetch_data.py --from-ice
+```
+
+This would prompt you to enter your username and password. Make sure to be connected to the VPN.
+
 ## DFT Calculation Process
 
 ### Quantum Espresso Input Production

@@ -7,4 +7,5 @@ dependencies:
   - requests>=2.32,<2.33
   - rdkit>=2024.03
   - numpy
+  - paramiko=4.0.0
   - pip
