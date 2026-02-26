@@ -1,0 +1,10 @@
+{
+  "input": "data/quantum_espress_placeholder.csv",
+  "model": "hgb",
+  "test_size": 0.2,
+  "seed": 42,
+  "n_rows": 200000,
+  "n_features": 34,
+  "MAE": 0.12213123813565524,
+  "R2": 0.9189160532171109
+}
