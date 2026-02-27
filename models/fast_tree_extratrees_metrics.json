@@ -1,0 +1,10 @@
+{
+  "input": "data/quantum_espress_placeholder.csv",
+  "model": "extratrees",
+  "test_size": 0.2,
+  "seed": 42,
+  "n_rows": 200000,
+  "n_features": 34,
+  "MAE": 0.13194891283918492,
+  "R2": 0.9043808365092132
+}

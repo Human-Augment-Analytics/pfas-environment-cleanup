@@ -11,6 +11,11 @@ import requests
 import pandas as pd
 from io import StringIO
 
+import argparse
+import getpass
+import os
+from pathlib import Path
+
 BASE = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
 UA = "pfas-adsorption-step1/1.0 (requests)"
 
@@ -105,6 +110,54 @@ def _post(url: str, data: dict, timeout: int = 90) -> dict:
     r.raise_for_status()
     return r.json()
 
+
+def fetch_data_from_ice_sftp(
+    host: str,
+    username: str,
+    password: str,
+    remote_base_dir: str = "/storage/ice-shared/cs8903onl/mussmann-pfas/data",
+    local_data_dir: str = "data",
+) -> None:
+    """
+    Downloads cluster CSVs from ICE via SFTP into the local data directory.
+    """
+    try:
+        import paramiko
+    except ImportError as e:
+        raise RuntimeError(
+            "Paramiko is required for --from-ice mode. Install with: pip install paramiko"
+        ) from e
+
+    local_dir = Path(local_data_dir).resolve()
+    local_dir.mkdir(parents=True, exist_ok=True)
+
+    files = [
+        "pfas_adsorption_candidates.csv",
+        "quantum_espress_placeholder.csv",
+    ]
+
+    remote_paths = [f"{remote_base_dir.rstrip('/')}/{fn}" for fn in files]
+    local_paths = [local_dir / fn for fn in files]
+
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    # Connect (password auth)
+    client.connect(hostname=host, username=username, password=password)
+
+    try:
+        sftp = client.open_sftp()
+        try:
+            for rpath, lpath in zip(remote_paths, local_paths):
+                # Download to temp then rename (prevents partial files if interrupted)
+                tmp_path = str(lpath) + ".tmp"
+                sftp.get(rpath, tmp_path)
+                os.replace(tmp_path, lpath)
+                print(f"[ICE] Downloaded {rpath} -> {lpath}")
+        finally:
+            sftp.close()
+    finally:
+        client.close()
 
 def request_with_backoff(method: str, url: str, *, max_tries: int = 8, timeout: int = 120, **kwargs) -> requests.Response:
     """Retry transient PubChem errors (403/429/5xx) with exponential backoff + jitter."""
@@ -430,4 +483,34 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Fetch PFAS data from PubChem or ICE cluster")
+
+    parser.add_argument("--from-ice", action="store_true",
+                    help="Download required CSVs from ICE cluster into the local data directory.")
+    parser.add_argument("--ice-host", type=str, default="login-ice.pace.gatech.edu",
+                        help="ICE SSH host (e.g., ice.pace.gatech.edu or your login node).")
+    parser.add_argument("--ice-username", type=str, default=None,
+                        help="ICE username. If omitted, you will be prompted.")
+    parser.add_argument("--ice-remote-dir", type=str,
+                        default="/storage/ice-shared/cs8903onl/mussmann-pfas/data",
+                        help="Remote directory on ICE containing the CSVs.")
+    parser.add_argument("--local-data-dir", type=str, default="data",
+                        help="Local directory to store downloaded data (same as PubChem outputs).")
+
+    args = parser.parse_args()
+
+    if args.from_ice:
+        if not args.ice_username:
+            args.ice_username = input("ICE username: ").strip()
+
+        ice_password = getpass.getpass("ICE password: ")
+
+        fetch_data_from_ice_sftp(
+            host=args.ice_host,
+            username=args.ice_username,
+            password=ice_password,
+            remote_base_dir=args.ice_remote_dir,
+            local_data_dir=args.local_data_dir,
+        )
+    else:
+        main()
