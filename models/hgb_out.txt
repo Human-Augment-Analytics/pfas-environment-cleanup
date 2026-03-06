@@ -1,0 +1,10 @@
+[info] Subsampled to 200000 rows
+[info] Train target bin counts:
+{0: 16000, 1: 16000, 2: 16000, 3: 16000, 4: 16000, 5: 16000, 6: 16000, 7: 16000, 8: 16000, 9: 16000}
+[info] Test target bin counts:
+{0: 4000, 1: 4000, 2: 4000, 3: 4000, 4: 4000, 5: 4000, 6: 4000, 7: 4000, 8: 4000, 9: 4000}
+[done] saved model:   models/fast_tree_hgb.joblib
+[done] saved metrics: models/fast_tree_hgb_metrics.json
+[metrics] Test MAE=0.1214  Test R2=0.9203
+[metrics] Best CV MAE=0.1222  Best CV R2=0.9185
+[best params] {'min_samples_leaf': 10, 'max_iter': 600, 'max_depth': 8, 'max_bins': 128, 'learning_rate': 0.05, 'l2_regularization': 0.01}

@@ -1,21 +1,21 @@
 {
   "input": "data/quantum_espress_placeholder.csv",
-  "model": "extratrees",
+  "model": "rf",
   "test_size": 0.2,
   "seed": 42,
   "n_rows": 200000,
   "n_features": 31,
   "n_search": 12,
   "n_strat_bins": 10,
-  "MAE": 0.12732565455530503,
-  "R2": 0.9108460251179468,
-  "CV_MAE_best": 0.128893985981149,
-  "CV_R2_best": 0.9078789357214903,
+  "MAE": 0.1290808278418449,
+  "R2": 0.907836563033274,
+  "CV_MAE_best": 0.13107680467776914,
+  "CV_R2_best": 0.9040187004607322,
   "best_params": {
     "n_estimators": 600,
     "min_samples_split": 5,
     "min_samples_leaf": 1,
-    "max_features": 1.0,
+    "max_features": 0.5,
     "max_depth": 20,
     "bootstrap": true
   }
