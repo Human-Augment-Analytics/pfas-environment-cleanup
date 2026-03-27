@@ -41,11 +41,14 @@ def mol_to_cif_pymatgen(input_mol: Path, output_name: str, padding: float = 10.0
     maxs = coords.max(axis=0)
     lengths = maxs - mins
 
-    cell_size = float(max(lengths) + padding)
-    lattice = Lattice.cubic(cell_size)
+    # cell_size = float(max(lengths) + padding) # this uses a cubic boxes
+    # lattice = Lattice.cubic(cell_size)
 
-    center = (mins + maxs) / 2
-    shifted_coords = coords - center + cell_size / 2
+    # center = (mins + maxs) / 2
+    # shifted_coords = coords - center + cell_size / 2
+    box_lengths = lengths + padding
+    lattice = Lattice.orthorhombic(*box_lengths)
+    shifted_coords = coords - mins + padding / 2
 
     structure = Structure(
         lattice,
@@ -59,7 +62,7 @@ def mol_to_cif_pymatgen(input_mol: Path, output_name: str, padding: float = 10.0
     if not output_cif.exists():
         raise FileNotFoundError(f"CIF file not created: {output_cif}")
 
-    print(f"[info] CIF created: {output_cif} (cell ≈ {cell_size:.2f} Å)")
+    print(f"[info] Complex CIF created: {output_cif} (box = {box_lengths})")
     return output_cif
 
 
@@ -74,7 +77,15 @@ def run_cif2cell(input_cif: Path, output_name: str) -> Path:
     return output_in
 
 
-def modify_qe_input(input_file, output_file=None, job_type="molecule"):
+def modify_qe_input(
+    input_file,
+    output_file=None,
+    job_type="molecule",
+    ecutwfc=35,
+    ecutrho=280,
+    use_gamma=True,
+    mixing_beta=None,
+):
     input_path = Path(input_file)
     prefix = input_path.stem
 
@@ -95,36 +106,43 @@ def modify_qe_input(input_file, output_file=None, job_type="molecule"):
     body = lines[body_start:]
 
     if job_type == "molecule":
+        if mixing_beta is None:
+            mixing_beta = 0.2
         system_extra = [
-            "  ecutwfc=60,\n",
-            "  ecutrho=480,\n",
+            f"  ecutwfc={ecutwfc},\n",
+            f"  ecutrho={ecutrho},\n",
             "  input_dft='pbe',\n",
             "  occupations='fixed',\n",
         ]
-        electrons_block = """&ELECTRONS
-  conv_thr=1d-07,
-  mixing_beta=0.3d0,
+        electrons_block = f"""&ELECTRONS
+  conv_thr=1d-06,
+  mixing_beta={mixing_beta}d0,
 /
 """
-        kpoints_block = """K_POINTS {automatic}
+        if use_gamma:
+            kpoints_block = "K_POINTS gamma\n"
+        else:
+            kpoints_block = """K_POINTS {automatic}
   1 1 1 0 0 0
 """
     else:
+        if mixing_beta is None:
+            mixing_beta = 0.5
         system_extra = [
-            "  ecutwfc=60,\n",
-            "  ecutrho=480,\n",
+            f"  ecutwfc={ecutwfc},\n",
+            f"  ecutrho={ecutrho},\n",
             "  input_dft='pbe',\n",
             "  occupations='smearing',\n",
             "  smearing='mv',\n",
             "  degauss=0.005d0,\n",
         ]
-        electrons_block = """&ELECTRONS
-  conv_thr=1d-07,
-  mixing_beta=0.7d0,
+        electrons_block = f"""&ELECTRONS
+  conv_thr=1d-06,
+  mixing_beta={mixing_beta}d0,
 /
 """
         kpoints_block = """K_POINTS {automatic}
-  5 5 5 0 0 0
+  3 3 3 0 0 0
 """
 
     system_block = []

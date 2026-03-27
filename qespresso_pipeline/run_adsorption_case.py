@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
 
+"""
+molecules:
+imidazolium
+Cetyltrimethylammonium bromide
+(Tridecafluoro-1,1,2,2-Tetrahydrooctyl)triethoxysilane
+
+
+4 MPI ranks
+1 thread each
+24–32 GB memory
+"""
+import os
+import shlex
 import argparse
 import json
 import re
@@ -7,7 +20,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-
+import os
 import numpy as np
 from pymatgen.core import Molecule, Lattice, Structure
 from pymatgen.io.cif import CifWriter
@@ -16,21 +29,63 @@ from smiles_to_qe import run_obabel, mol_to_cif_pymatgen, run_cif2cell, modify_q
 
 RY_TO_EV = 13.605693009
 
+def get_mode_settings(mode: str):
+    if mode == "lowmem":
+        return {
+            "ecutwfc": 25,
+            "ecutrho": 200,
+            "padding": 6.0,
+            "use_gamma": True,
+            "mixing_beta": 0.2,
+            "omp_threads": 1,
+        }
+    elif mode == "cluster":
+        return {
+            "ecutwfc": 30,
+            "ecutrho": 240,
+            "padding": 8.0,
+            "use_gamma": True,
+            "mixing_beta": 0.15,
+            "omp_threads": 1,
+        }
+    else:
+        raise ValueError(f"Unknown mode: {mode}")
 
 def ensure_dir(path: Path):
     path.mkdir(parents=True, exist_ok=True)
 
 
-def run_pwscf(input_path: Path, pw_command="pw.x") -> Path:
+def run_pwscf(input_path: Path, pw_command="pw.x", omp_threads=1):
     output_path = input_path.with_suffix(".out")
-    print(f"[run] {input_path.name} -> {output_path.name}")
+    stderr_path = input_path.with_suffix(".err")
 
-    with open(input_path, "r") as f_in, open(output_path, "w") as f_out:
-        result = subprocess.run([pw_command], stdin=f_in, stdout=f_out, stderr=subprocess.PIPE)
+    print(f"[run] {input_path.name} -> {output_path.name}")
+    workdir = input_path.parent
+    (workdir / "Outputs").mkdir(exist_ok=True)
+
+    env = os.environ.copy()
+    env["OMP_NUM_THREADS"] = str(omp_threads)
+
+    cmd = shlex.split(pw_command) + ["-in", input_path.name]
+
+    print(f"[run] command: {' '.join(cmd)}")
+    print(f"[run] OMP_NUM_THREADS={env['OMP_NUM_THREADS']}")
+
+    with open(output_path, "w") as f_out, open(stderr_path, "w") as f_err:
+        result = subprocess.run(
+            cmd,
+            cwd=workdir,
+            stdout=f_out,
+            stderr=f_err,
+            env=env,
+        )
 
     if result.returncode != 0:
         raise RuntimeError(
-            f"pw.x failed for {input_path}\n{result.stderr.decode(errors='ignore')}"
+            f"pw.x failed for {input_path}\n"
+            f"Return code: {result.returncode}\n"
+            f"Command: {' '.join(cmd)}\n"
+            f"See {output_path} and {stderr_path}"
         )
 
     return output_path
@@ -68,11 +123,14 @@ def build_complex_cif(adsorbent_mol: Path, pfas_mol: Path, output_cif: Path, shi
     mins = all_coords.min(axis=0)
     maxs = all_coords.max(axis=0)
     lengths = maxs - mins
-    cell_size = float(max(lengths) + padding)
+    # cell_size = float(max(lengths) + padding)
 
-    lattice = Lattice.cubic(cell_size)
-    center = (mins + maxs) / 2
-    centered = all_coords - center + cell_size / 2
+    # lattice = Lattice.cubic(cell_size)
+    # center = (mins + maxs) / 2
+    # centered = all_coords - center + cell_size / 2
+    box_lengths = lengths + padding
+    lattice = Lattice.orthorhombic(*box_lengths)
+    centered = all_coords - mins + padding / 2
 
     structure = Structure(
         lattice,
@@ -85,13 +143,29 @@ def build_complex_cif(adsorbent_mol: Path, pfas_mol: Path, output_cif: Path, shi
     print(f"[info] Complex CIF created: {output_cif}")
 
 
-def prepare_single_case(smiles: str, outbase: Path, padding: float):
+def prepare_single_case(smiles: str, outbase: Path, settings: dict):
     mol_path = run_obabel(smiles, str(outbase))
-    cif_path = mol_to_cif_pymatgen(mol_path, str(outbase), padding=padding)
+    cif_path = mol_to_cif_pymatgen(mol_path, str(outbase), padding=settings["padding"])
     in_path = run_cif2cell(cif_path, str(outbase))
-    modify_qe_input(in_path, job_type="molecule")
+    modify_qe_input(
+        in_path,
+        job_type="molecule",
+        ecutwfc=settings["ecutwfc"],
+        ecutrho=settings["ecutrho"],
+        use_gamma=settings["use_gamma"],
+        mixing_beta=settings["mixing_beta"],
+    )
     return mol_path, cif_path, in_path
 
+def link_pseudos(case_subdir: Path, pseudo_source: Path):
+    pseudos_dir = case_subdir / "Pseudopotentials"
+    outputs_dir = case_subdir / "Outputs"
+    outputs_dir.mkdir(exist_ok=True)
+
+    if pseudos_dir.exists() or pseudos_dir.is_symlink():
+        return
+
+    pseudos_dir.symlink_to(pseudo_source.resolve(), target_is_directory=True)
 
 def main():
     parser = argparse.ArgumentParser(description="Run one adsorption-energy demo case")
@@ -104,8 +178,15 @@ def main():
     parser.add_argument("--complex-shift-x", type=float, default=4.0)
     parser.add_argument("--complex-shift-y", type=float, default=0.0)
     parser.add_argument("--complex-shift-z", type=float, default=0.0)
-    args = parser.parse_args()
+    parser.add_argument("--pseudo-dir", required=True)
+    parser.add_argument("--mode", choices=["lowmem", "cluster"], default="lowmem")
+    parser.add_argument("--prepare-only", action="store_true")
+    parser.add_argument("--skip-complex", action="store_true")
+    parser.add_argument("--mpi-ranks", type=int, default=1)
 
+    args = parser.parse_args()
+    settings = get_mode_settings(args.mode)
+    
     case_dir = Path(args.workdir) / args.case_name
     ads_dir = case_dir / "adsorbent"
     pfas_dir = case_dir / "pfas"
@@ -114,40 +195,68 @@ def main():
     ensure_dir(ads_dir)
     ensure_dir(pfas_dir)
     ensure_dir(complex_dir)
+    pseudo_source = Path(args.pseudo_dir).resolve()
+
+    link_pseudos(ads_dir, pseudo_source)
+    link_pseudos(pfas_dir, pseudo_source)
+    link_pseudos(complex_dir, pseudo_source)
 
     print("[step] Preparing adsorbent")
     ads_base = ads_dir / "adsorbent"
     ads_mol, ads_cif, ads_in = prepare_single_case(
-        args.adsorbent_smiles, ads_base, padding=args.padding
+        args.adsorbent_smiles, ads_base, settings=settings
     )
 
     print("[step] Preparing PFAS")
     pfas_base = pfas_dir / "pfas"
     pfas_mol, pfas_cif, pfas_in = prepare_single_case(
-        args.pfas_smiles, pfas_base, padding=args.padding
+        args.pfas_smiles, pfas_base, settings=settings
     )
+    
+    if args.prepare_only:
+        print("[done] Preparation complete; QE inputs generated but not run.")
+        return
 
-    print("[step] Building complex")
-    complex_cif = complex_dir / "complex.cif"
-    build_complex_cif(
-        adsorbent_mol=ads_mol,
-        pfas_mol=pfas_mol,
-        output_cif=complex_cif,
-        shift=(args.complex_shift_x, args.complex_shift_y, args.complex_shift_z),
-        padding=args.padding,
-    )
+    if not args.skip_complex:
+        print("[step] Building complex")
+        complex_cif = complex_dir / "complex.cif"
+        build_complex_cif(
+            adsorbent_mol=ads_mol,
+            pfas_mol=pfas_mol,
+            output_cif=complex_cif,
+            shift=(args.complex_shift_x, args.complex_shift_y, args.complex_shift_z),
+            padding=settings["padding"],
+        )
 
-    complex_in = run_cif2cell(complex_cif, str(complex_dir / "complex"))
-    modify_qe_input(complex_in, job_type="molecule")
+        complex_in = run_cif2cell(complex_cif, str(complex_dir / "complex"))
+        modify_qe_input(
+            complex_in,
+            job_type="molecule",
+            ecutwfc=settings["ecutwfc"],
+            ecutrho=settings["ecutrho"],
+            use_gamma=settings["use_gamma"],
+            mixing_beta=settings["mixing_beta"],
+        )
+    else:
+        complex_in = None
 
     print("[step] Running adsorbent calculation")
-    ads_out = run_pwscf(ads_in, pw_command=args.pw_command)
+    ads_out = run_pwscf(ads_in, pw_command=args.pw_command,
+                        omp_threads=settings["omp_threads"])
 
     print("[step] Running PFAS calculation")
-    pfas_out = run_pwscf(pfas_in, pw_command=args.pw_command)
+    pfas_out = run_pwscf(pfas_in, 
+                        pw_command=args.pw_command,
+                        omp_threads=settings["omp_threads"])
 
     print("[step] Running complex calculation")
-    complex_out = run_pwscf(complex_in, pw_command=args.pw_command)
+    if complex_in != None:
+        complex_out = run_pwscf(complex_in, 
+                        pw_command=args.pw_command,
+                        omp_threads=settings["omp_threads"])
+    else:
+        print("[done] skipping energy calculations since complex out is skipped")
+        return
 
     print("[step] Parsing energies")
     e_adsorbent_ry = extract_total_energy_ry(ads_out)

@@ -3,4 +3,11 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - python=3.10
   - qe
+  - numpy
+  - scipy
+  - pandas
+  - pymatgen
+  - openbabel
+  - cif2cell
