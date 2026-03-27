@@ -140,6 +140,9 @@ def submit_slurm_job(
     lines += [
         "set -euo pipefail",
         f"cd {shlex.quote(run_dir)}",
+        "export OMP_NUM_THREADS=1",
+        "export MKL_NUM_THREADS=1",
+        "export OPENBLAS_NUM_THREADS=1",
         "echo \"[DFT] Starting workflow at $(date)\"",
         f"{shlex.quote(workflow_script)} {shlex.quote(compound_id)}",
         "echo \"[DFT] Finished at $(date)\"",
