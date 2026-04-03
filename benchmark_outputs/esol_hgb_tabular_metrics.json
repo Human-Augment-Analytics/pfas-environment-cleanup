@@ -1,0 +1,180 @@
+{
+  "dataset": "ESOL",
+  "model": "hgb",
+  "feature_type": "graph_summary_tabular",
+  "split_meta": {
+    "split_type": "random",
+    "n_total": 1128,
+    "n_train": 902,
+    "n_val": 113,
+    "n_test": 113,
+    "seed": 42
+  },
+  "n_features": 70,
+  "seed": 42,
+  "n_search": 12,
+  "best_params": {
+    "min_samples_leaf": 5,
+    "max_iter": 600,
+    "max_depth": 8,
+    "max_bins": 128,
+    "learning_rate": 0.05,
+    "l2_regularization": 0.01
+  },
+  "cv_metrics_best": {
+    "mae": 0.6038447890949488,
+    "r2": 0.8319626841024884
+  },
+  "test_metrics": {
+    "mae": 0.5488328571810479,
+    "rmse": 0.8047597989609507,
+    "r2": 0.868783488040269,
+    "n": 113
+  },
+  "search_results": [
+    {
+      "params": {
+        "min_samples_leaf": 5,
+        "max_iter": 600,
+        "max_depth": 8,
+        "max_bins": 128,
+        "learning_rate": 0.05,
+        "l2_regularization": 0.01
+      },
+      "cv_mae": 0.6038447890949488,
+      "cv_r2": 0.8319626841024884
+    },
+    {
+      "params": {
+        "min_samples_leaf": 20,
+        "max_iter": 600,
+        "max_depth": null,
+        "max_bins": 128,
+        "learning_rate": 0.03,
+        "l2_regularization": 0.1
+      },
+      "cv_mae": 0.6253709839522823,
+      "cv_r2": 0.8222319296411736
+    },
+    {
+      "params": {
+        "min_samples_leaf": 20,
+        "max_iter": 400,
+        "max_depth": null,
+        "max_bins": 128,
+        "learning_rate": 0.1,
+        "l2_regularization": 0.01
+      },
+      "cv_mae": 0.6256884984539052,
+      "cv_r2": 0.8216428262844654
+    },
+    {
+      "params": {
+        "min_samples_leaf": 30,
+        "max_iter": 300,
+        "max_depth": 8,
+        "max_bins": 255,
+        "learning_rate": 0.08,
+        "l2_regularization": 0.01
+      },
+      "cv_mae": 0.6335298304429696,
+      "cv_r2": 0.8199112372840237
+    },
+    {
+      "params": {
+        "min_samples_leaf": 20,
+        "max_iter": 300,
+        "max_depth": 6,
+        "max_bins": 128,
+        "learning_rate": 0.08,
+        "l2_regularization": 0.1
+      },
+      "cv_mae": 0.6320570371472786,
+      "cv_r2": 0.8200319124966056
+    },
+    {
+      "params": {
+        "min_samples_leaf": 10,
+        "max_iter": 400,
+        "max_depth": null,
+        "max_bins": 255,
+        "learning_rate": 0.05,
+        "l2_regularization": 1.0
+      },
+      "cv_mae": 0.612983747509904,
+      "cv_r2": 0.8286500194159537
+    },
+    {
+      "params": {
+        "min_samples_leaf": 20,
+        "max_iter": 200,
+        "max_depth": 10,
+        "max_bins": 255,
+        "learning_rate": 0.08,
+        "l2_regularization": 0.0
+      },
+      "cv_mae": 0.6264456083522701,
+      "cv_r2": 0.8196077090798365
+    },
+    {
+      "params": {
+        "min_samples_leaf": 20,
+        "max_iter": 300,
+        "max_depth": 6,
+        "max_bins": 255,
+        "learning_rate": 0.1,
+        "l2_regularization": 0.01
+      },
+      "cv_mae": 0.6309274851754222,
+      "cv_r2": 0.8192514214192469
+    },
+    {
+      "params": {
+        "min_samples_leaf": 20,
+        "max_iter": 400,
+        "max_depth": null,
+        "max_bins": 128,
+        "learning_rate": 0.08,
+        "l2_regularization": 0.0
+      },
+      "cv_mae": 0.6266493735764972,
+      "cv_r2": 0.8218802668395314
+    },
+    {
+      "params": {
+        "min_samples_leaf": 20,
+        "max_iter": 400,
+        "max_depth": 6,
+        "max_bins": 128,
+        "learning_rate": 0.05,
+        "l2_regularization": 0.1
+      },
+      "cv_mae": 0.6273186291661874,
+      "cv_r2": 0.8227692005880399
+    },
+    {
+      "params": {
+        "min_samples_leaf": 30,
+        "max_iter": 300,
+        "max_depth": 8,
+        "max_bins": 128,
+        "learning_rate": 0.05,
+        "l2_regularization": 1.0
+      },
+      "cv_mae": 0.6313824655335677,
+      "cv_r2": 0.8239062891385259
+    },
+    {
+      "params": {
+        "min_samples_leaf": 20,
+        "max_iter": 200,
+        "max_depth": 8,
+        "max_bins": 255,
+        "learning_rate": 0.03,
+        "l2_regularization": 0.0
+      },
+      "cv_mae": 0.6408194530681209,
+      "cv_r2": 0.814751411466609
+    }
+  ]
+}

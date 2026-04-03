@@ -1,0 +1,180 @@
+{
+  "dataset": "ESOL",
+  "model": "rf",
+  "feature_type": "graph_summary_tabular",
+  "split_meta": {
+    "split_type": "random",
+    "n_total": 1128,
+    "n_train": 902,
+    "n_val": 113,
+    "n_test": 113,
+    "seed": 42
+  },
+  "n_features": 70,
+  "seed": 42,
+  "n_search": 12,
+  "best_params": {
+    "n_estimators": 600,
+    "min_samples_split": 5,
+    "min_samples_leaf": 2,
+    "max_features": 0.5,
+    "max_depth": 30,
+    "bootstrap": true
+  },
+  "cv_metrics_best": {
+    "mae": 0.6119851567879423,
+    "r2": 0.8273742807666982
+  },
+  "test_metrics": {
+    "mae": 0.5386489209592724,
+    "rmse": 0.7804817425903615,
+    "r2": 0.8765811661264804,
+    "n": 113
+  },
+  "search_results": [
+    {
+      "params": {
+        "n_estimators": 400,
+        "min_samples_split": 2,
+        "min_samples_leaf": 4,
+        "max_features": 0.8,
+        "max_depth": 30,
+        "bootstrap": true
+      },
+      "cv_mae": 0.6381377068440137,
+      "cv_r2": 0.8158838345680373
+    },
+    {
+      "params": {
+        "n_estimators": 200,
+        "min_samples_split": 5,
+        "min_samples_leaf": 4,
+        "max_features": 0.5,
+        "max_depth": null,
+        "bootstrap": true
+      },
+      "cv_mae": 0.639315179160246,
+      "cv_r2": 0.8162786296196997
+    },
+    {
+      "params": {
+        "n_estimators": 200,
+        "min_samples_split": 2,
+        "min_samples_leaf": 4,
+        "max_features": 0.5,
+        "max_depth": 10,
+        "bootstrap": true
+      },
+      "cv_mae": 0.642330328017059,
+      "cv_r2": 0.8133634371846332
+    },
+    {
+      "params": {
+        "n_estimators": 200,
+        "min_samples_split": 5,
+        "min_samples_leaf": 1,
+        "max_features": "log2",
+        "max_depth": null,
+        "bootstrap": true
+      },
+      "cv_mae": 0.6466072261728407,
+      "cv_r2": 0.8137878234319023
+    },
+    {
+      "params": {
+        "n_estimators": 600,
+        "min_samples_split": 5,
+        "min_samples_leaf": 2,
+        "max_features": 0.5,
+        "max_depth": 30,
+        "bootstrap": true
+      },
+      "cv_mae": 0.6119851567879423,
+      "cv_r2": 0.8273742807666982
+    },
+    {
+      "params": {
+        "n_estimators": 600,
+        "min_samples_split": 5,
+        "min_samples_leaf": 1,
+        "max_features": 0.5,
+        "max_depth": 20,
+        "bootstrap": true
+      },
+      "cv_mae": 0.6121015548556171,
+      "cv_r2": 0.8265686541278999
+    },
+    {
+      "params": {
+        "n_estimators": 200,
+        "min_samples_split": 2,
+        "min_samples_leaf": 2,
+        "max_features": 0.8,
+        "max_depth": 30,
+        "bootstrap": true
+      },
+      "cv_mae": 0.6150486955737975,
+      "cv_r2": 0.8254245175034014
+    },
+    {
+      "params": {
+        "n_estimators": 400,
+        "min_samples_split": 2,
+        "min_samples_leaf": 4,
+        "max_features": "log2",
+        "max_depth": 10,
+        "bootstrap": true
+      },
+      "cv_mae": 0.7144861589003023,
+      "cv_r2": 0.7792041550908118
+    },
+    {
+      "params": {
+        "n_estimators": 200,
+        "min_samples_split": 10,
+        "min_samples_leaf": 1,
+        "max_features": 0.8,
+        "max_depth": 10,
+        "bootstrap": true
+      },
+      "cv_mae": 0.645000050500595,
+      "cv_r2": 0.8121195132739443
+    },
+    {
+      "params": {
+        "n_estimators": 400,
+        "min_samples_split": 5,
+        "min_samples_leaf": 2,
+        "max_features": "log2",
+        "max_depth": 10,
+        "bootstrap": true
+      },
+      "cv_mae": 0.6748690120687381,
+      "cv_r2": 0.8008154474161923
+    },
+    {
+      "params": {
+        "n_estimators": 200,
+        "min_samples_split": 2,
+        "min_samples_leaf": 4,
+        "max_features": "log2",
+        "max_depth": 10,
+        "bootstrap": true
+      },
+      "cv_mae": 0.7142257288860554,
+      "cv_r2": 0.7786461971846638
+    },
+    {
+      "params": {
+        "n_estimators": 400,
+        "min_samples_split": 10,
+        "min_samples_leaf": 2,
+        "max_features": 0.5,
+        "max_depth": null,
+        "bootstrap": true
+      },
+      "cv_mae": 0.633557951441775,
+      "cv_r2": 0.8176156751647906
+    }
+  ]
+}

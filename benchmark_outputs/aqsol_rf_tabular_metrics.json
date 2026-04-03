@@ -1,0 +1,175 @@
+{
+  "dataset": "AQSOL",
+  "model": "rf",
+  "feature_type": "graph_summary_tabular",
+  "split_meta": {
+    "split_type": "predefined"
+  },
+  "n_features": 20,
+  "seed": 42,
+  "n_search": 12,
+  "best_params": {
+    "n_estimators": 600,
+    "min_samples_split": 5,
+    "min_samples_leaf": 1,
+    "max_features": 0.5,
+    "max_depth": 20,
+    "bootstrap": true
+  },
+  "cv_metrics_best": {
+    "mae": 0.8871009241132258,
+    "r2": 0.7106283473959736
+  },
+  "test_metrics": {
+    "mae": 1.179444263488632,
+    "rmse": 1.5863535700894826,
+    "r2": 0.5885713508182375,
+    "n": 999
+  },
+  "search_results": [
+    {
+      "params": {
+        "n_estimators": 400,
+        "min_samples_split": 2,
+        "min_samples_leaf": 4,
+        "max_features": 0.8,
+        "max_depth": 30,
+        "bootstrap": true
+      },
+      "cv_mae": 0.9023515895670838,
+      "cv_r2": 0.7058064951481645
+    },
+    {
+      "params": {
+        "n_estimators": 200,
+        "min_samples_split": 5,
+        "min_samples_leaf": 4,
+        "max_features": 0.5,
+        "max_depth": null,
+        "bootstrap": true
+      },
+      "cv_mae": 0.9145153328957002,
+      "cv_r2": 0.6997315541654633
+    },
+    {
+      "params": {
+        "n_estimators": 200,
+        "min_samples_split": 2,
+        "min_samples_leaf": 4,
+        "max_features": 0.5,
+        "max_depth": 10,
+        "bootstrap": true
+      },
+      "cv_mae": 0.963688954401094,
+      "cv_r2": 0.6811424825463286
+    },
+    {
+      "params": {
+        "n_estimators": 200,
+        "min_samples_split": 5,
+        "min_samples_leaf": 1,
+        "max_features": "log2",
+        "max_depth": null,
+        "bootstrap": true
+      },
+      "cv_mae": 0.9106777372059112,
+      "cv_r2": 0.7008117163956928
+    },
+    {
+      "params": {
+        "n_estimators": 600,
+        "min_samples_split": 5,
+        "min_samples_leaf": 2,
+        "max_features": 0.5,
+        "max_depth": 30,
+        "bootstrap": true
+      },
+      "cv_mae": 0.8925146060636746,
+      "cv_r2": 0.7085940254500415
+    },
+    {
+      "params": {
+        "n_estimators": 600,
+        "min_samples_split": 5,
+        "min_samples_leaf": 1,
+        "max_features": 0.5,
+        "max_depth": 20,
+        "bootstrap": true
+      },
+      "cv_mae": 0.8871009241132258,
+      "cv_r2": 0.7106283473959736
+    },
+    {
+      "params": {
+        "n_estimators": 200,
+        "min_samples_split": 2,
+        "min_samples_leaf": 2,
+        "max_features": 0.8,
+        "max_depth": 30,
+        "bootstrap": true
+      },
+      "cv_mae": 0.8875802826332823,
+      "cv_r2": 0.7103683239876855
+    },
+    {
+      "params": {
+        "n_estimators": 400,
+        "min_samples_split": 2,
+        "min_samples_leaf": 4,
+        "max_features": "log2",
+        "max_depth": 10,
+        "bootstrap": true
+      },
+      "cv_mae": 1.0004697644655625,
+      "cv_r2": 0.6640075927839842
+    },
+    {
+      "params": {
+        "n_estimators": 200,
+        "min_samples_split": 10,
+        "min_samples_leaf": 1,
+        "max_features": 0.8,
+        "max_depth": 10,
+        "bootstrap": true
+      },
+      "cv_mae": 0.9519580336539192,
+      "cv_r2": 0.6880828097400391
+    },
+    {
+      "params": {
+        "n_estimators": 400,
+        "min_samples_split": 5,
+        "min_samples_leaf": 2,
+        "max_features": "log2",
+        "max_depth": 10,
+        "bootstrap": true
+      },
+      "cv_mae": 0.993015068072649,
+      "cv_r2": 0.668534671903422
+    },
+    {
+      "params": {
+        "n_estimators": 200,
+        "min_samples_split": 2,
+        "min_samples_leaf": 4,
+        "max_features": "log2",
+        "max_depth": 10,
+        "bootstrap": true
+      },
+      "cv_mae": 1.0009280691537252,
+      "cv_r2": 0.6634770154811864
+    },
+    {
+      "params": {
+        "n_estimators": 400,
+        "min_samples_split": 10,
+        "min_samples_leaf": 2,
+        "max_features": 0.5,
+        "max_depth": null,
+        "bootstrap": true
+      },
+      "cv_mae": 0.9036882146969921,
+      "cv_r2": 0.705600037413109
+    }
+  ]
+}
