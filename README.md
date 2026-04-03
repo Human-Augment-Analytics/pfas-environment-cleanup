@@ -42,4 +42,68 @@ An automated pipeline for automatically converting a compound of interest into a
 4. Using [cif2cell](https://pypi.org/project/cif2cell/), convert the Crystallographic Information File into a Quantum Espresso input file (.in).
 5. Modify the input file with pseudopotentials for constituent atoms and standard run parameters based on those atoms.
 6. Run PWSCF simulation with input file via [Quantum Espresso](https://www.quantum-espresso.org/Doc/INPUT_PW.html) (pw.x). 
-Note: This method represents a slight workaround from the typical DFT calculation process designed around VASP POSCAR files, used with VASP instead of Quantum Espresso. It is possible that some information is lost or improperly assumed in this conversion process, particularly at the .mol to .cif file conversion step with VESTA. 
+Note: This method represents a slight workaround from the typical DFT calculation process designed around VASP POSCAR files, used with VASP instead of Quantum Espresso. It is possible that some information is lost or improperly assumed in this conversion process, particularly at the .mol to .cif file conversion step with VESTA.
+
+
+The current pipeline automates the full process from SMILES to adsorption energy using Quantum ESPRESSO.
+
+**Steps:**
+
+1. Convert SMILES → `.mol` using Open Babel  
+2. Convert `.mol` → `.cif` using pymatgen  
+3. Convert `.cif` → QE input (`.in`) using `cif2cell`  
+4. Patch QE input with:
+   - PBE functional
+   - Cutoffs (e.g., `ecutwfc`, `ecutrho`)
+   - `K_POINTS = 1 1 1` (molecular system)
+   - Pseudopotential paths
+5. Run `pw.x` for:
+   - Adsorbent
+   - PFAS
+   - Adsorbent–PFAS complex
+6. Parse total energies and compute:
+E_ads = E_complex - E_adsorbent - E_PFAS
+
+### Running a Case
+```
+python qespresso_pipeline/run_adsorption_case.py \
+  --case-name <case_name> \
+  --adsorbent-name <adsorbent_name> \
+  --pfas-name <pfas_name> \
+  --adsorbent-smiles "<SMILES>" \
+  --pfas-smiles "<SMILES>" \
+  --compound-root compounds \
+  --workdir dft_cases \
+  --pseudo-dir qespresso_pipeline/Pseudopotentials \
+  --mode cluster \
+  --pw-command "pw.x"
+```
+
+#### Reusing Existing Calculations
+
+You can skip parts of the workflow if outputs already exist:
+
+```
+--skip-ads → reuse adsorbent
+--skip-pfas → reuse PFAS
+--skip-complex → reuse complex
+```
+- Providing PFAS Energy Directly
+
+#### If PFAS energy is already known:
+```
+--pfas-energy-ry <value>
+```
+- Skips PFAS calculation
+- Uses provided energy in adsorption calculation
+
+#### Directory Structure
+```
+compounds/
+  adsorbents/<adsorbent_name>/
+  pfas/<pfas_name>/
+
+dft_cases/
+  <case_name>/
+    complex/
+```
