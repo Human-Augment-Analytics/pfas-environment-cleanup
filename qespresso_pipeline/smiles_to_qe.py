@@ -117,6 +117,7 @@ def modify_qe_input(
         electrons_block = f"""&ELECTRONS
   conv_thr=1d-06,
   mixing_beta={mixing_beta}d0,
+  electron_maxstep=100,
 /
 """
         if use_gamma:
@@ -139,6 +140,7 @@ def modify_qe_input(
         electrons_block = f"""&ELECTRONS
   conv_thr=1d-06,
   mixing_beta={mixing_beta}d0,
+  electron_maxstep=100,
 /
 """
         kpoints_block = """K_POINTS {automatic}
