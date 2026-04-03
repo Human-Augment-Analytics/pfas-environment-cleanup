@@ -1,25 +1,9 @@
 #!/usr/bin/env python3
-
-# a wrapper that can be used to run DFT simulations
-# skips if DFT is ran for the simulation already
-"""
-Docstring for scripts.dft_wrapper
-
-Check status:
-python3 scripts/dft_wrapper.py --host user@ice-login --compound-id IKHGUXGNUITLKF-UHFFFAOYSA-N --status
-
-Submit if results are missing:
-python3 scripts/dft_wrapper.py --host user@ice-login --compound-id IKHGUXGNUITLKF-UHFFFAOYSA-N --submit-if-missing
-
-Fetch if results exist:
-python3 scripts/dft_wrapper.py --host user@ice-login --compound-id IKHGUXGNUITLKF-UHFFFAOYSA-N --fetch
-"""
 from __future__ import annotations
 
 import argparse
 import json
 import shlex
-import shutil
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -31,11 +15,8 @@ DEFAULT_RUNS_SUBDIR = "dft_runs"
 DEFAULT_LOCAL_CACHE = "./data/dft_cache"
 DEFAULT_CLUSTER_HOST = "login-ice.pace.gatech.edu"
 
+
 def run(cmd: str, check: bool = True, capture: bool = False) -> subprocess.CompletedProcess:
-    """
-    Runs a shell command.
-    capture=False keeps it interactive; capture=True captures stdout/stderr.
-    """
     if capture:
         p = subprocess.run(cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     else:
@@ -57,20 +38,25 @@ class Cluster:
     runs_subdir: str = DEFAULT_RUNS_SUBDIR
     control_path: str = ""
 
+
 def now_utc_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
-def rdir(c: Cluster, compound_id: str) -> str:
-    return f"{c.root.rstrip('/')}/{c.runs_subdir.strip('/')}/{compound_id}"
+
+def rdir(c: Cluster, case_name: str) -> str:
+    return f"{c.root.rstrip('/')}/{c.runs_subdir.strip('/')}/{case_name}"
+
 
 def ensure_control_dir() -> Path:
     d = Path.home() / ".ssh" / "cm_sockets"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
+
 def make_control_path(user: str, host: str) -> str:
     d = ensure_control_dir()
     return str(d / f"cm-{user}@{host}")
+
 
 def ssh_opts_control(c: Cluster) -> list[str]:
     return [
@@ -82,52 +68,68 @@ def ssh_opts_control(c: Cluster) -> list[str]:
         "-q",
     ]
 
+
 def ssh_cmd_interactive(c: Cluster, remote_cmd: str) -> str:
     opts = ssh_opts_control(c) + ["-tt"]
     return "ssh " + " ".join(shlex.quote(x) for x in opts) + " " + shlex.quote(c.ssh_target) + " " + shlex.quote(remote_cmd)
 
+
 def ssh_cmd_quiet(c: Cluster, remote_cmd: str) -> str:
     opts = ssh_opts_control(c) + ["-T"]
     return "ssh " + " ".join(shlex.quote(x) for x in opts) + " " + shlex.quote(c.ssh_target) + " " + shlex.quote(remote_cmd)
+
 
 def open_master_connection(c: Cluster) -> None:
     print("[AUTH] Warming SSH (you should be prompted once if needed)...")
     run(ssh_cmd_interactive(c, "echo AUTH_OK"), check=True, capture=False)
     print("[AUTH] SSH OK (ControlMaster enabled).")
 
+
 def remote_file_exists(c: Cluster, remote_path: str) -> bool:
     cmd = ssh_cmd_quiet(c, f"test -f {shlex.quote(remote_path)}")
     p = run(cmd, check=False, capture=False)
     return p.returncode == 0
+
 
 def remote_dir_exists(c: Cluster, remote_path: str) -> bool:
     cmd = ssh_cmd_quiet(c, f"test -d {shlex.quote(remote_path)}")
     p = run(cmd, check=False, capture=False)
     return p.returncode == 0
 
-def ensure_remote_dirs(c: Cluster, compound_id: str) -> None:
-    cmd = ssh_cmd_quiet(c, f"mkdir -p {shlex.quote(rdir(c, compound_id))}/{{inputs,outputs,results}}")
+
+def ensure_remote_dirs(c: Cluster, case_name: str) -> None:
+    cmd = ssh_cmd_quiet(c, f"mkdir -p {shlex.quote(rdir(c, case_name))}/{{inputs,outputs,results}}")
     run(cmd, check=True, capture=False)
+
 
 def write_remote_file(c: Cluster, remote_path: str, content: str) -> None:
     cmd = ssh_cmd_quiet(c, f"cat > {shlex.quote(remote_path)} << 'EOF'\n{content}\nEOF")
     run(cmd, check=True, capture=False)
 
+
 def submit_slurm_job(
     c: Cluster,
-    compound_id: str,
+    case_name: str,
     workflow_script: str,
     partition: Optional[str],
     time_limit: str,
     cpus: int,
     mem_gb: int,
+    skip_ads: bool,
+    skip_pfas: bool,
+    skip_complex: bool,
+    adsorbent_name: str,
+    pfas_name: str,
+    adsorbent_smiles: Optional[str],
+    pfas_smiles: Optional[str],
+    pfas_energy_ry: Optional[float],
 ) -> None:
-    run_dir = rdir(c, compound_id)
+    run_dir = rdir(c, case_name)
     jobfile = f"{run_dir}/job.sbatch"
 
     lines = [
         "#!/bin/bash",
-        f"#SBATCH --job-name=dft_{compound_id}",
+        f"#SBATCH --job-name=dft_{case_name}",
         f"#SBATCH --cpus-per-task={cpus}",
         f"#SBATCH --mem={mem_gb}G",
         f"#SBATCH --time={time_limit}",
@@ -143,8 +145,28 @@ def submit_slurm_job(
         "export OMP_NUM_THREADS=1",
         "export MKL_NUM_THREADS=1",
         "export OPENBLAS_NUM_THREADS=1",
+        f"export CASE_NAME={shlex.quote(case_name)}",
+        f"export ADSORBENT_NAME={shlex.quote(adsorbent_name)}",
+        f"export PFAS_NAME={shlex.quote(pfas_name)}",
+        f"export COMPOUND_ROOT={shlex.quote(c.root.rstrip('/') + '/compounds')}",
+        f"export WORKDIR={shlex.quote(c.root.rstrip('/') + '/dft_cases')}",
+        f"export SKIP_ADS={'1' if skip_ads else '0'}",
+        f"export SKIP_PFAS={'1' if skip_pfas else '0'}",
+        f"export SKIP_COMPLEX={'1' if skip_complex else '0'}",
+    ]
+
+    if adsorbent_smiles:
+        lines.append(f"export ADSORBENT_SMILES={shlex.quote(adsorbent_smiles)}")
+    if pfas_smiles:
+        lines.append(f"export PFAS_SMILES={shlex.quote(pfas_smiles)}")
+    if pfas_energy_ry is not None:
+        lines.append(f"export PFAS_ENERGY_RY={shlex.quote(str(pfas_energy_ry))}")
+
+    lines += [
         "echo \"[DFT] Starting workflow at $(date)\"",
-        f"{shlex.quote(workflow_script)} {shlex.quote(compound_id)}",
+        "echo \"[DFT] CASE_NAME=$CASE_NAME ADSORBENT_NAME=$ADSORBENT_NAME PFAS_NAME=$PFAS_NAME\"",
+        "echo \"[DFT] SKIP_ADS=$SKIP_ADS SKIP_PFAS=$SKIP_PFAS SKIP_COMPLEX=$SKIP_COMPLEX\"",
+        shlex.quote(workflow_script),
         "echo \"[DFT] Finished at $(date)\"",
         "echo \"DONE\" > DONE",
     ]
@@ -152,11 +174,12 @@ def submit_slurm_job(
     write_remote_file(c, jobfile, "\n".join(lines) + "\n")
     run(ssh_cmd_quiet(c, f"sbatch {shlex.quote(jobfile)}"), check=True, capture=False)
 
+
 def fetch_with_tar(c: Cluster, run_dir: str, dst: Path) -> None:
     if not remote_dir_exists(c, run_dir):
         raise RuntimeError(
             f"Remote run directory does not exist:\n  {run_dir}\n"
-            "You likely need to run --submit-if-missing first, or your compound_id is wrong."
+            "You likely need to run --submit-if-missing first, or your case_name is wrong."
         )
 
     remote_tar_cmd = (
@@ -171,20 +194,19 @@ def fetch_with_tar(c: Cluster, run_dir: str, dst: Path) -> None:
     run(cmd, check=True, capture=False)
 
 
-def fetch(c: Cluster, compound_id: str, local_cache: str) -> Path:
-    dst = Path(local_cache).resolve() / compound_id
+def fetch(c: Cluster, case_name: str, local_cache: str) -> Path:
+    dst = Path(local_cache).resolve() / case_name
     dst.mkdir(parents=True, exist_ok=True)
 
-    run_dir = rdir(c, compound_id)
-
+    run_dir = rdir(c, case_name)
     fetch_with_tar(c, run_dir, dst)
     return dst
+
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="DFT wrapper: submit-if-missing and fetch results.")
     ap.add_argument("--user", required=True, help="Cluster username.")
     ap.add_argument("--cluster", default=DEFAULT_CLUSTER_HOST, help="Cluster SSH hostname.")
-    ap.add_argument("--compound-id", required=True, help="Stable ID (InChIKey/CID/etc.).")
     ap.add_argument("--cluster-root", default=DEFAULT_CLUSTER_ROOT)
     ap.add_argument("--runs-subdir", default=DEFAULT_RUNS_SUBDIR)
     ap.add_argument("--status", action="store_true")
@@ -198,40 +220,88 @@ def main() -> int:
     ap.add_argument("--mem-gb", type=int, default=32)
     ap.add_argument("--no-auth-check", action="store_true")
 
+    ap.add_argument("--skip-ads", action="store_true")
+    ap.add_argument("--skip-pfas", action="store_true")
+    ap.add_argument("--skip-complex", action="store_true")
+
+    ap.add_argument("--case-name", required=True)
+    ap.add_argument("--adsorbent-name", required=True)
+    ap.add_argument("--pfas-name", required=True)
+    ap.add_argument("--adsorbent-smiles", required=False)
+    ap.add_argument("--pfas-smiles", required=False)
+    ap.add_argument("--pfas-energy-ry", type=float, default=None)
+
     args = ap.parse_args()
 
     ssh_target = f"{args.user}@{args.cluster}"
     control_path = make_control_path(args.user, args.cluster)
-    c = Cluster(ssh_target=ssh_target, root=args.cluster_root, runs_subdir=args.runs_subdir, control_path=control_path)
+    c = Cluster(
+        ssh_target=ssh_target,
+        root=args.cluster_root,
+        runs_subdir=args.runs_subdir,
+        control_path=control_path,
+    )
 
     if not args.no_auth_check:
         open_master_connection(c)
 
-    run_dir = rdir(c, args.compound_id)
+    run_dir = rdir(c, args.case_name)
     done = remote_file_exists(c, f"{run_dir}/DONE")
     summary = remote_file_exists(c, f"{run_dir}/results/summary.json")
 
     if args.status:
         print(json.dumps(
-            {"compound_id": args.compound_id, "run_dir": run_dir, "done": done, "summary": summary},
+            {
+                "case_name": args.case_name,
+                "run_dir": run_dir,
+                "done": done,
+                "summary": summary,
+            },
             indent=2
         ))
         return 0
 
     if args.submit_if_missing:
         if done and summary:
-            print(f"[SKIP] {args.compound_id}: results already exist (DONE + summary.json).")
+            print(f"[SKIP] {args.case_name}: results already exist (DONE + summary.json).")
         else:
-            print(f"[SUBMIT] {args.compound_id}: preparing directory and submitting SLURM job.")
-            ensure_remote_dirs(c, args.compound_id)
+            print(f"[SUBMIT] {args.case_name}: preparing directory and submitting SLURM job.")
+            ensure_remote_dirs(c, args.case_name)
+
+            ads_done = remote_file_exists(
+                c, f"{c.root}/compounds/adsorbents/{args.adsorbent_name}/adsorbent.out"
+            )
+            pfas_done = remote_file_exists(
+                c, f"{c.root}/compounds/pfas/{args.pfas_name}/pfas.out"
+            )
+            complex_done = remote_file_exists(
+                c, f"{c.root}/dft_cases/{args.case_name}/complex/complex.out"
+            )
+
+            skip_ads = args.skip_ads or ads_done
+            skip_pfas = args.skip_pfas or pfas_done or (args.pfas_energy_ry is not None)
+            skip_complex = args.skip_complex or complex_done
 
             meta = {
-                "compound_id": args.compound_id,
+                "case_name": args.case_name,
+                "adsorbent_name": args.adsorbent_name,
+                "pfas_name": args.pfas_name,
                 "created_utc": now_utc_iso(),
                 "cluster_root": args.cluster_root,
                 "runs_subdir": args.runs_subdir,
                 "run_dir": run_dir,
                 "workflow_script": args.workflow_script,
+                "pfas_energy_ry": args.pfas_energy_ry,
+                "skip_flags": {
+                    "skip_ads": skip_ads,
+                    "skip_pfas": skip_pfas,
+                    "skip_complex": skip_complex,
+                },
+                "existing_outputs": {
+                    "ads_done": ads_done,
+                    "pfas_done": pfas_done,
+                    "complex_done": complex_done,
+                },
                 "slurm": {
                     "partition": args.partition,
                     "time": args.time,
@@ -243,18 +313,26 @@ def main() -> int:
 
             submit_slurm_job(
                 c=c,
-                compound_id=args.compound_id,
+                case_name=args.case_name,
                 workflow_script=args.workflow_script,
                 partition=args.partition,
                 time_limit=args.time,
                 cpus=args.cpus,
                 mem_gb=args.mem_gb,
+                skip_ads=skip_ads,
+                skip_pfas=skip_pfas,
+                skip_complex=skip_complex,
+                adsorbent_name=args.adsorbent_name,
+                pfas_name=args.pfas_name,
+                adsorbent_smiles=args.adsorbent_smiles,
+                pfas_smiles=args.pfas_smiles,
+                pfas_energy_ry=args.pfas_energy_ry,
             )
             print("[SUBMIT] Job submitted.")
 
     if args.fetch:
-        dst = fetch(c, args.compound_id, args.local_cache)
-        print(f"[FETCHED] {args.compound_id} -> {dst}")
+        dst = fetch(c, args.case_name, args.local_cache)
+        print(f"[FETCHED] {args.case_name} -> {dst}")
 
     if not (args.status or args.submit_if_missing or args.fetch):
         ap.print_help()
