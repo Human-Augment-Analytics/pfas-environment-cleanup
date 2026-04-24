@@ -123,6 +123,10 @@ def submit_slurm_job(
     adsorbent_smiles: Optional[str],
     pfas_smiles: Optional[str],
     pfas_energy_ry: Optional[float],
+    adsorbent_source: str,
+    adsorbent_cif: Optional[str],
+    system_type: str,
+    mode: str,
 ) -> None:
     run_dir = rdir(c, case_name)
     jobfile = f"{run_dir}/job.sbatch"
@@ -162,6 +166,14 @@ def submit_slurm_job(
     if pfas_energy_ry is not None:
         lines.append(f"export PFAS_ENERGY_RY={shlex.quote(str(pfas_energy_ry))}")
 
+    lines += [
+        f"export ADSORBENT_SOURCE={shlex.quote(adsorbent_source)}",
+        f"export SYSTEM_TYPE={shlex.quote(system_type)}",
+        f"export MODE={shlex.quote(mode)}",
+    ]
+    if adsorbent_cif:
+        lines.append(f"export ADSORBENT_CIF={shlex.quote(adsorbent_cif)}")
+        
     lines += [
         "echo \"[DFT] Starting workflow at $(date)\"",
         "echo \"[DFT] CASE_NAME=$CASE_NAME ADSORBENT_NAME=$ADSORBENT_NAME PFAS_NAME=$PFAS_NAME\"",
@@ -230,7 +242,10 @@ def main() -> int:
     ap.add_argument("--adsorbent-smiles", required=False)
     ap.add_argument("--pfas-smiles", required=False)
     ap.add_argument("--pfas-energy-ry", type=float, default=None)
-
+    ap.add_argument("--adsorbent-source", choices=["smiles", "cif"], required=True)
+    ap.add_argument("--adsorbent-cif", default=None)
+    ap.add_argument("--system-type", choices=["molecule", "periodic"], default="molecule")
+    ap.add_argument("--mode", choices=["lowmem", "cluster", "production"], default="cluster")
     args = ap.parse_args()
 
     ssh_target = f"{args.user}@{args.cluster}"
@@ -268,15 +283,9 @@ def main() -> int:
             print(f"[SUBMIT] {args.case_name}: preparing directory and submitting SLURM job.")
             ensure_remote_dirs(c, args.case_name)
 
-            ads_done = remote_file_exists(
-                c, f"{c.root}/compounds/adsorbents/{args.adsorbent_name}/adsorbent.out"
-            )
-            pfas_done = remote_file_exists(
-                c, f"{c.root}/compounds/pfas/{args.pfas_name}/pfas.out"
-            )
-            complex_done = remote_file_exists(
-                c, f"{c.root}/dft_cases/{args.case_name}/complex/complex.out"
-            )
+            ads_done = remote_file_exists(c, f"{c.root}/compounds/adsorbents/{args.adsorbent_name}/adsorbent.out")
+            pfas_done = remote_file_exists(c, f"{c.root}/compounds/pfas/{args.pfas_name}/pfas.out")
+            complex_done = remote_file_exists(c, f"{c.root}/dft_cases/{args.case_name}/complex/complex.out")
 
             skip_ads = args.skip_ads or ads_done
             skip_pfas = args.skip_pfas or pfas_done or (args.pfas_energy_ry is not None)
@@ -327,6 +336,10 @@ def main() -> int:
                 adsorbent_smiles=args.adsorbent_smiles,
                 pfas_smiles=args.pfas_smiles,
                 pfas_energy_ry=args.pfas_energy_ry,
+                adsorbent_source=args.adsorbent_source,
+                adsorbent_cif=args.adsorbent_cif,
+                system_type=args.system_type,
+                mode=args.mode,
             )
             print("[SUBMIT] Job submitted.")
 

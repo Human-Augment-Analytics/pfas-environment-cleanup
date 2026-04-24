@@ -41,11 +41,6 @@ def mol_to_cif_pymatgen(input_mol: Path, output_name: str, padding: float = 10.0
     maxs = coords.max(axis=0)
     lengths = maxs - mins
 
-    # cell_size = float(max(lengths) + padding) # this uses a cubic boxes
-    # lattice = Lattice.cubic(cell_size)
-
-    # center = (mins + maxs) / 2
-    # shifted_coords = coords - center + cell_size / 2
     box_lengths = lengths + padding
     lattice = Lattice.orthorhombic(*box_lengths)
     shifted_coords = coords - mins + padding / 2
@@ -62,7 +57,7 @@ def mol_to_cif_pymatgen(input_mol: Path, output_name: str, padding: float = 10.0
     if not output_cif.exists():
         raise FileNotFoundError(f"CIF file not created: {output_cif}")
 
-    print(f"[info] Complex CIF created: {output_cif} (box = {box_lengths})")
+    print(f"[info] CIF created: {output_cif} (box = {box_lengths})")
     return output_cif
 
 
@@ -85,6 +80,9 @@ def modify_qe_input(
     ecutrho=280,
     use_gamma=True,
     mixing_beta=None,
+    input_dft="pbe",
+    kpts=(1, 1, 1),
+    calculation="scf"
 ):
     input_path = Path(input_file)
     prefix = input_path.stem
@@ -111,7 +109,7 @@ def modify_qe_input(
         system_extra = [
             f"  ecutwfc={ecutwfc},\n",
             f"  ecutrho={ecutrho},\n",
-            "  input_dft='pbe',\n",
+            f"  input_dft='{input_dft}',\n",
             "  occupations='fixed',\n",
         ]
         electrons_block = f"""&ELECTRONS
@@ -123,8 +121,9 @@ def modify_qe_input(
         if use_gamma:
             kpoints_block = "K_POINTS gamma\n"
         else:
-            kpoints_block = """K_POINTS {automatic}
-  1 1 1 0 0 0
+            kx, ky, kz = kpts
+            kpoints_block = f"""K_POINTS {{automatic}}
+  {kx} {ky} {kz} 0 0 0
 """
     else:
         if mixing_beta is None:
@@ -132,7 +131,7 @@ def modify_qe_input(
         system_extra = [
             f"  ecutwfc={ecutwfc},\n",
             f"  ecutrho={ecutrho},\n",
-            "  input_dft='pbe',\n",
+            f"  input_dft='{input_dft}',\n",
             "  occupations='smearing',\n",
             "  smearing='mv',\n",
             "  degauss=0.005d0,\n",
@@ -143,8 +142,9 @@ def modify_qe_input(
   electron_maxstep=100,
 /
 """
-        kpoints_block = """K_POINTS {automatic}
-  3 3 3 0 0 0
+        kx, ky, kz = kpts
+        kpoints_block = f"""K_POINTS {{automatic}}
+  {kx} {ky} {kz} 0 0 0
 """
 
     system_block = []
@@ -169,8 +169,8 @@ def modify_qe_input(
         line = re.sub(r"\b([A-Za-z]+)_PSEUDO\b", r"\1.UPF", line)
         fixed_body.append(line)
 
-    control_block = f"""&CONTROL
-  calculation='scf',
+control_block = f"""&CONTROL
+  calculation='{calculation}',
   outdir='./Outputs',
   prefix='{prefix}',
   pseudo_dir='./Pseudopotentials',
@@ -205,6 +205,11 @@ def main():
     parser.add_argument("output", help="Base output filename")
     parser.add_argument("--padding", type=float, default=10.0)
     parser.add_argument("--job-type", choices=["molecule", "periodic"], default="molecule")
+    parser.add_argument("--ecutwfc", type=float, default=35)
+    parser.add_argument("--ecutrho", type=float, default=280)
+    parser.add_argument("--input-dft", default="pbe")
+    parser.add_argument("--kpts", nargs=3, type=int, default=[1, 1, 1])
+    parser.add_argument("--no-gamma", action="store_true")
     args = parser.parse_args()
 
     check_executable("obabel")
@@ -214,7 +219,15 @@ def main():
         mol_file = run_obabel(args.input, args.output)
         cif_file = mol_to_cif_pymatgen(mol_file, args.output, padding=args.padding)
         qe_input = run_cif2cell(cif_file, args.output)
-        modify_qe_input(qe_input, job_type=args.job_type)
+        modify_qe_input(
+            qe_input,
+            job_type=args.job_type,
+            ecutwfc=args.ecutwfc,
+            ecutrho=args.ecutrho,
+            use_gamma=not args.no_gamma,
+            input_dft=args.input_dft,
+            kpts=tuple(args.kpts),
+        )
 
         print("\n[done] Pipeline completed successfully.")
         print(f"  - {mol_file}")
