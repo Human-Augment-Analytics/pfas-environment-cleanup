@@ -1,0 +1,302 @@
+
+     Program PWSCF v.7.2 starts on 16Apr2026 at 10:48:38 
+
+     This program is part of the open-source Quantum ESPRESSO suite
+     for quantum simulation of materials; please cite
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 21 395502 (2009);
+         "P. Giannozzi et al., J. Phys.:Condens. Matter 29 465901 (2017);
+         "P. Giannozzi et al., J. Chem. Phys. 152 154105 (2020);
+          URL http://www.quantum-espresso.org", 
+     in publications or presentations arising from this work. More details at
+     http://www.quantum-espresso.org/quote
+
+     Parallel version (MPI & OpenMP), running on       4 processor cores
+     Number of MPI processes:                 1
+     Threads/MPI process:                     4
+
+     MPI processes distributed on     1 nodes
+     4023 MiB available memory on the printing compute node when the environment starts
+
+     Reading input from FE_with_TFAnew.in
+
+     Current dimensions of program PWSCF are:
+     Max number of different atomic species (ntypx) = 10
+     Max number of k-points (npk) =  40000
+     Max angular momentum in pseudopotentials (lmaxx) =  4
+     Presently no symmetry can be used with electric field
+
+     Presently stress not available with electric field and gates
+
+     Message from routine iosys:
+     pot_extrapolation='second_order' not available, using 'atomic'
+     Message from routine iosys:
+     wfc_extrapolation='second_order' not available, using 'atomic'
+     file Fe.UPF: wavefunction(s)  3P 3D renormalized
+     file C.UPF: wavefunction(s)  2S 2P renormalized
+     file O.UPF: wavefunction(s)  2S 2P renormalized
+     file F.UPF: wavefunction(s)  2S 2P renormalized
+
+     IMPORTANT: XC functional enforced from input :
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+     Any further DFT definition will be discarded
+     Please, verify this is what you really want
+
+
+     Subspace diagonalization in iterative solution of the eigenvalue problem:
+     a serial algorithm will be used
+
+
+     G-vector sticks info
+     --------------------
+     sticks:   dense  smooth     PW     G-vecs:    dense   smooth      PW
+     Sum        7153    3585    977              1324965   468413   67151
+
+     Using Slab Decomposition
+
+
+
+     bravais-lattice index     =            0
+     lattice parameter (alat)  =      16.2705  a.u.
+     unit-cell volume          =    7459.8003 (a.u.)^3
+     number of atoms/cell      =           43
+     number of atomic types    =            4
+     number of electrons       =       617.00
+     number of Kohn-Sham states=          371
+     kinetic-energy cutoff     =      60.0000  Ry
+     charge density cutoff     =     480.0000  Ry
+     scf convergence threshold =      1.0E-07
+     mixing beta               =       0.3000
+     number of iterations used =            8  local-TF  mixing
+     energy convergence thresh.=      7.3E-07
+     force convergence thresh. =      7.7E-04
+     Exchange-correlation= PBE
+                           (   1   4   3   4   0   0   0)
+     nstep                     =           50
+
+
+     celldm(1)=  16.270542  celldm(2)=   0.000000  celldm(3)=   0.000000
+     celldm(4)=   0.000000  celldm(5)=   0.000000  celldm(6)=   0.000000
+
+     crystal axes: (cart. coord. in units of alat)
+               a(1) = (   1.000000   0.000000   0.000000 )  
+               a(2) = (   0.500000   0.707107   0.000000 )  
+               a(3) = (   0.000000   0.000000   2.449267 )  
+
+     reciprocal axes: (cart. coord. in units 2 pi/alat)
+               b(1) = (  1.000000 -0.707107  0.000000 )  
+               b(2) = (  0.000000  1.414214  0.000000 )  
+               b(3) = (  0.000000  0.000000  0.408285 )  
+
+
+     PseudoPot. # 1 for Fe read from file:
+     ./Pseudopotentials/Fe.UPF
+     MD5 check sum: d27ee10e6da873e3f1670f15abb69e09
+     Pseudo is Projector augmented-wave + core cor, Zval = 16.0
+     Generated using 'atomic' code by A. Dal Corso  v.7.2
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1191 points,  6 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+                l(5) =   2
+                l(6) =   2
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 2 for C  read from file:
+     ./Pseudopotentials/C.UPF
+     MD5 check sum: 0dcd7e2f47656ebc741e5a19a8c99607
+     Pseudo is Projector augmented-wave + core cor, Zval =  4.0
+     Generated using 'atomic' code by A. Dal Corso  v.7.2
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1073 points,  4 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 3 for O  read from file:
+     ./Pseudopotentials/O.UPF
+     MD5 check sum: c2b90f53c2e0374da637a288a3f2c0d1
+     Pseudo is Projector augmented-wave + core cor, Zval =  6.0
+     Generated using 'atomic' code by A. Dal Corso  v.7.2
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1095 points,  4 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+     Q(r) pseudized with 0 coefficients 
+
+
+     PseudoPot. # 4 for F  read from file:
+     ./Pseudopotentials/F.UPF
+     MD5 check sum: 24f06cbbe4770390fadad187de636a74
+     Pseudo is Projector augmented-wave + core cor, Zval =  7.0
+     Generated using 'atomic' code by A. Dal Corso  v.7.2
+     Shape of augmentation charge: PSQ
+     Using radial grid of 1105 points,  4 beta functions with: 
+                l(1) =   0
+                l(2) =   0
+                l(3) =   1
+                l(4) =   1
+     Q(r) pseudized with 0 coefficients 
+
+
+     atomic species   valence    mass     pseudopotential
+        Fe            16.00    55.84500     Fe( 1.00)
+        C              4.00    12.01060     C ( 1.00)
+        O              6.00    15.99900     O ( 1.00)
+        F              7.00    18.99800     F ( 1.00)
+
+     Starting magnetic structure 
+     atomic species   magnetization
+        Fe           0.300
+        C            0.000
+        O            0.000
+        F            0.000
+
+     No symmetry found
+
+
+
+   Cartesian axes
+
+     site n.     atom                  positions (alat units)
+         1           Fe  tau(   1) = (   1.0000000   0.2357023   0.8710801  )
+         2           Fe  tau(   2) = (   0.3333333   0.2357023   0.8710801  )
+         3           Fe  tau(   3) = (   0.6666667   0.2357023   0.8710801  )
+         4           Fe  tau(   4) = (   1.1666667   0.4714045   0.8710801  )
+         5           Fe  tau(   5) = (   0.5000000   0.4714045   0.8710801  )
+         6           Fe  tau(   6) = (   0.8333333   0.4714045   0.8710801  )
+         7           Fe  tau(   7) = (   0.8333333   0.0000000   0.8710801  )
+         8           Fe  tau(   8) = (   0.1666667   0.0000000   0.8710801  )
+         9           Fe  tau(   9) = (   0.5000000   0.0000000   0.8710801  )
+        10           Fe  tau(  10) = (   0.0000000   0.0000000   1.1067824  )
+        11           Fe  tau(  11) = (   0.3333333   0.0000000   1.1067824  )
+        12           Fe  tau(  12) = (   0.6666667   0.0000000   1.1067824  )
+        13           Fe  tau(  13) = (   0.1666667   0.2357023   1.1067824  )
+        14           Fe  tau(  14) = (   0.5000000   0.2357023   1.1067824  )
+        15           Fe  tau(  15) = (   0.8333333   0.2357023   1.1067824  )
+        16           Fe  tau(  16) = (   0.3333333   0.4714045   1.1067824  )
+        17           Fe  tau(  17) = (   0.6666667   0.4714045   1.1067824  )
+        18           Fe  tau(  18) = (   1.0000000   0.4714045   1.1067824  )
+        19           Fe  tau(  19) = (   1.0000000   0.2357023   1.3424847  )
+        20           Fe  tau(  20) = (   0.3333333   0.2357023   1.3424847  )
+        21           Fe  tau(  21) = (   0.6666667   0.2357023   1.3424847  )
+        22           Fe  tau(  22) = (   1.1666667   0.4714045   1.3424847  )
+        23           Fe  tau(  23) = (   0.5000000   0.4714045   1.3424847  )
+        24           Fe  tau(  24) = (   0.8333333   0.4714045   1.3424847  )
+        25           Fe  tau(  25) = (   0.8333333   0.0000000   1.3424847  )
+        26           Fe  tau(  26) = (   0.1666667   0.0000000   1.3424847  )
+        27           Fe  tau(  27) = (   0.5000000   0.0000000   1.3424847  )
+        28           Fe  tau(  28) = (   0.0000000   0.0000000   1.5781869  )
+        29           Fe  tau(  29) = (   0.3333333   0.0000000   1.5781869  )
+        30           Fe  tau(  30) = (   0.6666667   0.0000000   1.5781869  )
+        31           Fe  tau(  31) = (   0.1666667   0.2357023   1.5781869  )
+        32           Fe  tau(  32) = (   0.5000000   0.2357023   1.5781869  )
+        33           Fe  tau(  33) = (   0.8333333   0.2357023   1.5781869  )
+        34           Fe  tau(  34) = (   0.3333333   0.4714045   1.5781869  )
+        35           Fe  tau(  35) = (   0.6666667   0.4714045   1.5781869  )
+        36           Fe  tau(  36) = (   1.0000000   0.4714045   1.5781869  )
+        37           F   tau(  37) = (   0.7708825   0.0831700   1.8653649  )
+        38           F   tau(  38) = (   0.5780606   0.2052376   1.9753300  )
+        39           F   tau(  39) = (   0.5711151   0.1541340   1.7265146  )
+        40           O   tau(  40) = (   0.6875492   0.4785591   1.7838899  )
+        41           O   tau(  41) = (   0.9084319   0.3396857   1.8128098  )
+        42           C   tau(  42) = (   0.7500000   0.3535534   1.8104750  )
+        43           C   tau(  43) = (   0.6656447   0.2003708   1.8441221  )
+
+     --------------------------------------------
+     DFT-D3 Dispersion Correction (3-body terms):
+     --------------------------------------------
+       Reference C6 values for interpolation: 
+
+         atom   Coordination number   C6
+         C          0.000            98.23
+         C          0.987            86.49
+         C          1.998            58.72
+         C          2.999            51.56
+         C          3.984            36.41
+         O          0.000            31.01
+         O          0.993            25.63
+         O          1.989            20.74
+         F          0.000            19.38
+         F          0.998            14.27
+         Fe         0.000           982.67
+         Fe         1.648           409.99
+         Fe         9.138           219.01
+
+       Values used:
+
+         atom   Coordination number  R0_AB[au]  C6      C8
+         Fe         6.737            3.252    219.01  20487.87
+         Fe         6.737            3.252    219.01  20487.87
+         Fe         6.737            3.252    219.01  20487.87
+         Fe         6.737            3.252    219.01  20487.87
+         Fe         6.737            3.252    219.01  20487.87
+         Fe         6.737            3.252    219.01  20487.87
+         Fe         6.737            3.252    219.01  20487.87
+         Fe         6.737            3.252    219.01  20487.87
+         Fe         6.737            3.252    219.01  20487.87
+         Fe         9.236            3.252    219.01  20487.87
+         Fe         9.236            3.252    219.01  20487.87
+         Fe         9.236            3.252    219.01  20487.87
+         Fe         9.236            3.252    219.01  20487.87
+         Fe         9.236            3.252    219.01  20487.87
+         Fe         9.236            3.252    219.01  20487.87
+         Fe         9.236            3.252    219.01  20487.87
+         Fe         9.236            3.252    219.01  20487.87
+         Fe         9.236            3.252    219.01  20487.87
+         Fe         9.238            3.252    219.01  20487.87
+         Fe         9.238            3.252    219.01  20487.87
+         Fe         9.242            3.252    219.01  20487.87
+         Fe         9.237            3.252    219.01  20487.87
+         Fe         9.238            3.252    219.01  20487.87
+         Fe         9.239            3.252    219.01  20487.87
+         Fe         9.238            3.252    219.01  20487.87
+         Fe         9.237            3.252    219.01  20487.87
+         Fe         9.239            3.252    219.01  20487.87
+         Fe         6.762            3.252    219.01  20487.87
+         Fe         6.814            3.252    219.01  20487.87
+         Fe         7.716            3.252    219.01  20487.87
+         Fe         6.752            3.252    219.01  20487.87
+         Fe         7.901            3.252    219.01  20487.87
+         Fe         7.897            3.252    219.01  20487.87
+         Fe         6.748            3.252    219.01  20487.87
+         Fe         8.309            3.252    219.01  20487.87
+         Fe         6.964            3.252    219.01  20487.87
+         F          1.192            2.173     14.29    244.45
+         F          1.090            2.173     14.31    244.84
+         F          3.077            2.173     14.27    244.15
+         O          2.090            2.345     20.78    419.34
+         O          1.632            2.345     21.87    441.37
+         C          4.237            2.750     36.45   1054.21
+         C          4.358            2.750     36.43   1053.55
+
+         Molecular C6 ( Ry / a.u.^6 ) =    318007.38
+
+
+     number of k points=    13  Marzari-Vanderbilt smearing, width (Ry)=  0.0100
+                       cart. coord. in units 2pi/alat
+        k(    1) = (   0.0000000   0.0000000   0.0000000), wk =   0.0400000
+        k(    2) = (   0.0000000   0.2828427   0.0000000), wk =   0.0800000
+        k(    3) = (   0.0000000   0.5656854   0.0000000), wk =   0.0800000
+        k(    4) = (   0.2000000  -0.1414214   0.0000000), wk =   0.0800000
+        k(    5) = (   0.2000000   0.1414214   0.0000000), wk =   0.0800000
+        k(    6) = (   0.2000000   0.4242641   0.0000000), wk =   0.0800000
+        k(    7) = (   0.2000000  -0.7071068   0.0000000), wk =   0.0800000
+        k(    8) = (   0.2000000  -0.4242641   0.0000000), wk =   0.0800000
+        k(    9) = (   0.4000000  -0.2828427   0.0000000), wk =   0.0800000
+        k(   10) = (   0.4000000   0.0000000   0.0000000), wk =   0.0800000
+        k(   11) = (   0.4000000   0.2828427   0.0000000), wk =   0.0800000
+        k(   12) = (   0.4000000  -0.8485281   0.0000000), wk =   0.0800000
+        k(   13) = (   0.4000000  -0.5656854   0.0000000), wk =   0.0800000
+
+     Dense  grid:  1324965 G-vectors     FFT dimensions: ( 120, 100, 288)
+
+     Smooth grid:   468413 G-vectors     FFT dimensions: (  81,  72, 200)
