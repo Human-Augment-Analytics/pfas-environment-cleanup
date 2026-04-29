@@ -8,6 +8,8 @@ import numpy as np
 from ase import Atom
 from ase.build import graphene
 from ase.io import write
+from pymatgen.core import Lattice, Structure
+from pymatgen.io.cif import CifWriter
 
 
 def build_graphene_sheet(nx: int, ny: int, vacuum: float):
@@ -117,23 +119,136 @@ def build_go(nx: int, ny: int, vacuum: float, epoxides: int, hydroxyls: int, see
     return atoms
 
 
+def build_sic4h_si_terminated(
+    nx: int = 6,
+    ny: int = 6,
+    vacuum: float = 15.0,
+    a: float = 3.08,
+    layer_spacing: float = 1.9,
+    h_bond: float = 1.50,
+):
+    """
+    Approximate Si-terminated 4H-SiC slab.
+
+    For nx=6, ny=6:
+    - 72 Si
+    - 72 C
+    - 72 H passivation atoms
+    - 216 atoms total
+
+    Top surface is Si-terminated.
+    Bottom surface is C-terminated and H-passivated.
+    """
+
+    lattice = Lattice([
+        [nx * a, 0.0, 0.0],
+        [-0.5 * ny * a, np.sqrt(3) * 0.5 * ny * a, 0.0],
+        [0.0, 0.0, 4 * layer_spacing + vacuum],
+    ])
+
+    z_offset = vacuum / 2.0
+
+    layers = [
+        ("C", 0.0, (0.0, 0.0)),
+        ("Si", layer_spacing, (1 / 3, 2 / 3)),
+        ("C", 2 * layer_spacing, (2 / 3, 1 / 3)),
+        ("Si", 3 * layer_spacing, (0.0, 0.0)),
+    ]
+
+    species = []
+    coords = []
+
+    top_si_positions = []
+    bottom_c_positions = []
+
+    for symbol, z, shift in layers:
+        sx, sy = shift
+
+        for i in range(nx):
+            for j in range(ny):
+                frac_x = (i + sx) / nx
+                frac_y = (j + sy) / ny
+
+                cart = lattice.get_cartesian_coords([frac_x, frac_y, 0.0])
+                cart[2] = z + z_offset
+
+                species.append(symbol)
+                coords.append(cart)
+
+                if symbol == "Si" and z == 3 * layer_spacing:
+                    top_si_positions.append(cart.copy())
+
+                if symbol == "C" and z == 0.0:
+                    bottom_c_positions.append(cart.copy())
+
+    # H-passivate exposed top Si atoms
+    for pos in top_si_positions:
+        h_pos = pos.copy()
+        h_pos[2] += h_bond
+        species.append("H")
+        coords.append(h_pos)
+
+    # H-passivate exposed bottom C atoms
+    for pos in bottom_c_positions:
+        h_pos = pos.copy()
+        h_pos[2] -= h_bond
+        species.append("H")
+        coords.append(h_pos)
+
+    return Structure(
+        lattice,
+        species,
+        coords,
+        coords_are_cartesian=True,
+    )
+
+
+def write_output(path: Path, obj):
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    if isinstance(obj, Structure):
+        CifWriter(obj, symprec=None).write_file(str(path))
+        print(f"[info] Formula: {obj.composition}")
+        print(f"[info] Natoms: {len(obj)}")
+        print(f"[info] Lattice:\n{obj.lattice}")
+    else:
+        write(str(path), obj)
+        print(f"[info] Formula: {obj.get_chemical_formula()}")
+        print(f"[info] Natoms: {len(obj)}")
+        print(f"[info] Cell:\n{obj.cell}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Build a periodic adsorbent slab and export CIF")
-    parser.add_argument("--template", choices=["graphene", "go"], required=True)
+
+    parser.add_argument(
+        "--template",
+        choices=["graphene", "go", "sic4h_si"],
+        required=True,
+    )
     parser.add_argument("--nx", type=int, default=5)
     parser.add_argument("--ny", type=int, default=5)
     parser.add_argument("--vacuum", type=float, default=15.0)
+
+    # GO options
     parser.add_argument("--epoxides", type=int, default=0)
     parser.add_argument("--hydroxyls", type=int, default=0)
     parser.add_argument("--seed", type=int, default=42)
+
+    # SiC options
+    parser.add_argument("--sic-a", type=float, default=3.08)
+    parser.add_argument("--sic-layer-spacing", type=float, default=1.9)
+    parser.add_argument("--sic-h-bond", type=float, default=1.50)
+
     parser.add_argument("--out", required=True)
 
     args = parser.parse_args()
 
     if args.template == "graphene":
-        atoms = build_graphene_sheet(args.nx, args.ny, args.vacuum)
+        structure = build_graphene_sheet(args.nx, args.ny, args.vacuum)
+
     elif args.template == "go":
-        atoms = build_go(
+        structure = build_go(
             nx=args.nx,
             ny=args.ny,
             vacuum=args.vacuum,
@@ -141,16 +256,24 @@ def main():
             hydroxyls=args.hydroxyls,
             seed=args.seed,
         )
+
+    elif args.template == "sic4h_si":
+        structure = build_sic4h_si_terminated(
+            nx=args.nx,
+            ny=args.ny,
+            vacuum=args.vacuum,
+            a=args.sic_a,
+            layer_spacing=args.sic_layer_spacing,
+            h_bond=args.sic_h_bond,
+        )
+
     else:
         raise ValueError(f"Unknown template: {args.template}")
 
     out_path = Path(args.out)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    write(str(out_path), atoms)
+    write_output(out_path, structure)
 
     print(f"[done] Wrote periodic adsorbent to {out_path}")
-    print(f"[info] Formula: {atoms.get_chemical_formula()}")
-    print(f"[info] Cell:\n{atoms.cell}")
 
 
 if __name__ == "__main__":

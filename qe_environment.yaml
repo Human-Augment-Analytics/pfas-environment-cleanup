@@ -11,3 +11,4 @@ dependencies:
   - pymatgen
   - openbabel
   - cif2cell
+  - ase
