@@ -219,3 +219,101 @@ python3 scripts/dft_wrapper.py \
   --time 12:00:00 \
   --workflow-script /storage/ice-shared/cs8903onl/mussmann-pfas/run_dft_workflow.sh
 ```
+
+### Manual DFT Simulation
+
+For tuning purposes, it will likely be necessary to manually create a DFT input file from a CIF file, created either via ase, pymatgen, or sourced from a crystallographic database. You begin by running a command of this following structure to create an input file:
+
+```
+cif2cell [input_file].cif -p quantum-espresso -o [output_file].in
+```
+
+This gives you a generic input file. Depending on if you have a molecular or periodic/metallic structure, we then need to append a certain number of things. For molecular, the structure may look something like this:
+
+```
+&CONTROL
+  calculation='relax', ! to denote the type of calculation you want to run
+  outdir='./Outputs', ! where it sends metadata, run results, etc.
+  prefix='tfanoh_isolated', ! title of results
+  pseudo_dir='./Pseudopotentials', ! where it sources pseudopotential files for the run
+  verbosity='low',
+  tprnfor=.true., ! additional force/stress calculations
+  tstress=.true.,
+  forc_conv_thr=7.7D-4, ! global convergence thresholds
+  etot_conv_thr=7.3D-7
+/
+&SYSTEM
+  ibrav = 1
+  A = 15.0  ! for molecules, you need vacuum on the sides to prevent spurious interactions
+  nat = 7 ! that means rescaling the ATOMIC_POSITIONS parameters
+  ntyp = 3
+  tot_charge = -1.0 ! specifying the ionic nature 
+  assume_isolated = 'martyna-tuckerman' ! this is a correction factor for isolated molecular systems
+  ecutwfc=60, ! energy cutoffs, the higher the more accurate, but the more memory/time required
+  ecutrho=480,
+  input_dft='pbe',
+  occupations='fixed',
+  vdw_corr='grimme-d3' ! van der waals force correction
+/
+&ELECTRONS
+  conv_thr=1d-07, ! self-consistent convergence threshold
+  mixing_beta=0.3, ! mixing factor (akin to a learning rate, too high is unstable, too low is slow)
+/
+&IONS
+  ion_dynamics='bfgs', ! relaxation dynamics for ions
+/
+CELL_PARAMETERS {angstrom}
+  15.00000000000000   0.000000000000000   0.000000000000000 
+  0.000000000000000   15.00000000000000   0.000000000000000 
+  0.000000000000000   0.000000000000000   15.00000000000000 
+ATOMIC_SPECIES
+   F   18.99800   F.UPF ! PAW pseudopotential files in the given directory
+   O   15.99900   O.UPF
+   C   12.01060   C.UPF
+ATOMIC_POSITIONS {angstrom}
+F   8.071326   5.984002   7.794029 ! note that these parameters are clearly bounded by vacuum
+F   6.411133   7.035002   8.740828 ! note that the cell goes from [0,15], and this is centred
+F   6.351331   6.595001   6.598528
+O   7.353828   9.388298   7.092531
+O   9.255626   8.192599   7.341530
+C   7.891528   8.311999   7.321427
+C   7.165231   6.993100   7.611128
+K_POINTS gamma ! equivalent to a 1 1 1 grid, appropriate for isolated systems
+```
+
+Conversely, if you have a periodic/metallic structure, you will need some additions, such as:
+```
+&CONTROL ! these only describe additions that must be made
+  tefield=.true., ! electric field potential for lattices
+  dipfield=.true., ! dipole correction factor for lattices
+  max_seconds=40000, ! periodic structures run longer, so this sets a save point for restarts
+&SYSTEM
+  occupations='smearing', ! Gaussian smoothing filter, necessary for metals
+  smearing='mv', ! specific form of cold smearing
+  degauss=0.01,
+  nspin=2, ! spin-polarization, due to magnetism of system
+  edir=3, ! electric field/dipole correction axis
+  emaxpos=0.9, ! maximum electric potential, placed in vacuum above all atoms
+  eopreg=0.1, ! zone of decline for dipole factor, placed in vacuum under all atoms
+  starting_magnetization(1)=0.3 ! initial magnetization for metal (in this case iron)
+&ELECTRONS
+  mixing_mode='local-TF', ! inhomogeniety correction for adsorbants
+  electron_maxstep=200 ! extending calculation steps to promote convergence
+/
+&IONS
+  wfc_extrapolation='second_order', ! wave function and potential optimizers
+  pot_extrapolation='second_order', ! increases runtime drastically, trading small portion of accuracy
+/
+ATOMIC_POSITIONS {crystal} ! note the additional numbers added after the positions
+Fe   0.833333333333333   0.333333333333333   0.355649309796759 0 0 0 ! 0s represent fixed structure 
+ C   0.523961155391464   0.283367120111382   0.752928148328609 1 1 1 ! 1s represent free movement
+ K_POINTS {automatic} ! we need fixed layers to simulate bulk behaviour 
+  5 5 1 0 0 0 ! periodic structures need K-mesh for accurate energy calc, 5x5x1 is good for slabs
+```
+
+These files can be run on PACE ICE with parallelization as follows:
+```
+module load quantum-espresso
+module load openmpi
+mpirun -np [number_of_processors] pw.x -in [input_file].in > [output_file].out
+```
