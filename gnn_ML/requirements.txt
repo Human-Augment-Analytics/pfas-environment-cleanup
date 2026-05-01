@@ -1,0 +1,10 @@
+# Install after creating/activating the conda environment:
+#   conda env create -f environment.yml
+#   conda activate pfas-ml-bo
+#   pip install -r requirements.txt
+
+torch
+torchvision
+torchaudio
+torch-geometric
+xgboost
