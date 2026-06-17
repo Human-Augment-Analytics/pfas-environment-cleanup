@@ -152,6 +152,8 @@ python qespresso_pipeline/run_adsorption_case.py \
 
 *Periodic Adsorbent example*
 
+The below is based on PFOA.
+
 ```
 python qespresso_pipeline/run_adsorption_case.py \
   --case-name pfoa_go \
@@ -310,6 +312,8 @@ Fe   0.833333333333333   0.333333333333333   0.355649309796759 0 0 0 ! 0s repres
  K_POINTS {automatic} ! we need fixed layers to simulate bulk behaviour 
   5 5 1 0 0 0 ! periodic structures need K-mesh for accurate energy calc, 5x5x1 is good for slabs
 ```
+
+(Note here that, for the periodicity to be preserved, we may need a charge correction using trifluoroacetic acid as opposed to trifluoroacetate.)
 
 These files can be run on PACE ICE with parallelization as follows:
 ```
