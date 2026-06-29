@@ -6,6 +6,8 @@ echo "[job] host: $(hostname)"
 echo "[job] pwd: $(pwd)"
 
 module load anaconda3
+module load quantum-espresso
+module load openmpi
 eval "$(conda shell.bash hook)"
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -33,7 +35,8 @@ conda run -p "$ENV_PREFIX" python -c "import sys; print(sys.executable)"
 
 export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
-export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-1}"
+export OMP_NUM_THREADS=1
+MPI_TASKS="${SLURM_NTASKS:-1}"
 
 CASE_NAME="${CASE_NAME:?CASE_NAME not set}"
 ADSORBENT_NAME="${ADSORBENT_NAME:?ADSORBENT_NAME not set}"
@@ -49,7 +52,7 @@ PFAS_SMILES="${PFAS_SMILES:-}"
 PFAS_ENERGY_RY="${PFAS_ENERGY_RY:-}"
 
 PSEUDO_DIR="${PSEUDO_DIR:-$PROJECT_ROOT/qespresso_pipeline/Pseudopotentials}"
-PW_COMMAND="${PW_COMMAND:-pw.x}"
+PW_COMMAND="${PW_COMMAND:-mpirun -np $MPI_TASKS pw.x}"
 COMPOUND_ROOT="${COMPOUND_ROOT:-$PROJECT_ROOT/compounds}"
 WORKDIR="${WORKDIR:-$PROJECT_ROOT/dft_cases}"
 
@@ -85,4 +88,4 @@ if [[ "${SKIP_COMPLEX:-0}" == "1" ]]; then ARGS+=(--skip-complex); fi
 
 conda run -p "$ENV_PREFIX" python qespresso_pipeline/run_adsorption_case.py "${ARGS[@]}"
 
-echo "[job] finished at $(date)"
+echo "[job] finished successfully at $(date)"

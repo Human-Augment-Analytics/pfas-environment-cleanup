@@ -21,16 +21,21 @@ def check_executable(name: str):
 
 def run_obabel(input_string: str, output_name: str) -> Path:
     output_mol = Path(f"{output_name}.mol")
-    command = ["obabel", f"-:{input_string}", "-O", str(output_mol), "--gen3d"]
+    command = [
+        "obabel", f"-:{input_string}", "-O", str(output_mol), 
+        "--gen3d", "--conformer", "--minimize", "--steps", "1000", "--ff", "MMFF94"
+    ]
     print(f"[info] Creating MOL: {output_mol}")
     subprocess.run(command, check=True)
 
     if not output_mol.exists():
         raise FileNotFoundError(f"MOL file not created: {output_mol}")
+    
+    print(f"[info] MOL created: {output_mol}")
     return output_mol
 
 
-def mol_to_cif_pymatgen(input_mol: Path, output_name: str, padding: float = 10.0) -> Path:
+def mol_to_cif_pymatgen(input_mol: Path, output_name: str, padding: float = 12.0) -> Path:
     output_cif = Path(f"{output_name}.cif")
     print(f"[info] Creating CIF from MOL: {output_cif}")
 
@@ -56,7 +61,7 @@ def mol_to_cif_pymatgen(input_mol: Path, output_name: str, padding: float = 10.0
 
     if not output_cif.exists():
         raise FileNotFoundError(f"CIF file not created: {output_cif}")
-
+    
     print(f"[info] CIF created: {output_cif} (box = {box_lengths})")
     return output_cif
 
@@ -76,13 +81,15 @@ def modify_qe_input(
     input_file,
     output_file=None,
     job_type="molecule",
-    ecutwfc=35,
-    ecutrho=280,
+    ecutwfc=60,
+    ecutrho=600,
     use_gamma=True,
     mixing_beta=None,
     input_dft="pbe",
     kpts=(1, 1, 1),
-    calculation="scf"
+    calculation="relax", 
+    nspin=1,
+    tot_magnetization=0.0
 ):
     input_path = Path(input_file)
     prefix = input_path.stem
@@ -103,49 +110,41 @@ def modify_qe_input(
 
     body = lines[body_start:]
 
+    # dft-d3 usage optional
+    system_extra = [
+        f"  ecutwfc={ecutwfc},\n",
+        f"  ecutrho={ecutrho},\n",
+        f"  input_dft='{input_dft}',\n",
+        f"  vdw_corr='dft-d3',\n", 
+    ]
+    
+    if nspin == 2:
+        system_extra.extend([
+            f"  nspin=2,\n",
+            f"  tot_magnetization={tot_magnetization},\n"
+        ])
+
     if job_type == "molecule":
-        if mixing_beta is None:
-            mixing_beta = 0.2
-        system_extra = [
-            f"  ecutwfc={ecutwfc},\n",
-            f"  ecutrho={ecutrho},\n",
-            f"  input_dft='{input_dft}',\n",
-            "  occupations='fixed',\n",
-        ]
-        electrons_block = f"""&ELECTRONS
-  conv_thr=1d-06,
-  mixing_beta={mixing_beta}d0,
-  electron_maxstep=100,
-/
-"""
-        if use_gamma:
-            kpoints_block = "K_POINTS gamma\n"
-        else:
-            kx, ky, kz = kpts
-            kpoints_block = f"""K_POINTS {{automatic}}
-  {kx} {ky} {kz} 0 0 0
-"""
-    else:
-        if mixing_beta is None:
-            mixing_beta = 0.5
-        system_extra = [
-            f"  ecutwfc={ecutwfc},\n",
-            f"  ecutrho={ecutrho},\n",
-            f"  input_dft='{input_dft}',\n",
-            "  occupations='smearing',\n",
-            "  smearing='mv',\n",
+        if mixing_beta is None: mixing_beta = 0.2
+        system_extra.extend([
+            "  assume_isolated='mt',\n",
+            "  occupations='smearing',\n", 
+            "  smearing='gaussian',\n",
             "  degauss=0.005d0,\n",
-        ]
-        electrons_block = f"""&ELECTRONS
-  conv_thr=1d-06,
-  mixing_beta={mixing_beta}d0,
-  electron_maxstep=100,
-/
-"""
-        kx, ky, kz = kpts
-        kpoints_block = f"""K_POINTS {{automatic}}
-  {kx} {ky} {kz} 0 0 0
-"""
+        ])
+        electrons_block = f"&ELECTRONS\n  conv_thr=1d-06,\n  mixing_beta={mixing_beta}d0,\n  electron_maxstep=100,\n/\n"
+        kpoints_block = "K_POINTS gamma\n" if use_gamma else f"K_POINTS {{automatic}}\n  {kpts[0]} {kpts[1]} {kpts[2]} 0 0 0\n"
+    else:
+        if mixing_beta is None: mixing_beta = 0.4
+        system_extra.extend([
+            "  occupations='smearing',\n",
+            "  smearing='cold',\n",      
+            "  degauss=0.01d0,\n",
+        ])
+        electrons_block = f"&ELECTRONS\n  conv_thr=1d-06,\n  mixing_beta={mixing_beta}d0,\n  electron_maxstep=150,\n/\n"
+        kpoints_block = f"K_POINTS {{automatic}}\n  {kpts[0]} {kpts[1]} {kpts[2]} 0 0 0\n"
+
+    ions_block = "&IONS\n  ion_dynamics='bfgs',\n/\n"
 
     system_block = []
     i = 0
@@ -169,7 +168,7 @@ def modify_qe_input(
         line = re.sub(r"\b([A-Za-z]+)_PSEUDO\b", r"\1.UPF", line)
         fixed_body.append(line)
 
-control_block = f"""&CONTROL
+    control_block = f"""&CONTROL
   calculation='{calculation}',
   outdir='./Outputs',
   prefix='{prefix}',
@@ -181,13 +180,15 @@ control_block = f"""&CONTROL
 """
 
     final_body = []
-    inserted = False
+    inserted_electrons = False
     for line in fixed_body:
         final_body.append(line)
-        if line.strip() == "/" and not inserted:
+        if line.strip() == "/" and not inserted_electrons:
             final_body.append("\n")
             final_body.append(electrons_block)
-            inserted = True
+            if calculation == 'relax' or calculation == 'vc-relax':
+                final_body.append(ions_block)
+            inserted_electrons = True
 
     with open(output_file, "w") as f:
         f.writelines(header)
