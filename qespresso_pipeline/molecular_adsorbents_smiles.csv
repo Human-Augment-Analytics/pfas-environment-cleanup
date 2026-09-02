@@ -1,0 +1,101 @@
+ID,Name,SMILES,Category
+001,Cetyltrimethylammonium bromide (CTAB),CCCCCCCCCCCCCCCC[N+](C)(C)C.[Br-],Quaternary Ammonium Cationic Surfactants
+002,Cetyltrimethylammonium chloride (CTAC),CCCCCCCCCCCCCCCC[N+](C)(C)C.[Cl-],Quaternary Ammonium Cationic Surfactants
+003,Tetradecyltrimethylammonium bromide (TTAB),CCCCCCCCCCCCCC[N+](C)(C)C.[Br-],Quaternary Ammonium Cationic Surfactants
+004,Dodecyltrimethylammonium bromide (DTAB),CCCCCCCCCCCC[N+](C)(C)C.[Br-],Quaternary Ammonium Cationic Surfactants
+005,Decyltrimethylammonium bromide,CCCCCCCCCC[N+](C)(C)C.[Br-],Quaternary Ammonium Cationic Surfactants
+006,Octyltrimethylammonium bromide,CCCCCCCC[N+](C)(C)C.[Br-],Quaternary Ammonium Cationic Surfactants
+007,Stearyltrimethylammonium chloride,CCCCCCCCCCCCCCCCCC[N+](C)(C)C.[Cl-],Quaternary Ammonium Cationic Surfactants
+008,Benzalkonium chloride (C12),CCCCCCCCCCCC[N+](C)(C)CC1=CC=CC=C1.[Cl-],Quaternary Ammonium Cationic Surfactants
+009,Benzalkonium chloride (C14),CCCCCCCCCCCCCC[N+](C)(C)CC1=CC=CC=C1.[Cl-],Quaternary Ammonium Cationic Surfactants
+010,Benzyldimethyloctylammonium chloride,CCCCCCCC[N+](C)(C)CC1=CC=CC=C1.[Cl-],Quaternary Ammonium Cationic Surfactants
+011,Cetylpyridinium chloride,CCCCCCCCCCCCCCCC[N+]1=CC=CC=C1.[Cl-],Quaternary Ammonium Cationic Surfactants
+012,Dodecylpyridinium chloride,CCCCCCCCCCCC[N+]1=CC=CC=C1.[Cl-],Quaternary Ammonium Cationic Surfactants
+013,Tetradecylpyridinium bromide,CCCCCCCCCCCCCC[N+]1=CC=CC=C1.[Br-],Quaternary Ammonium Cationic Surfactants
+014,Myristyltrimethylammonium chloride,CCCCCCCCCCCCCC[N+](C)(C)C.[Cl-],Quaternary Ammonium Cationic Surfactants
+015,Didecyldimethylammonium chloride,CCCCCCCCC[N+](C)(C)CCCCCCCCC.[Cl-],Quaternary Ammonium Cationic Surfactants
+016,Dioctyldimethylammonium bromide,CCCCCCCC[N+](C)(C)CCCCCCCC.[Br-],Quaternary Ammonium Cationic Surfactants
+017,Hexadecyltrimethylammonium hydroxide,CCCCCCCCCCCCCCCC[N+](C)(C)C.[OH-],Quaternary Ammonium Cationic Surfactants
+018,Dimethyldioctadecylammonium bromide (DDAB),CCCCCCCCCCCCCCCCCC[N+](C)(C)CCCCCCCCCCCCCCCCCC.[Br-],Quaternary Ammonium Cationic Surfactants
+019,Benzethonium chloride,CC(C)(C)CC(C)(C)C1=CC=C(C=C1)OCCCOCCOCC[N+](C)(C)CC2=CC=CC=C2.[Cl-],Quaternary Ammonium Cationic Surfactants
+020,Methyltrioctylammonium chloride (Aliquat 336),CCCCCCCC[N+](C)(CCCCCCCC)(CCCCCCCC)C.[Cl-],Quaternary Ammonium Cationic Surfactants
+021,Sodium dodecyl sulfate (SDS),CCCCCCCCCCCCOS(=O)(=O)[O-].[Na+],Anionic Surfactants
+022,Sodium tetradecyl sulfate,CCCCCCCCCCCCCCOS(=O)(=O)[O-].[Na+],Anionic Surfactants
+023,Sodium cetyl sulfate,CCCCCCCCCCCCCCCCOS(=O)(=O)[O-].[Na+],Anionic Surfactants
+024,Sodium stearyl sulfate,CCCCCCCCCCCCCCCCCCOS(=O)(=O)[O-].[Na+],Anionic Surfactants
+025,Sodium decyl sulfate,CCCCCCCCCCOS(=O)(=O)[O-].[Na+],Anionic Surfactants
+026,Sodium octyl sulfate,CCCCCCCCOS(=O)(=O)[O-].[Na+],Anionic Surfactants
+027,Sodium dodecylbenzenesulfonate,CCCCCCCCCCCC1=CC=C(C=C1)S(=O)(=O)[O-].[Na+],Anionic Surfactants
+028,Sodium decylbenzenesulfonate,CCCCCCCCC1=CC=C(C=C1)S(=O)(=O)[O-].[Na+],Anionic Surfactants
+029,Sodium octylbenzenesulfonate,CCCCCCC1=CC=C(C=C1)S(=O)(=O)[O-].[Na+],Anionic Surfactants
+030,Ammonium lauryl sulfate,CCCCCCCCCCCCOS(=O)(=O)[O-].[NH4+],Anionic Surfactants
+031,Sodium 1-hexanesulfonate,CCCCCCS(=O)(=O)[O-].[Na+],Anionic Surfactants
+032,Sodium 1-heptanesulfonate,CCCCCCCS(=O)(=O)[O-].[Na+],Anionic Surfactants
+033,Sodium 1-octanesulfonate,CCCCCCCCS(=O)(=O)[O-].[Na+],Anionic Surfactants
+034,Sodium 1-decanesulfonate,CCCCCCCCCCS(=O)(=O)[O-].[Na+],Anionic Surfactants
+035,Sodium 1-dodecanesulfonate,CCCCCCCCCCCCS(=O)(=O)[O-].[Na+],Anionic Surfactants
+036,Dioctyl sodium sulfosuccinate (Aerosol OT),CCCCCC(CC)COC(=O)CC(S(=O)(=O)[O-])C(=O)OCC(CC)CCCC.[Na+],Anionic Surfactants
+037,Potassium laurate,CCCCCCCCCCC(=O)[O-].[K+],Anionic Surfactants
+038,Sodium palmitate,CCCCCCCCCCCCCCC(=O)[O-].[Na+],Anionic Surfactants
+039,Sodium stearate,CCCCCCCCCCCCCCCCC(=O)[O-].[Na+],Anionic Surfactants
+040,Sodium oleate,CCCCCCC/C=C\CCCCCCCC(=O)[O-].[Na+],Anionic Surfactants
+041,Octyl glucoside,CCCCCCCCOC1C(C(C(C(O1)CO)O)O)O,Non-Ionic Surfactants & Polyethers
+042,Decyl glucoside,CCCCCCCCCCOC1C(C(C(C(O1)CO)O)O)O,Non-Ionic Surfactants & Polyethers
+043,Lauryl glucoside,CCCCCCCCCCCC1C(C(C(C(O1)CO)O)O)O,Non-Ionic Surfactants & Polyethers
+044,Triton X-100 (n=1),CC(C)(C)CC(C)(C)C1=CC=C(C=C1)OCCOCCO,Non-Ionic Surfactants & Polyethers
+045,"Polyethylene glycol dodecyl ether (Brij-35, n=4)",CCCCCCCCCCCCOCCOCCOCCOCCO,Non-Ionic Surfactants & Polyethers
+046,Tetraethylene glycol monooctyl ether,CCCCCCCCOCCOCCOCCOCCO,Non-Ionic Surfactants & Polyethers
+047,Pentaethylene glycol monodecyl ether,CCCCCCCCCCOCCOCCOCCOCCOCCO,Non-Ionic Surfactants & Polyethers
+048,Hexaethylene glycol monododecyl ether,CCCCCCCCCCCCOCCOCCOCCOCCOCCOCCO,Non-Ionic Surfactants & Polyethers
+049,Sorbitan monolaurate (Span 20),CCCCCCCCCCCC(=O)OCC(C1C(C(O1)O)O)O,Non-Ionic Surfactants & Polyethers
+050,Sorbitan monopalmitate (Span 40),CCCCCCCCCCCCCCC(=O)OCC(C1C(C(O1)O)O)O,Non-Ionic Surfactants & Polyethers
+051,Sorbitan monostearate (Span 60),CCCCCCCCCCCCCCCCC(=O)OCC(C1C(C(O1)O)O)O,Non-Ionic Surfactants & Polyethers
+052,Sorbitan monooleate (Span 80),CCCCCCC/C=C\CCCCCCCC(=O)OCC(C1C(C(O1)O)O)O,Non-Ionic Surfactants & Polyethers
+053,Polysorbate 20 (core),CCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCOCCO(=O)CCCCCCCCCCCC,Non-Ionic Surfactants & Polyethers
+054,1-Dodecanol,CCCCCCCCCCCCCO,Non-Ionic Surfactants & Polyethers
+055,1-Hexadecanol,CCCCCCCCCCCCCCCCCO,Non-Ionic Surfactants & Polyethers
+056,Octaethylene glycol monododecyl ether,CCCCCCCCCCCCOCCOCCOCCOCCOCCOCCOCCOCCO,Non-Ionic Surfactants & Polyethers
+057,Nonylphenol ethoxylate (n=2),CCCCCCCCC1=CC=C(C=C1)OCCOCCO,Non-Ionic Surfactants & Polyethers
+058,Cetyl alcohol,CCCCCCCCCCCCCCCCCO,Non-Ionic Surfactants & Polyethers
+059,Oleyl alcohol,CCCCCCC/C=C\CCCCCCCCCO,Non-Ionic Surfactants & Polyethers
+060,Glycerol monolaurate,CCCCCCCCCCCC(=O)OCC(CO)O,Non-Ionic Surfactants & Polyethers
+061,Lauryl betaine,CCCCCCCCCCCC[N+](C)(C)CC(=O)[O-],Amphoteric & Zwitterionic Surfactants
+062,Cetyl betaine,CCCCCCCCCCCCCCCC[N+](C)(C)CC(=O)[O-],Amphoteric & Zwitterionic Surfactants
+063,Myristyl betaine,CCCCCCCCCCCCCC[N+](C)(C)CC(=O)[O-],Amphoteric & Zwitterionic Surfactants
+064,Cocamidopropyl betaine (C12 core),CCCCCCCCCCCC(=O)NCCCN(C)(C)CC(=O)[O-],Amphoteric & Zwitterionic Surfactants
+065,Lauryl hydroxysultaine,CCCCCCCCCCCC[N+](C)(C)CC(O)CS(=O)(=O)[O-],Amphoteric & Zwitterionic Surfactants
+066,Cocamidopropyl hydroxysultaine (C12 core),CCCCCCCCCCCC(=O)NCCCN(C)(C)CC(O)CS(=O)(=O)[O-],Amphoteric & Zwitterionic Surfactants
+067,CHAPS,CC(C)CCCC(C)C1CCC2C1(CCC3C2C(CC4C3(CCC(C4)O)C)O)C(=O)NCCCN5(C)(C)CCCS(=O)(=O)[O-],Amphoteric & Zwitterionic Surfactants
+068,CHAPSO,CC(C)CCCC(C)C1CCC2C1(CCC3C2C(CC4C3(CCC(C4)O)C)O)C(=O)NCCCN5(C)(C)CC(O)CS(=O)(=O)[O-],Amphoteric & Zwitterionic Surfactants
+069,Dodecylphosphocholine,CCCCCCCCCCCCOP(=O)([O-])OCC[N+](C)(C)C,Amphoteric & Zwitterionic Surfactants
+070,Tetradecylphosphocholine,CCCCCCCCCCCCCCOP(=O)([O-])OCC[N+](C)(C)C,Amphoteric & Zwitterionic Surfactants
+071,Dodecylamine,CCCCCCCCCCCCN,"Long-Chain Amines, Fatty Acids & Thiols"
+072,Hexadecylamine,CCCCCCCCCCCCCCCN,"Long-Chain Amines, Fatty Acids & Thiols"
+073,Octadecylamine,CCCCCCCCCCCCCCCCCCN,"Long-Chain Amines, Fatty Acids & Thiols"
+074,Dioctylamine,CCCCCCCCNCCCCCCCC,"Long-Chain Amines, Fatty Acids & Thiols"
+075,Trioctylamine,CCCCCCCCN(CCCCCCCC)CCCCCCCC,"Long-Chain Amines, Fatty Acids & Thiols"
+076,Lauric acid,CCCCCCCCCCCC(=O)O,"Long-Chain Amines, Fatty Acids & Thiols"
+077,Myristic acid,CCCCCCCCCCCCCC(=O)O,"Long-Chain Amines, Fatty Acids & Thiols"
+078,Palmitic acid,CCCCCCCCCCCCCCCC(=O)O,"Long-Chain Amines, Fatty Acids & Thiols"
+079,Stearic acid,CCCCCCCCCCCCCCCCC(=O)O,"Long-Chain Amines, Fatty Acids & Thiols"
+080,Oleic acid,CCCCCCC/C=C\CCCCCCCC(=O)O,"Long-Chain Amines, Fatty Acids & Thiols"
+081,1-Octanethiol,CCCCCCCCS,"Long-Chain Amines, Fatty Acids & Thiols"
+082,1-Dodecanethiol,CCCCCCCCCCCCS,"Long-Chain Amines, Fatty Acids & Thiols"
+083,1-Hexadecanethiol,CCCCCCCCCCCCCCCS,"Long-Chain Amines, Fatty Acids & Thiols"
+084,Trioctylphosphine oxide (TOPO),CCCCCCCCP(=O)(CCCCCCCC)CCCCCCCC,"Long-Chain Amines, Fatty Acids & Thiols"
+085,Tributyl phosphate (TBP),CCCCOP(=O)(OCCCC)OCCCC,"Long-Chain Amines, Fatty Acids & Thiols"
+086,Ethylenediaminetetraacetic acid (EDTA),C(CN(CC(=O)O)CC(=O)O)N(CC(=O)O)CC(=O)O,"Molecular Chelators, Macrocycles & Extraction Agents"
+087,Nitrilotriacetic acid (NTA),C(C(=O)O)N(CC(=O)O)CC(=O)O,"Molecular Chelators, Macrocycles & Extraction Agents"
+088,Di(2-ethylhexal) phosphoric acid (D2EHPA),CCCCC(CC)COP(=O)(O)OCC(CC)CCCC,"Molecular Chelators, Macrocycles & Extraction Agents"
+089,Crown Ether / 18-Crown-6,C1COCCOCCOCCOCCOCCO1,"Molecular Chelators, Macrocycles & Extraction Agents"
+090,Crown Ether / 15-Crown-5,C1COCCOCCOCCOCCO1,"Molecular Chelators, Macrocycles & Extraction Agents"
+091,Crown Ether / 12-Crown-4,C1COCCOCCOCCO1,"Molecular Chelators, Macrocycles & Extraction Agents"
+092,Calixarene,C1=C(C=C2CC3=C(C(=CC=C3)O)CC4=C(C(=CC=C4)O)CC5=C(C(=CC=C5)O)CC2=C1O),"Molecular Chelators, Macrocycles & Extraction Agents"
+093,Acetylacetone,CC(=O)CC(=O)C,"Molecular Chelators, Macrocycles & Extraction Agents"
+094,8-Hydroxyquinoline,C1=CC2=C(C(=C1)O)N=CC=C2,"Molecular Chelators, Macrocycles & Extraction Agents"
+095,Dimethylglyoxime,CC(=NO)C(=NO)C,"Molecular Chelators, Macrocycles & Extraction Agents"
+096,Dithizone,C1=CC=C(C=C1)N=NC(=S)NNC2=CC=CC=C2,"Molecular Chelators, Macrocycles & Extraction Agents"
+097,Cupferron,C1=CC=C(C=C1)N(N=O)[O-].[NH4+],"Molecular Chelators, Macrocycles & Extraction Agents"
+098,Thenoyltrifluoroacetone,C1=CSC(=C1)C(=O)CC(=O)C(F)(F)F,"Molecular Chelators, Macrocycles & Extraction Agents"
+099,Diethylenetriaminepentaacetic acid (DTPA),C(CN(CC(=O)O)CC(=O)O)N(CCN(CC(=O)O)CC(=O)O)CC(=O)O,"Molecular Chelators, Macrocycles & Extraction Agents"
+100,Di-n-octyl phthalate,CCCCCCCCOC(=O)C1=CC=CC=C1C(=O)OCCCCCCCC,"Molecular Chelators, Macrocycles & Extraction Agents"

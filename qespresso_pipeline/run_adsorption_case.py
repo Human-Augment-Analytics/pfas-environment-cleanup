@@ -179,22 +179,6 @@ def prepare_from_cif(input_cif: Path, outbase: Path, settings: dict):
     return cif_path, in_path
 
 
-def patch_qe_input(in_path: Path, settings: dict, nspin: int, tot_mag: float):
-    modify_qe_input(
-        in_path,
-        job_type=settings["job_type"],
-        ecutwfc=settings["ecutwfc"],
-        ecutrho=settings["ecutrho"],
-        use_gamma=settings["use_gamma"],
-        mixing_beta=settings["mixing_beta"],
-        input_dft=settings["input_dft"],
-        kpts=settings["kpts"],
-        calculation="relax",
-        nspin=nspin,
-        tot_magnetization=tot_mag
-    )
-
-
 def build_molecular_complex_cif(adsorbent_mol: Path, pfas_mol: Path, output_cif: Path, padding=12.0, vdw_gap=2.5):
     ads = Molecule.from_file(str(adsorbent_mol))
     pfas = Molecule.from_file(str(pfas_mol))

@@ -110,13 +110,14 @@ def modify_qe_input(
 
     body = lines[body_start:]
 
-    # dft-d3 usage optional
     system_extra = [
         f"  ecutwfc={ecutwfc},\n",
         f"  ecutrho={ecutrho},\n",
         f"  input_dft='{input_dft}',\n",
-        f"  vdw_corr='dft-d3',\n", 
     ]
+
+    if "vdW" not in input_dft and "vdw" not in input_dft:
+        system_extra.append("  vdw_corr='dft-d3',\n")
     
     if nspin == 2:
         system_extra.extend([
@@ -129,10 +130,10 @@ def modify_qe_input(
         system_extra.extend([
             "  assume_isolated='mt',\n",
             "  occupations='smearing',\n", 
-            "  smearing='gaussian',\n",
+            "  smearing='m-p',\n",
             "  degauss=0.005d0,\n",
         ])
-        electrons_block = f"&ELECTRONS\n  conv_thr=1d-06,\n  mixing_beta={mixing_beta}d0,\n  electron_maxstep=100,\n/\n"
+        electrons_block = f"&ELECTRONS\n  conv_thr=1d-07,\n  mixing_beta={mixing_beta}d0,\n  electron_maxstep=200,\n/\n"
         kpoints_block = "K_POINTS gamma\n" if use_gamma else f"K_POINTS {{automatic}}\n  {kpts[0]} {kpts[1]} {kpts[2]} 0 0 0\n"
     else:
         if mixing_beta is None: mixing_beta = 0.4
@@ -176,6 +177,7 @@ def modify_qe_input(
   verbosity='low',
   tprnfor=.true.,
   tstress=.true.,
+  forc_conv_thr=1.0d-4,
 /
 """
 
