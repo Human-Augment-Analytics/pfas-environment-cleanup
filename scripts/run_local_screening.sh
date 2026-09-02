@@ -16,4 +16,6 @@ tail -n +2 "$CSV_FILE" | while IFS=',' read -r ADS_NAME ADS_SMILES; do
     bash run_dft_workflow.sh
     
     grep -H "Adsorption Energy" dft_cases/$CASE_NAME/results.json >> master_results.txt
+    
+    rm -rf dft_cases/$CASE_NAME/*/Outputs/
 done

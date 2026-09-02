@@ -178,6 +178,7 @@ def modify_qe_input(
   tprnfor=.true.,
   tstress=.true.,
   forc_conv_thr=1.0d-4,
+  disk_io='low',
 /
 """
 

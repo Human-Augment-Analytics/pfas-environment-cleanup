@@ -5,10 +5,18 @@ echo "[job] starting at $(date)"
 echo "[job] host: $(hostname)"
 echo "[job] pwd: $(pwd)"
 
-module load anaconda3
-module load quantum-espresso
-module load openmpi
-eval "$(conda shell.bash hook)"
+if command -v module &> /dev/null; then
+    module load anaconda3
+    module load quantum-espresso
+    module load openmpi
+fi
+
+if command -v conda &> /dev/null; then
+    eval "$(conda shell.bash hook)"
+else
+    echo "[error] conda command not found. Please ensure Anaconda/Miniconda is installed locally and in your PATH."
+    exit 1
+fi
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_ROOT"
