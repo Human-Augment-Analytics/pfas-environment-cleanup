@@ -209,10 +209,6 @@ python3 scripts/dft_wrapper.py \
   --pfas-smiles "OC(=O)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)C(F)(F)F" \
   --system-type periodic \
   --mode production \
-  --ecutwfc 40 \
-  --ecutrho 200 \
-  --input-dft vdW-DF-cx \
-  --kpts 2 2 1 \
   --cluster-root /storage/ice-shared/cs8903onl/mussmann-pfas \
   --runs-subdir dft_runs \
   --submit-if-missing \
@@ -221,6 +217,8 @@ python3 scripts/dft_wrapper.py \
   --time 12:00:00 \
   --workflow-script /storage/ice-shared/cs8903onl/mussmann-pfas/run_dft_workflow.sh
 ```
+
+> **Note on cutoffs, functionals, and k-points:** `dft_wrapper.py` does not accept `--ecutwfc`, `--ecutrho`, `--input-dft`, or `--kpts` (an earlier version of this example showed them; the command exits with `error: unrecognized arguments`). Through the wrapper, these are chosen by `--mode` — `lowmem` (ecutwfc 40 / ecutrho 400), `cluster` (60 / 600), `production` (80 / 800, with `vdW-DF-cx` for periodic systems) — and by `--system-type` for the k-point grid; see `get_mode_settings()` in `qespresso_pipeline/run_adsorption_case.py`. To set them explicitly per run, call `qespresso_pipeline/smiles_to_qe.py` directly, which does accept all four flags.
 
 ### Manual DFT Simulation
 
