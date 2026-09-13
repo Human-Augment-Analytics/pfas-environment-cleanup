@@ -18,7 +18,20 @@ else
     exit 1
 fi
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Locate the repo root. The script may live in scripts/ (repo checkout), at
+# the repo root (older deployments), or be invoked through a symlink at the
+# repo root, so resolve the physical script path and walk up until the
+# environment file is present instead of assuming a fixed relative position.
+SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+PROJECT_ROOT="$(dirname "$SCRIPT_PATH")"
+while [[ "$PROJECT_ROOT" != "/" && ! -f "$PROJECT_ROOT/qe_environment.yaml" ]]; do
+    PROJECT_ROOT="$(dirname "$PROJECT_ROOT")"
+done
+if [[ ! -f "$PROJECT_ROOT/qe_environment.yaml" ]]; then
+    echo "[error] qe_environment.yaml not found at $SCRIPT_PATH or any parent directory."
+    echo "[error] Deploy the full repository (see README) and run this script from within it."
+    exit 1
+fi
 cd "$PROJECT_ROOT"
 
 ENV_YAML="$PROJECT_ROOT/qe_environment.yaml"

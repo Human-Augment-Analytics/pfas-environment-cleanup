@@ -115,8 +115,8 @@ You can skip parts of the workflow if outputs already exist:
 │       └── outputs/
 ├── qespresso_pipeline/
 ├── scripts/
-├── qe_environment.yaml
-└── run_dft_workflow.sh
+│   └── run_dft_workflow.sh
+└── qe_environment.yaml
 ```
 
 #### Important Scripts
@@ -218,9 +218,28 @@ python3 scripts/dft_wrapper.py \
   --submit-if-missing \
   --cpus 4 \
   --mem-gb 64 \
-  --time 12:00:00 \
-  --workflow-script /storage/ice-shared/cs8903onl/mussmann-pfas/run_dft_workflow.sh
+  --time 12:00:00
 ```
+
+The `--workflow-script` flag is optional: by default the wrapper submits
+`<cluster-root>/scripts/run_dft_workflow.sh`, matching the layout above.
+
+#### Deploying to the Cluster
+
+The SLURM jobs submitted by `dft_wrapper.py` run `scripts/run_dft_workflow.sh`
+from this repository on the cluster, so the copy on the cluster must match this
+checkout. Deploy the whole repository in one command, run from the repository
+root on any machine with SSH access to PACE-ICE:
+
+```
+rsync -av --delete \
+  --exclude data/ --exclude dft_runs/ --exclude dft_cases/ --exclude compounds/ \
+  ./ <user>@login-ice.pace.gatech.edu:/storage/ice-shared/cs8903onl/mussmann-pfas/
+```
+
+`run_dft_workflow.sh` locates the repository root on its own (it walks up from
+its own location until it finds `qe_environment.yaml`), so it runs correctly
+from `scripts/` without copying files to the root or creating symlinks.
 
 ### Manual DFT Simulation
 
