@@ -215,6 +215,47 @@ def fetch(c: Cluster, case_name: str, local_cache: str) -> Path:
     return dst
 
 
+def validate_submit_args(args: argparse.Namespace) -> list[str]:
+    """Submit-time validation of argument combinations that are statically
+    known to be fatal inside the SLURM job (audit finding A8).
+
+    Before this check, `--adsorbent-source smiles` without `--adsorbent-smiles`
+    was only discovered on the compute node, after the wrapper had already
+    SSH'd in, created run directories, and burned a queued job ("error parsing
+    None smiles": the workflow script only forwards a non-empty SMILES, so
+    run_adsorption_case.py's argparse default None reaches obabel). The cif and
+    pfas analogues fail the same way. Refuse these on the submitting machine,
+    before any SSH.
+
+    Only what the job will actually need is validated: --skip-ads / --skip-pfas
+    exempt their side, --pfas-energy-ry replaces the PFAS SMILES calculation,
+    and --status / --fetch never submit so never hit this check.
+    """
+    errors: list[str] = []
+
+    if not args.skip_ads:
+        if args.adsorbent_source == "smiles" and not args.adsorbent_smiles:
+            errors.append(
+                "--adsorbent-source smiles requires --adsorbent-smiles "
+                "(the job would call obabel with SMILES=None; pass the SMILES "
+                "or use --adsorbent-source cif)"
+            )
+        if args.adsorbent_source == "cif" and not args.adsorbent_cif:
+            errors.append(
+                "--adsorbent-source cif requires --adsorbent-cif "
+                "(the job would receive a None CIF path)"
+            )
+
+    if not args.skip_pfas and args.pfas_energy_ry is None and not args.pfas_smiles:
+        errors.append(
+            "--pfas-smiles is required for the PFAS reference calculation "
+            "(pass the SMILES, or use --pfas-energy-ry, or --skip-pfas; "
+            "otherwise the job would call obabel with SMILES=None)"
+        )
+
+    return errors
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="DFT wrapper: submit-if-missing and fetch results.")
     ap.add_argument("--user", required=True, help="Cluster username.")
@@ -247,6 +288,11 @@ def main() -> int:
     ap.add_argument("--system-type", choices=["molecule", "periodic"], default="molecule")
     ap.add_argument("--mode", choices=["lowmem", "cluster", "production"], default="cluster")
     args = ap.parse_args()
+
+    if args.submit_if_missing:
+        errors = validate_submit_args(args)
+        if errors:
+            ap.error("invalid submit configuration: " + "; ".join(errors))
 
     ssh_target = f"{args.user}@{args.cluster}"
     control_path = make_control_path(args.user, args.cluster)
