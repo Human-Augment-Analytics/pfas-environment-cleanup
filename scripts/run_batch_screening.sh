@@ -5,6 +5,11 @@
 #SBATCH --ntasks=16
 #SBATCH --time=24:00:00
 #SBATCH --array=2-101  # one task per CSV data row: 101 = 1 header + 100 data rows (IDs 001-100); update if the CSV changes
+# Explicit PACE-ICE scheduling values verified during the audit (account coc,
+# qos coc-ice, partition ice-cpu); adjust if the cluster re-allocates resources.
+#SBATCH --partition=ice-cpu
+#SBATCH --account=coc
+#SBATCH --qos=coc-ice
 
 CSV_FILE="molecular_adsorbents_smiles.csv"
 
