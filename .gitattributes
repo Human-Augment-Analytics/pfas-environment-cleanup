@@ -9,3 +9,6 @@
 *.py text eol=lf
 # Data tables are read on both the cluster and local machines: normalize, no eol pin
 *.csv text
+# CIF structure files: two legacy files are stored with CRLF; -text freezes
+# normalization so renormalize/checkout never rewrites them (zero churn)
+*.cif -text
