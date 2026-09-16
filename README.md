@@ -115,8 +115,8 @@ You can skip parts of the workflow if outputs already exist:
 │       └── outputs/
 ├── qespresso_pipeline/
 ├── scripts/
-├── qe_environment.yaml
-└── run_dft_workflow.sh
+│   └── run_dft_workflow.sh
+└── qe_environment.yaml
 ```
 
 #### Important Scripts
@@ -214,11 +214,28 @@ python3 scripts/dft_wrapper.py \
   --submit-if-missing \
   --cpus 4 \
   --mem-gb 64 \
-  --time 12:00:00 \
-  --workflow-script /storage/ice-shared/cs8903onl/mussmann-pfas/run_dft_workflow.sh
+  --time 12:00:00
 ```
 
-> **Note on cutoffs, functionals, and k-points:** `dft_wrapper.py` does not accept `--ecutwfc`, `--ecutrho`, `--input-dft`, or `--kpts` (an earlier version of this example showed them; the command exits with `error: unrecognized arguments`). Through the wrapper, these are chosen by `--mode` — `lowmem` (ecutwfc 40 / ecutrho 400), `cluster` (60 / 600), `production` (80 / 800, with `vdW-DF-cx` for periodic systems) — and by `--system-type` for the k-point grid; see `get_mode_settings()` in `qespresso_pipeline/run_adsorption_case.py`. To set them explicitly per run, call `qespresso_pipeline/smiles_to_qe.py` directly, which does accept all four flags.
+The `--workflow-script` flag is optional: by default the wrapper submits
+`<cluster-root>/scripts/run_dft_workflow.sh`, matching the layout above.
+
+#### Deploying to the Cluster
+
+The SLURM jobs submitted by `dft_wrapper.py` run `scripts/run_dft_workflow.sh`
+from this repository on the cluster, so the copy on the cluster must match this
+checkout. Deploy the whole repository in one command, run from the repository
+root on any machine with SSH access to PACE-ICE:
+
+```
+rsync -av --delete \
+  --exclude data/ --exclude dft_runs/ --exclude dft_cases/ --exclude compounds/ \
+  ./ <user>@login-ice.pace.gatech.edu:/storage/ice-shared/cs8903onl/mussmann-pfas/
+```
+
+`run_dft_workflow.sh` locates the repository root on its own (it walks up from
+its own location until it finds `qe_environment.yaml`), so it runs correctly
+from `scripts/` without copying files to the root or creating symlinks.
 
 ### Manual DFT Simulation
 

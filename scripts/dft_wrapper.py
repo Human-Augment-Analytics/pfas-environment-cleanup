@@ -266,7 +266,12 @@ def main() -> int:
     ap.add_argument("--submit-if-missing", action="store_true")
     ap.add_argument("--fetch", action="store_true")
     ap.add_argument("--local-cache", default=DEFAULT_LOCAL_CACHE)
-    ap.add_argument("--workflow-script", default=f"{DEFAULT_CLUSTER_ROOT}/run_dft_workflow.sh")
+    ap.add_argument(
+        "--workflow-script",
+        default=None,
+        help="Path to run_dft_workflow.sh on the cluster. "
+             f"Default: <cluster-root>/scripts/run_dft_workflow.sh.",
+    )
     ap.add_argument("--partition", default=None)
     ap.add_argument("--time", default="12:00:00")
     ap.add_argument("--cpus", type=int, default=8)
@@ -289,6 +294,8 @@ def main() -> int:
     ap.add_argument("--mode", choices=["lowmem", "cluster", "production"], default="cluster")
     args = ap.parse_args()
 
+    if not args.workflow_script:
+        args.workflow_script = args.cluster_root.rstrip("/") + "/scripts/run_dft_workflow.sh"
     if args.submit_if_missing:
         errors = validate_submit_args(args)
         if errors:
