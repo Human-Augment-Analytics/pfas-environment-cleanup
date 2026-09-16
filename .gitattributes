@@ -1,0 +1,11 @@
+# Shell/sbatch scripts must stay LF or Slurm rejects them (DOS line-break error)
+*.sh text eol=lf
+*.sbatch text eol=lf
+*.in text eol=lf
+*.UPF binary
+*.ps1 text eol=crlf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.py text eol=lf
+# Data tables are read on both the cluster and local machines: normalize, no eol pin
+*.csv text
