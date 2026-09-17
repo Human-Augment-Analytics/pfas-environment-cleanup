@@ -11,8 +11,6 @@ from pymatgen.core import Molecule, Lattice, Structure
 from pymatgen.io.cif import CifWriter
 from pathlib import Path
 
-VESTA_PATH = "/home/max/Downloads/VESTA-gtk3/VESTA"
-
 
 def check_executable(name: str):
     if shutil.which(name) is None and not Path(name).exists():
