@@ -20,11 +20,13 @@ fi
 
 # Locate the repo root. The script may live in scripts/ (repo checkout), at
 # the repo root (older deployments), or be invoked through a symlink at the
-# repo root, so resolve the physical script path and walk up until the
-# environment file is present instead of assuming a fixed relative position.
+# repo root, so resolve the physical script path and walk up instead of
+# assuming a fixed relative position. Anchor the walk-up on the root-only
+# qespresso_pipeline/ directory: qe_environment.yaml is also tracked under
+# scripts/ (audit finding B3) and must not anchor root detection.
 SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
 PROJECT_ROOT="$(dirname "$SCRIPT_PATH")"
-while [[ "$PROJECT_ROOT" != "/" && ! -f "$PROJECT_ROOT/qe_environment.yaml" ]]; do
+while [[ "$PROJECT_ROOT" != "/" && ! -d "$PROJECT_ROOT/qespresso_pipeline" ]]; do
     PROJECT_ROOT="$(dirname "$PROJECT_ROOT")"
 done
 if [[ ! -f "$PROJECT_ROOT/qe_environment.yaml" ]]; then
