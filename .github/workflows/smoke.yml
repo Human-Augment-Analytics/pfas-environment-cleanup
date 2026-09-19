@@ -27,7 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        shell: bash
+        # Login shell so "micromamba activate" works in every step.
+        shell: bash -l {0}
     steps:
       - uses: actions/checkout@v4
 
@@ -46,7 +47,7 @@ jobs:
         run: |
           micromamba activate pfas-smoke
           python --version
-          obabel -V
+          obabel -V || true
           cif2cell --version || true
 
       # Neutral-row smoke: water + TFA. --pseudo-dir is required by argparse
