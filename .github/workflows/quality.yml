@@ -1,0 +1,60 @@
+name: Python quality checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ruff:
+    name: Ruff
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+          cache-suffix: ruff
+      - name: Install CI tools
+        run: ./scripts/dev update
+      - name: Run Ruff
+        run: ./scripts/dev ruff
+
+  mypy:
+    name: mypy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+          cache-suffix: mypy
+      - name: Install CI tools
+        run: ./scripts/dev update
+      - name: Run mypy
+        run: ./scripts/dev mypy
+
+  fast-tests:
+    name: Fast tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+          cache-suffix: fast-tests
+      - name: Install CI tools
+        run: ./scripts/dev update
+      - name: Run fast tests
+        run: ./scripts/dev fast-test

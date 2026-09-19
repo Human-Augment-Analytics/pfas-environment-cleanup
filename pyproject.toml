@@ -1,0 +1,22 @@
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.lint]
+# Start with correctness checks that can run across the whole repository
+# without requiring a repo-wide style migration. Expand this set as code is
+# cleaned up.
+select = ["E7", "E9", "F63", "F7", "F82"]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["scripts/dft_wrapper.py"]
+check_untyped_defs = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+# Fast tests must finish promptly: cap each test and the full test session.
+timeout = 2
+session_timeout = 60
+markers = [
+    "slow: test is excluded from the fast local and CI test suites",
+]

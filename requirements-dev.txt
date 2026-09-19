@@ -1,0 +1,6 @@
+# Fast local and CI checks; scientific environments remain Conda-managed.
+invoke==2.2.0
+mypy==1.19.1
+pytest==8.4.2
+pytest-timeout==2.4.0
+ruff==0.14.14

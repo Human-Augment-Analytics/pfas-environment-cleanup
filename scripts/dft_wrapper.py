@@ -20,7 +20,7 @@ def run(cmd: str, check: bool = True, capture: bool = False) -> subprocess.Compl
     if capture:
         p = subprocess.run(cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     else:
-        p = subprocess.run(cmd, shell=True)
+        p = subprocess.run(cmd, shell=True, text=True)
 
     if check and p.returncode != 0:
         if capture:
