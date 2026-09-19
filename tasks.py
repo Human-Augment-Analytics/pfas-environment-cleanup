@@ -18,7 +18,7 @@ def _run(context, label: str, command: str) -> None:
 @task
 def ruff(context) -> None:
     """Run Ruff's repository-wide correctness checks."""
-    _run(context, "Ruff", f"{quote(str(TOOL_BIN / 'ruff'))} check .")
+    _run(context, "Ruff", f"CLICOLOR_FORCE=1 {quote(str(TOOL_BIN / 'ruff'))} check .")
 
 
 @task
