@@ -250,6 +250,36 @@ rsync -av --delete \
 its own location until it finds `qe_environment.yaml`), so it runs correctly
 from `scripts/` without copying files to the root or creating symlinks.
 
+#### Explicit Slurm Scheduling on PACE-ICE
+
+The jobs submitted by `dft_wrapper.py` do not pin any scheduling attributes
+unless you ask for them: with no flags, each job lands wherever the cluster's
+default partition, account, and QOS point on the day it is submitted. When
+submitting on PACE-ICE, pass the scheduling attributes explicitly so jobs are
+not routed by whatever the cluster default happens to be that day:
+
+```
+python3 scripts/dft_wrapper.py \
+  ... \
+  --partition ice-cpu \
+  --account coc \
+  --qos coc-ice
+```
+
+`--partition`, `--account`, and `--qos` are all optional; omitting them
+reproduces the previous behavior exactly (no `#SBATCH` lines are added to the
+generated job script). The values above (`partition=ice-cpu`, `account=coc`,
+`qos=coc-ice`) are the PACE-ICE values verified during the May 2026 audit —
+adjust them if the cluster re-allocates resources. The batch screening array
+job (`scripts/run_batch_screening.sh`) carries the same values in its static
+`#SBATCH` block.
+
+Note that the `quantum-espresso` module can only be loaded and run inside
+compute-node jobs: on a login node, `module load quantum-espresso` appears to
+succeed, but `pw.x` is unavailable (the module is guarded by Lmod so that it
+only activates within jobs). Run the workflows via `sbatch` from
+`dft_wrapper.py` or the array script, not directly on the login node.
+
 ### Manual DFT Simulation
 
 For tuning purposes, it will likely be necessary to manually create a DFT input file from a CIF file, created either via ase, pymatgen, or sourced from a crystallographic database. You begin by running a command of this following structure to create an input file:

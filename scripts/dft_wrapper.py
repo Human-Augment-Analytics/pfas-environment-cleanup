@@ -112,6 +112,8 @@ def submit_slurm_job(
     case_name: str,
     workflow_script: str,
     partition: Optional[str],
+    account: Optional[str],
+    qos: Optional[str],
     time_limit: str,
     cpus: int,
     mem_gb: int,
@@ -142,6 +144,10 @@ def submit_slurm_job(
     ]
     if partition:
         lines.append(f"#SBATCH --partition={partition}")
+    if account:
+        lines.append(f"#SBATCH --account={account}")
+    if qos:
+        lines.append(f"#SBATCH --qos={qos}")
 
     lines += [
         "set -euo pipefail",
@@ -273,6 +279,16 @@ def main() -> int:
              f"Default: <cluster-root>/scripts/run_dft_workflow.sh.",
     )
     ap.add_argument("--partition", default=None)
+    ap.add_argument(
+        "--account",
+        default=None,
+        help="Optional Slurm account to charge the job to (e.g. 'coc' on PACE-ICE).",
+    )
+    ap.add_argument(
+        "--qos",
+        default=None,
+        help="Optional Slurm QOS to submit the job under (e.g. 'coc-ice' on PACE-ICE).",
+    )
     ap.add_argument("--time", default="12:00:00")
     ap.add_argument("--cpus", type=int, default=8)
     ap.add_argument("--mem-gb", type=int, default=32)
@@ -366,6 +382,8 @@ def main() -> int:
                 },
                 "slurm": {
                     "partition": args.partition,
+                    "account": args.account,
+                    "qos": args.qos,
                     "time": args.time,
                     "cpus": args.cpus,
                     "mem_gb": args.mem_gb,
@@ -378,6 +396,8 @@ def main() -> int:
                 case_name=args.case_name,
                 workflow_script=args.workflow_script,
                 partition=args.partition,
+                account=args.account,
+                qos=args.qos,
                 time_limit=args.time,
                 cpus=args.cpus,
                 mem_gb=args.mem_gb,
