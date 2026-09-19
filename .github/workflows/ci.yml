@@ -1,0 +1,120 @@
+# Static CI for every push/PR to main.
+# Five fast lanes (< ~1 min each), all guaranteed green on current main:
+#   1. shellcheck the 3 shell scripts (errors only - see lane comment)
+#   2. ruff fatal-error rules + compileall on all repo Python files
+#   3. README-CLI contract test (scripts/check_readme_cli_contract.py)
+#   4. conda env YAML lint (4 env files: name key + allowlist)
+#   5. markdown link check on README.md (429/timeout tolerant)
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  shellcheck:
+    name: shellcheck (scripts/*.sh)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # severity: error -> only shellcheck findings of severity "error" fail
+      # the build (syntax errors, unset-variable expansion under set -u,
+      # etc.). style/info warnings (e.g. quoting suggestions for
+      # run_local_screening.sh) stay visible in the log without blocking, so
+      # current main is green; tighten once the scripts are cleaned up.
+      # shellcheck is preinstalled on GitHub ubuntu runners, so this lane
+      # calls it directly instead of via a wrapper action.
+      - name: Run shellcheck
+        run: find scripts -name '*.sh' -print0 | xargs -0 shellcheck --severity=error
+
+  python-static:
+    name: ruff (fatal) + compileall
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The rule selection below is deliberately minimal: only ruff's
+      # fatal-error checks (syntax errors, undefined names, misuse of a
+      # loop variable outside its loop). This guarantees the existing
+      # code passes while still catching real breakage as scripts evolve.
+      # Style lint (and ruff format) is intentionally NOT run here yet.
+      - name: ruff check (fatal rules only)
+        run: pipx run ruff check --select E9,F63,F7,F82 .
+      - name: byte-compile all Python files
+        run: python -m compileall -q .
+
+  readme-cli-contract:
+    name: README-CLI contract test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check README flags against dft_wrapper.py argparse
+        run: python scripts/check_readme_cli_contract.py
+
+  env-yaml-lint:
+    name: conda env YAML lint (4 files)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install pyyaml
+        run: pip install pyyaml
+      - name: Lint env YAMLs
+        run: |
+          python - <<'EOF'
+          import sys
+          import yaml
+
+          files = [
+              "environment.yaml",
+              "qe_environment.yaml",
+              "scripts/qe_environment.yaml",
+              "basic_molecule_gnn/environment.yml",
+          ]
+          # Documented allowlist: what the README/docs tell users to activate.
+          allowlist = {"pfas", "qe", "pfas_gnn_env"}
+
+          failed = False
+          for path in files:
+              try:
+                  with open(path, encoding="utf-8") as f:
+                      data = yaml.safe_load(f)
+              except yaml.YAMLError as e:
+                  print(f"FAIL {path}: invalid YAML: {e}")
+                  failed = True
+                  continue
+              if not isinstance(data, dict) or "name" not in data:
+                  print(f"FAIL {path}: missing top-level 'name:' key")
+                  failed = True
+                  continue
+              name = data["name"]
+              if name not in allowlist:
+                  print(f"FAIL {path}: env name {name!r} not in documented allowlist {sorted(allowlist)}")
+                  failed = True
+                  continue
+              # Informational only: these env files pin a local "prefix:"
+              # path (a known cleanup item); not a hard failure here.
+              prefix = data.get("prefix")
+              note = f" (info: pins prefix {prefix!r} - known cleanup item, not fatal)" if prefix else ""
+              print(f"OK   {path}: name={name!r}{note}")
+
+          sys.exit(1 if failed else 0)
+          EOF
+
+  markdown-links:
+    name: markdown link check (README)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Tolerant config: transient 429s/timeouts are retried and ignored
+      # (.github/mlc_config.json) so a flaky external site cannot block CI.
+      # Runs markdown-link-check directly via npx (pinned), not through a
+      # wrapper action, so the check is independent of wrapper upkeep.
+      - name: Check README.md links
+        run: npx --yes markdown-link-check@3.15.0 --config .github/mlc_config.json --quiet README.md
