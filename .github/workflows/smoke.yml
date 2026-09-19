@@ -1,0 +1,141 @@
+# Reproducibility smoke test, plus a regression guard for an ionic-SMILES obabel crash.
+#
+# Builds a pinned conda-forge env (inline spec - the repo's own env files are
+# NOT touched) and runs the core SMILES -> MOL -> CIF -> QE-input chain via
+# run_adsorption_case.py --prepare-only: full artifact generation, zero pw.x,
+# ~1 min CPU. Verifies "a new person can clone and produce a QE input".
+#
+# A second, deliberately separate step replays the ionic CTAB row 001 from
+# scripts/molecular_adsorbents_smiles.csv - the exact SMILES that crashed
+# obabel (segmentation fault) before the OBABEL_LADDER fallback (PR #14)
+# was added. A neutral-row success stays visible in the same job even if
+# this step regresses.
+name: Smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  prepare-only:
+    name: SMILES->MOL->CIF->QE-input (prepare-only)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-name: pfas-smoke
+          create-args: >-
+            python=3.11
+            openbabel
+            pymatgen
+            cif2cell
+            ase
+          cache-downloads: true
+
+      - name: Show tool versions
+        run: |
+          micromamba activate pfas-smoke
+          python --version
+          obabel -V
+          cif2cell --version || true
+
+      # Neutral-row smoke: water + TFA. --pseudo-dir is required by argparse
+      # but prepare-only never runs pw.x (run_adsorption_case.py returns at
+      # the --prepare-only check, before any pwscf call), so an empty dir
+      # suffices - link_pseudos only symlinks it.
+      - name: Prepare-only run (neutral molecules)
+        run: |
+          micromamba activate pfas-smoke
+          mkdir -p /tmp/ci_smoke_pseudo
+          python qespresso_pipeline/run_adsorption_case.py --prepare-only \
+            --case-name ci_smoke \
+            --adsorbent-name water \
+            --pfas-name tfa \
+            --adsorbent-source smiles \
+            --adsorbent-smiles "O" \
+            --pfas-smiles "CC(=O)O" \
+            --system-type molecule \
+            --mode lowmem \
+            --workdir /tmp/ci_smoke_work \
+            --compound-root /tmp/ci_smoke_compounds \
+            --pseudo-dir /tmp/ci_smoke_pseudo
+
+      - name: Assert artifacts (neutral)
+        run: |
+          micromamba activate pfas-smoke
+          echo "--- .in files ---"
+          find /tmp/ci_smoke_work /tmp/ci_smoke_compounds -name '*.in' -print
+          n_in=$(find /tmp/ci_smoke_work /tmp/ci_smoke_compounds -name '*.in' | grep -c . || true)
+          n_mol=$(find /tmp/ci_smoke_work /tmp/ci_smoke_compounds -name '*.mol' | grep -c . || true)
+          n_cif=$(find /tmp/ci_smoke_work /tmp/ci_smoke_compounds -name '*.cif' | grep -c . || true)
+          echo "counts: .in=$n_in .mol=$n_mol .cif=$n_cif"
+          python - <<'EOF'
+          import sys
+          from pathlib import Path
+
+          roots = [Path("/tmp/ci_smoke_work"), Path("/tmp/ci_smoke_compounds")]
+          files = [p for r in roots for p in r.rglob("*") if p.is_file()]
+          in_files  = [p for p in files if p.suffix == ".in"]
+          mol_files = [p for p in files if p.suffix == ".mol"]
+          cif_files = [p for p in files if p.suffix == ".cif"]
+
+          # Tolerant of exact tree shape: adsorbent/pfas/complex each produced
+          # a QE input (>= 3), plus MOL/CIF intermediates.
+          assert len(in_files) >= 3, f"expected >= 3 .in files (adsorbent/pfas/complex), got {len(in_files)}: {in_files}"
+          assert mol_files, "no .mol intermediate found"
+          assert cif_files, "no .cif intermediate found"
+          print(f"OK: {len(in_files)} .in, {len(mol_files)} .mol, {len(cif_files)} .cif artifacts")
+          for p in sorted(in_files):
+              print(f"  {p}")
+          EOF
+
+      # Regression guard: CTAB row 001 - the ionic SMILES that crashed
+      # obabel (segmentation fault) before the OBABEL_LADDER fallback
+      # (PR #14) was added. Separate step on purpose: a neutral-row pass
+      # above stays green/visible if this step regresses. The SMILES is
+      # hardcoded verbatim from molecular_adsorbents_smiles.csv row 001
+      # and cross-checked against the CSV at run time.
+      - name: Prepare-only run (ionic CTAB row 001 - obabel-crash regression)
+        run: |
+          micromamba activate pfas-smoke
+          CSV_SMILES=$(python - <<'EOF'
+          import csv
+          with open("scripts/molecular_adsorbents_smiles.csv", newline="") as f:
+              row = next(r for r in csv.reader(f) if r and r[0] == "001")
+          print(row[2], end="")
+          EOF
+          )
+          echo "CSV row 001 SMILES: $CSV_SMILES"
+          test "$CSV_SMILES" = "CCCCCCCCCCCCCCCC[N+](C)(C)C.[Br-]" \
+            || { echo "FAIL: hardcoded CTAB SMILES no longer matches CSV row 001 - update smoke.yml"; exit 1; }
+          mkdir -p /tmp/ci_smoke_pseudo
+          python qespresso_pipeline/run_adsorption_case.py --prepare-only \
+            --case-name ci_smoke_ionic \
+            --adsorbent-name ctab \
+            --pfas-name tfa \
+            --adsorbent-source smiles \
+            --adsorbent-smiles "$CSV_SMILES" \
+            --pfas-smiles "CC(=O)O" \
+            --system-type molecule \
+            --mode lowmem \
+            --workdir /tmp/ci_smoke_work \
+            --compound-root /tmp/ci_smoke_compounds \
+            --pseudo-dir /tmp/ci_smoke_pseudo
+
+      - name: Assert artifacts (ionic)
+        run: |
+          micromamba activate pfas-smoke
+          n_in=$(find /tmp/ci_smoke_work/ci_smoke_ionic -name '*.in' | grep -c . || true)
+          echo "ionic .in count: $n_in"
+          test "$n_in" -ge 1
+          find /tmp/ci_smoke_work/ci_smoke_ionic -name '*.in' -print
