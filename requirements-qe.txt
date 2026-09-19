@@ -1,0 +1,8 @@
+# Build .env-qe through scripts/bootstrap_qe.sh.  QE 7.3 and its MPI runtime
+# are deliberately *not* Python dependencies: they come from the PACE module
+# or a matching, verified local QE 7.3 installation.
+ase==3.29.0
+cif2cell==2.1.0
+numpy==2.2.6
+openbabel-wheel==3.1.1.22
+pymatgen==2025.10.7

@@ -101,7 +101,7 @@ dependencies:
   - pytest=8.4.2
   - pytest-timeout=2.4.0
   - pysocks=1.7.1
-  - python=3.11.14
+  - python=3.12.5
   - python-dateutil=2.9.0.post0
   - python-tzdata=2025.3
   - python_abi=3.11

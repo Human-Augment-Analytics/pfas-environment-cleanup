@@ -7,9 +7,10 @@ ENV_DIR="$PROJECT_ROOT/.env-pfas-ci"
 
 cd "$PROJECT_ROOT"
 
-if [[ ! -x "$ENV_DIR/bin/invoke" ]]; then
+if [[ ! -x "$ENV_DIR/bin/invoke" ]] || ! "$ENV_DIR/bin/python" -c \
+    'import sys; raise SystemExit(sys.version_info[:3] != (3, 12, 5))'; then
     echo "[dev] Creating $ENV_DIR"
-    uv venv --allow-existing --python 3.11 "$ENV_DIR"
+    uv venv --clear --python 3.12.5 "$ENV_DIR"
     uv pip install --python "$ENV_DIR/bin/python" -r requirements-dev.txt
 fi
 
