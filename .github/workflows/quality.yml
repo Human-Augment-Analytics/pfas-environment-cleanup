@@ -9,8 +9,8 @@ permissions:
   contents: read
 
 jobs:
-  quality:
-    name: Fast tests and quality
+  ruff:
+    name: Ruff
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -19,5 +19,31 @@ jobs:
         with:
           python-version: "3.11"
           enable-cache: true
-          cache-suffix: quality
-      - run: ./scripts/dev ci
+          cache-suffix: ruff
+      - run: ./scripts/dev ruff
+
+  mypy:
+    name: mypy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+          cache-suffix: mypy
+      - run: ./scripts/dev mypy
+
+  fast-tests:
+    name: Fast tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+          cache-suffix: fast-tests
+      - run: ./scripts/dev fast-test
