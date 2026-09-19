@@ -7,7 +7,7 @@ from invoke import task
 
 
 ROOT = Path(__file__).parent
-TOOL_BIN = ROOT / ".venv" / "bin"
+TOOL_BIN = ROOT / ".env-pfas-ci" / "bin"
 
 
 def _run(context, label: str, command: str) -> None:
@@ -46,6 +46,17 @@ def slow_test(context) -> None:
         context,
         "slow pytest suite in the pfas Conda environment",
         "conda run -n pfas python -m pytest -q -m slow --timeout=0 --session-timeout=0",
+    )
+
+
+@task
+def update(context) -> None:
+    """Reinstall the pinned developer requirements."""
+    _run(
+        context,
+        "developer requirement update",
+        f"uv pip install --reinstall --python {quote(str(TOOL_BIN / 'python'))} "
+        "-r requirements-dev.txt",
     )
 
 

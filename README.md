@@ -13,7 +13,7 @@ This repository ships **three** conda environment files, one per workflow. Creat
 ### Developer checks
 
 Install [uv](https://docs.astral.sh/uv/) and use the local developer launcher.
-It creates a lightweight `.venv`, installs only the developer tools, and
+It creates a lightweight `.env-pfas-ci`, installs only the developer tools, and
 avoids Quantum ESPRESSO, Open Babel, and the ML stack:
 
 ```bash
@@ -23,6 +23,7 @@ avoids Quantum ESPRESSO, Open Babel, and the ML stack:
 ./scripts/dev quality     # Ruff and mypy
 ./scripts/dev fast-test   # fast pytest suite (also used by CI)
 ./scripts/dev slow-test   # tests marked @pytest.mark.slow
+./scripts/dev update      # reinstall developer requirements
 ```
 
 GitHub Actions runs `./scripts/dev ci` on pushes and pull requests. Ruff
