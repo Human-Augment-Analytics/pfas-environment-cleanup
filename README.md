@@ -55,6 +55,7 @@ An automated pipeline for automatically converting a compound of interest into a
 5. Modify the input file with pseudopotentials for constituent atoms and standard run parameters based on those atoms.
 6. Run PWSCF simulation with input file via [Quantum Espresso](https://www.quantum-espresso.org/Doc/INPUT_PW.html) (pw.x). 
 Note: This method represents a slight workaround from the typical DFT calculation process designed around VASP POSCAR files, used with VASP instead of Quantum Espresso. It is possible that some information is lost or improperly assumed in this conversion process, particularly at the .mol to .cif file conversion step with VESTA.
+`qespresso_pipeline/smiles_qespresso.py` resolves the VESTA binary via the `VESTA_PATH` environment variable first, then via `VESTA` on PATH (`shutil.which`); export `VESTA_PATH=/path/to/VESTA` on machines where VESTA is not on PATH.
 
 
 The current pipeline automates the full process from SMILES to adsorption energy using Quantum ESPRESSO.

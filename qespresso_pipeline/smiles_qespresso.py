@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import os
 import subprocess
 import sys
 import shutil
@@ -10,8 +11,10 @@ from pymatgen.core import Molecule, Lattice, Structure
 from pymatgen.io.cif import CifWriter
 from pathlib import Path
 
-# Set the appropriate path for VESTA
-VESTA_PATH = "/home/max/Downloads/VESTA-gtk3/VESTA"
+# Resolve the VESTA binary: $VESTA_PATH if set (non-empty), else the first
+# "VESTA" executable on PATH (shutil.which), else the bare name so that
+# check_executable() reports a clean "not found in PATH" error.
+VESTA_PATH = os.environ.get("VESTA_PATH") or shutil.which("VESTA") or "VESTA"
 
 def check_executable(name: str):
     """Ensure required external executable exists."""
