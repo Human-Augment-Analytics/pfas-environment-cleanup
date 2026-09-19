@@ -106,9 +106,12 @@ def extract_total_energy_ry(path: Path) -> float:
     with open(path, "r", errors="ignore") as f:
         for line in f:
             if "!" in line and "total energy" in line:
-                try: energy = float(line.split()[4])
-                except IndexError: pass
-    if energy is None: raise ValueError(f"No total energy found in {path}")
+                try:
+                    energy = float(line.split()[4])
+                except IndexError:
+                    pass
+    if energy is None:
+        raise ValueError(f"No total energy found in {path}")
     return energy
 
 
@@ -333,11 +336,15 @@ def main():
     case_dir = Path(args.workdir) / args.case_name
     compound_root = Path(args.compound_root)
 
-    ads_dir, pfas_dir, complex_dir = compound_root / "adsorbents" / args.adsorbent_name, compound_root / "pfas" / args.pfas_name, case_dir / "complex"
-    for d in [ads_dir, pfas_dir, complex_dir]: ensure_dir(d)
+    ads_dir = compound_root / "adsorbents" / args.adsorbent_name
+    pfas_dir = compound_root / "pfas" / args.pfas_name
+    complex_dir = case_dir / "complex"
+    for directory in [ads_dir, pfas_dir, complex_dir]:
+        ensure_dir(directory)
 
     pseudo_source = Path(args.pseudo_dir).resolve()
-    for d in [ads_dir, pfas_dir, complex_dir]: link_pseudos(d, pseudo_source)
+    for directory in [ads_dir, pfas_dir, complex_dir]:
+        link_pseudos(directory, pseudo_source)
 
     ads_base, pfas_base, complex_base = ads_dir / "adsorbent", pfas_dir / "pfas", complex_dir / "complex"
 
@@ -369,11 +376,15 @@ def main():
         complex_in = run_cif2cell(complex_base.with_suffix(".cif"), str(complex_base))
         patch_qe_input(complex_in, settings, args.nspin, args.tot_magnetization)
 
-    if args.prepare_only: return
+    if args.prepare_only:
+        return
 
-    if not args.skip_ads: ads_out = run_pwscf(ads_in, args.pw_command)
-    if args.pfas_energy_ry is None and not args.skip_pfas: pfas_out = run_pwscf(pfas_in, args.pw_command)
-    if not args.skip_complex: complex_out = run_pwscf(complex_in, args.pw_command)
+    if not args.skip_ads:
+        ads_out = run_pwscf(ads_in, args.pw_command)
+    if args.pfas_energy_ry is None and not args.skip_pfas:
+        pfas_out = run_pwscf(pfas_in, args.pw_command)
+    if not args.skip_complex:
+        complex_out = run_pwscf(complex_in, args.pw_command)
 
     e_ads = extract_total_energy_ry(ads_out) if not args.skip_ads else 0.0
     e_pfas = args.pfas_energy_ry if args.pfas_energy_ry else (extract_total_energy_ry(pfas_out) if not args.skip_pfas else 0.0)
@@ -400,7 +411,8 @@ def main():
                 "adsorption": e_adsorption_ev,
             }
         },
-        with open(case_dir / "results.json", "w") as f: json.dump(results, f, indent=2)
+        with open(case_dir / "results.json", "w") as f:
+            json.dump(results, f, indent=2)
         print(f"\n[SUCCESS] Adsorption Energy: {e_adsorption_ev:.4f} eV")
 
 if __name__ == "__main__":

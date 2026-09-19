@@ -190,7 +190,8 @@ def modify_qe_input(
         ])
 
     if job_type == "molecule":
-        if mixing_beta is None: mixing_beta = 0.2
+        if mixing_beta is None:
+            mixing_beta = 0.2
         system_extra.extend([
             "  assume_isolated='mt',\n",
             "  occupations='smearing',\n", 
@@ -200,7 +201,8 @@ def modify_qe_input(
         electrons_block = f"&ELECTRONS\n  conv_thr=1d-07,\n  mixing_beta={mixing_beta}d0,\n  electron_maxstep=200,\n/\n"
         kpoints_block = "K_POINTS gamma\n" if use_gamma else f"K_POINTS {{automatic}}\n  {kpts[0]} {kpts[1]} {kpts[2]} 0 0 0\n"
     else:
-        if mixing_beta is None: mixing_beta = 0.4
+        if mixing_beta is None:
+            mixing_beta = 0.4
         system_extra.extend([
             "  occupations='smearing',\n",
             "  smearing='cold',\n",      
