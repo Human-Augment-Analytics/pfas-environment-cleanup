@@ -1,0 +1,52 @@
+name: Python quality checks
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ruff:
+    name: Ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10
+        with:
+          python-version: "3.11"
+          enable-cache: true
+          cache-suffix: ruff
+      - run: uv venv --python 3.11
+      - run: uv pip install --python .venv -r requirements-dev.txt
+      - run: .venv/bin/ruff check .
+
+  mypy:
+    name: Mypy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10
+        with:
+          python-version: "3.11"
+          enable-cache: true
+          cache-suffix: mypy
+      - run: uv venv --python 3.11
+      - run: uv pip install --python .venv -r requirements-dev.txt
+      - run: .venv/bin/mypy
+
+  tests:
+    name: Fast tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10
+        with:
+          python-version: "3.11"
+          enable-cache: true
+          cache-suffix: tests
+      - run: uv venv --python 3.11
+      - run: uv pip install --python .venv -r requirements-dev.txt
+      - run: .venv/bin/pytest -q

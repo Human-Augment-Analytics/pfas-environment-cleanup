@@ -1,0 +1,4 @@
+# Fast local and CI checks; scientific environments remain Conda-managed.
+mypy==1.19.1
+pytest==8.4.2
+ruff==0.14.14
