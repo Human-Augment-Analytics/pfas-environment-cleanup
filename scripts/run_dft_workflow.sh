@@ -5,27 +5,56 @@ echo "[job] starting at $(date)"
 echo "[job] host: $(hostname)"
 echo "[job] pwd: $(pwd)"
 
+if command -v module &> /dev/null; then
+    module load anaconda3
+    module load quantum-espresso
+    module load openmpi
+fi
+
+if command -v conda &> /dev/null; then
+    eval "$(conda shell.bash hook)"
+else
+    echo "[error] conda command not found. Please ensure Anaconda/Miniconda is installed locally and in your PATH."
+    exit 1
+fi
+
 # Locate the repo root. The script may live in scripts/ (repo checkout), at
 # the repo root (older deployments), or be invoked through a symlink at the
 # repo root, so resolve the physical script path and walk up instead of
 # assuming a fixed relative position. Anchor the walk-up on the root-only
-# qespresso_pipeline/ directory.
+# qespresso_pipeline/ directory: qe_environment.yaml is also tracked under
+# scripts/ (audit finding B3) and must not anchor root detection.
 SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
 PROJECT_ROOT="$(dirname "$SCRIPT_PATH")"
 while [[ "$PROJECT_ROOT" != "/" && ! -d "$PROJECT_ROOT/qespresso_pipeline" ]]; do
     PROJECT_ROOT="$(dirname "$PROJECT_ROOT")"
 done
-if [[ ! -f "$PROJECT_ROOT/requirements-qe.txt" ]]; then
-    echo "[error] requirements-qe.txt not found at $SCRIPT_PATH or any parent directory."
+if [[ ! -f "$PROJECT_ROOT/qe_environment.yaml" ]]; then
+    echo "[error] qe_environment.yaml not found at $SCRIPT_PATH or any parent directory."
     echo "[error] Deploy the full repository (see README) and run this script from within it."
     exit 1
 fi
 cd "$PROJECT_ROOT"
 
-# See scripts/bootstrap_qe.sh for PACE-module and local-QE-7.3 handling.
-source "$PROJECT_ROOT/scripts/bootstrap_qe.sh"
-echo "[env] python: $QE_PYTHON"
-"$QE_PYTHON" --version
+ENV_YAML="$PROJECT_ROOT/qe_environment.yaml"
+ENV_PREFIX="${HOME}/.conda/envs/qe_pfas"
+
+if [[ ! -f "$ENV_YAML" ]]; then
+    echo "[error] Missing environment file: $ENV_YAML"
+    exit 1
+fi
+
+if [[ ! -d "$ENV_PREFIX" ]]; then
+    echo "[env] creating env at $ENV_PREFIX from $ENV_YAML"
+    conda env create -p "$ENV_PREFIX" -f "$ENV_YAML"
+else
+    echo "[env] updating env at $ENV_PREFIX from $ENV_YAML"
+    conda env update -p "$ENV_PREFIX" -f "$ENV_YAML" --prune
+fi
+
+echo "[env] python:"
+conda run -p "$ENV_PREFIX" python --version
+conda run -p "$ENV_PREFIX" python -c "import sys; print(sys.executable)"
 
 export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
@@ -46,7 +75,7 @@ PFAS_SMILES="${PFAS_SMILES:-}"
 PFAS_ENERGY_RY="${PFAS_ENERGY_RY:-}"
 
 PSEUDO_DIR="${PSEUDO_DIR:-$PROJECT_ROOT/qespresso_pipeline/Pseudopotentials}"
-PW_COMMAND="${PW_COMMAND:-mpirun -np $MPI_TASKS $QE_PW_X}"
+PW_COMMAND="${PW_COMMAND:-mpirun -np $MPI_TASKS pw.x}"
 COMPOUND_ROOT="${COMPOUND_ROOT:-$PROJECT_ROOT/compounds}"
 WORKDIR="${WORKDIR:-$PROJECT_ROOT/dft_cases}"
 
@@ -80,6 +109,6 @@ if [[ "${SKIP_ADS:-0}" == "1" ]]; then ARGS+=(--skip-ads); fi
 if [[ "${SKIP_PFAS:-0}" == "1" ]]; then ARGS+=(--skip-pfas); fi
 if [[ "${SKIP_COMPLEX:-0}" == "1" ]]; then ARGS+=(--skip-complex); fi
 
-"$QE_PYTHON" qespresso_pipeline/run_adsorption_case.py "${ARGS[@]}"
+conda run -p "$ENV_PREFIX" python qespresso_pipeline/run_adsorption_case.py "${ARGS[@]}"
 
 echo "[job] finished successfully at $(date)"

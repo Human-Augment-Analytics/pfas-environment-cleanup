@@ -2,15 +2,13 @@
 
 ## Setup
 
-This repository ships two Conda environment files for data/ML work and one
-Python-virtual-environment specification for DFT. Create only the one you need.
+This repository ships **three** conda environment files, one per workflow. Create only the one you need.
 
 | Environment file | Conda env name | Used for | Where it runs |
 |---|---|---|---|
-| Environment file | Python | Used for | Where it runs |
-| `environment.yaml` | 3.12.5 | Data fetching and ML screening (`scripts/fetch_data.py`, `scripts/run_local_screening.sh`) | Your machine |
-| `requirements-qe.txt` | 3.12.5 | DFT adsorption runs (`qespresso_pipeline/run_adsorption_case.py`) | PACE or a prepared local machine |
-| `basic_molecule_gnn/environment.yml` | 3.12.5 | GNN modeling in `basic_molecule_gnn/` | Your machine |
+| `environment.yaml` | `pfas` | Data fetching and ML screening (`scripts/fetch_data.py`, `scripts/run_local_screening.sh`) | Your machine |
+| `qe_environment.yaml` | `qe` | DFT adsorption runs (`qespresso_pipeline/run_adsorption_case.py`; python=3.10, qe, numpy, scipy, pandas, pymatgen, openbabel, cif2cell, ase) | The cluster — built automatically, see below |
+| `basic_molecule_gnn/environment.yml` | `pfas_gnn_env` | GNN modeling in `basic_molecule_gnn/` | Your machine |
 
 ### Developer checks
 
@@ -51,17 +49,9 @@ conda activate pfas
 
 conda env update -f environment.yaml --prune
 
-#### The DFT (`.env-qe`) environment
+#### The DFT (`qe`) environment on the cluster
 
-`scripts/bootstrap_qe.sh` creates or updates the repository-local `.env-qe`
-from `requirements-qe.txt`. It deliberately does not install Quantum ESPRESSO
-or MPI into that virtual environment. On PACE, it loads
-`quantum-espresso/7.3`, `python/3.12.5`, and `uv/0.9.17`. Elsewhere, it checks
-for QE 7.3 under `~/opt/qe-7.3`; set `QE_INSTALL_LOCAL=1` when sourcing the
-bootstrap helper to build that version from source. Jobs are submitted with
-`scripts/dft_wrapper.py` (see [Important Scripts](#important-scripts)); the
-SLURM workflow invokes the bootstrap helper before running
-`qespresso_pipeline/run_adsorption_case.py`.
+You normally do **not** create the `qe` environment yourself. `scripts/run_dft_workflow.sh` (the entrypoint the SLURM jobs run) creates or updates it on the cluster automatically from `qe_environment.yaml`, at the prefix `~/.conda/envs/qe_pfas`, and then runs `qespresso_pipeline/run_adsorption_case.py` inside it. Jobs are submitted from your machine with `scripts/dft_wrapper.py` (see [Important Scripts](#important-scripts)); `run_adsorption_case.py` runs inside the SLURM job under this environment. If you need it by name for interactive use, `conda env create -f qe_environment.yaml && conda activate qe` builds the same package set.
 
 ## Scripts 
 
@@ -166,9 +156,8 @@ You can skip parts of the workflow if outputs already exist:
 │       └── outputs/
 ├── qespresso_pipeline/
 ├── scripts/
-│   ├── bootstrap_qe.sh
 │   └── run_dft_workflow.sh
-└── requirements-qe.txt
+└── qe_environment.yaml
 ```
 
 #### Important Scripts
@@ -228,8 +217,8 @@ Cluster-side workflow script.
 
 This is the entrypoint used by SLURM jobs. It:
 
-sources `bootstrap_qe.sh`, which loads `quantum-espresso/7.3` and Python 3.12.5 on PACE
-creates or updates the `.env-qe` Python virtual environment
+loads Anaconda
+creates or updates the QE conda environment
 reads environment variables from the SLURM job
 runs run_adsorption_case.py
 
@@ -286,7 +275,7 @@ rsync -av --delete \
 ```
 
 `run_dft_workflow.sh` locates the repository root on its own (it walks up from
-its own location until it finds `requirements-qe.txt`), so it runs correctly
+its own location until it finds `qe_environment.yaml`), so it runs correctly
 from `scripts/` without copying files to the root or creating symlinks.
 
 #### Explicit Slurm Scheduling on PACE-ICE
@@ -313,8 +302,8 @@ adjust them if the cluster re-allocates resources. The batch screening array
 job (`scripts/run_batch_screening.sh`) carries the same values in its static
 `#SBATCH` block.
 
-Note that the `quantum-espresso/7.3` module can only be loaded and run inside
-compute-node jobs: on a login node, `module load quantum-espresso/7.3` appears to
+Note that the `quantum-espresso` module can only be loaded and run inside
+compute-node jobs: on a login node, `module load quantum-espresso` appears to
 succeed, but `pw.x` is unavailable (the module is guarded by Lmod so that it
 only activates within jobs). Run the workflows via `sbatch` from
 `dft_wrapper.py` or the array script, not directly on the login node.
@@ -414,6 +403,7 @@ Fe   0.833333333333333   0.333333333333333   0.355649309796759 0 0 0 ! 0s repres
 
 These files can be run on PACE ICE with parallelization as follows:
 ```
-module load quantum-espresso/7.3
+module load quantum-espresso
+module load openmpi
 mpirun -np [number_of_processors] pw.x -in [input_file].in > [output_file].out
 ```

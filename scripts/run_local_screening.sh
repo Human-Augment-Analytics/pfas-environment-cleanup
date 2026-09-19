@@ -4,14 +4,16 @@
 # script may be invoked from the repo root, from scripts/, or via
 # "bash scripts/run_local_screening.sh", so walk up from this script until the
 # repo root is found instead of assuming a fixed working directory. Anchor the
-# walk-up on the root-only qespresso_pipeline/ directory.
+# walk-up on the root-only qespresso_pipeline/ directory: qe_environment.yaml
+# is also tracked under scripts/ (audit finding B3) and must not anchor root
+# detection.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR"
 while [[ "$PROJECT_ROOT" != "/" && ! -d "$PROJECT_ROOT/qespresso_pipeline" ]]; do
     PROJECT_ROOT="$(dirname "$PROJECT_ROOT")"
 done
-if [[ ! -f "$PROJECT_ROOT/requirements-qe.txt" ]]; then
-    echo "[error] requirements-qe.txt not found at $SCRIPT_DIR or any parent directory." >&2
+if [[ ! -f "$PROJECT_ROOT/qe_environment.yaml" ]]; then
+    echo "[error] qe_environment.yaml not found at $SCRIPT_DIR or any parent directory." >&2
     echo "[error] Deploy the full repository (see README) and run this script from within it." >&2
     exit 1
 fi

@@ -2,7 +2,7 @@ name: pfas_gnn_env
 channels:
   - conda-forge
 dependencies:
-  - python=3.12.5
+  - python=3.10
   - pip>=23.2
   - numpy
   - scipy
