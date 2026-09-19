@@ -2,6 +2,14 @@
 
 ## Setup
 
+This repository ships **three** conda environment files, one per workflow. Create only the one you need.
+
+| Environment file | Conda env name | Used for | Where it runs |
+|---|---|---|---|
+| `environment.yaml` | `pfas` | Data fetching and ML screening (`scripts/fetch_data.py`, `scripts/run_local_screening.sh`) | Your machine |
+| `qe_environment.yaml` | `qe` | DFT adsorption runs (`qespresso_pipeline/run_adsorption_case.py`; python=3.10, qe, numpy, scipy, pandas, pymatgen, openbabel, cif2cell, ase) | The cluster — built automatically, see below |
+| `basic_molecule_gnn/environment.yml` | `pfas_gnn_env` | GNN modeling in `basic_molecule_gnn/` | Your machine |
+
 ### For fetching the data
 
 #### Installing the required packages
@@ -11,7 +19,11 @@ conda activate pfas
 
 #### Updating the environment.yaml files
 
-conda env update -f environment.yml --prune
+conda env update -f environment.yaml --prune
+
+#### The DFT (`qe`) environment on the cluster
+
+You normally do **not** create the `qe` environment yourself. `scripts/run_dft_workflow.sh` (the entrypoint the SLURM jobs run) creates or updates it on the cluster automatically from `qe_environment.yaml`, at the prefix `~/.conda/envs/qe_pfas`, and then runs `qespresso_pipeline/run_adsorption_case.py` inside it. Jobs are submitted from your machine with `scripts/dft_wrapper.py` (see [Important Scripts](#important-scripts)); `run_adsorption_case.py` runs inside the SLURM job under this environment. If you need it by name for interactive use, `conda env create -f qe_environment.yaml && conda activate qe` builds the same package set.
 
 ## Scripts 
 
