@@ -12,3 +12,11 @@ python_version = "3.10"
 files = ["scripts/dft_wrapper.py"]
 check_untyped_defs = true
 warn_unused_configs = true
+
+[tool.pytest.ini_options]
+# Fast tests must finish promptly: cap each test and the full test session.
+timeout = 2
+session_timeout = 60
+markers = [
+    "slow: test is excluded from the fast local and CI test suites",
+]
