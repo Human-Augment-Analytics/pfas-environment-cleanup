@@ -59,7 +59,7 @@ conda run -p "$ENV_PREFIX" python -c "import sys; print(sys.executable)"
 export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export OMP_NUM_THREADS=1
-MPI_TASKS="${SLURM_NTASKS:-1}"
+MPI_TASKS="${SLURM_CPUS_PER_TASK:-${SLURM_NTASKS:-1}}"
 
 CASE_NAME="${CASE_NAME:?CASE_NAME not set}"
 ADSORBENT_NAME="${ADSORBENT_NAME:?ADSORBENT_NAME not set}"
