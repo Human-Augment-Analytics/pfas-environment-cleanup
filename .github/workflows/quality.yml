@@ -22,7 +22,10 @@ jobs:
           python-version: "3.11"
           enable-cache: true
           cache-suffix: ruff
-      - run: ./scripts/dev ruff
+      - name: Install CI tools
+        run: ./scripts/dev update
+      - name: Run Ruff
+        run: ./scripts/dev ruff
 
   mypy:
     name: mypy
@@ -35,7 +38,10 @@ jobs:
           python-version: "3.11"
           enable-cache: true
           cache-suffix: mypy
-      - run: ./scripts/dev mypy
+      - name: Install CI tools
+        run: ./scripts/dev update
+      - name: Run mypy
+        run: ./scripts/dev mypy
 
   fast-tests:
     name: Fast tests
@@ -48,4 +54,7 @@ jobs:
           python-version: "3.11"
           enable-cache: true
           cache-suffix: fast-tests
-      - run: ./scripts/dev fast-test
+      - name: Install CI tools
+        run: ./scripts/dev update
+      - name: Run fast tests
+        run: ./scripts/dev fast-test
