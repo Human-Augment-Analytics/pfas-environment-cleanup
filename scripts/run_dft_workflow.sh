@@ -6,55 +6,36 @@ echo "[job] host: $(hostname)"
 echo "[job] pwd: $(pwd)"
 
 if command -v module &> /dev/null; then
-    module load anaconda3
-    module load quantum-espresso
-    module load openmpi
-fi
-
-if command -v conda &> /dev/null; then
-    eval "$(conda shell.bash hook)"
-else
-    echo "[error] conda command not found. Please ensure Anaconda/Miniconda is installed locally and in your PATH."
-    exit 1
+    module load quantum-espresso/7.3 python/3.12.5
 fi
 
 # Locate the repo root. The script may live in scripts/ (repo checkout), at
 # the repo root (older deployments), or be invoked through a symlink at the
 # repo root, so resolve the physical script path and walk up instead of
 # assuming a fixed relative position. Anchor the walk-up on the root-only
-# qespresso_pipeline/ directory: qe_environment.yaml is also tracked under
-# scripts/ (audit finding B3) and must not anchor root detection.
+# qespresso_pipeline/ directory.
 SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
 PROJECT_ROOT="$(dirname "$SCRIPT_PATH")"
 while [[ "$PROJECT_ROOT" != "/" && ! -d "$PROJECT_ROOT/qespresso_pipeline" ]]; do
     PROJECT_ROOT="$(dirname "$PROJECT_ROOT")"
 done
-if [[ ! -f "$PROJECT_ROOT/qe_environment.yaml" ]]; then
-    echo "[error] qe_environment.yaml not found at $SCRIPT_PATH or any parent directory."
+if [[ ! -f "$PROJECT_ROOT/requirements-qe.txt" ]]; then
+    echo "[error] requirements-qe.txt not found at $SCRIPT_PATH or any parent directory."
     echo "[error] Deploy the full repository (see README) and run this script from within it."
     exit 1
 fi
 cd "$PROJECT_ROOT"
 
-ENV_YAML="$PROJECT_ROOT/qe_environment.yaml"
-ENV_PREFIX="${HOME}/.conda/envs/qe_pfas"
-
-if [[ ! -f "$ENV_YAML" ]]; then
-    echo "[error] Missing environment file: $ENV_YAML"
+ENV_DIR="$PROJECT_ROOT/.env-qe"
+if [[ ! -x "$ENV_DIR/bin/python" || ! -f "$ENV_DIR/bin/activate" ]]; then
+    echo "[error] Create .env-qe with uv before submitting jobs; see README's DFT setup."
     exit 1
 fi
+# Activation also puts obabel and cif2cell on PATH for Python subprocesses.
+source "$ENV_DIR/bin/activate"
 
-if [[ ! -d "$ENV_PREFIX" ]]; then
-    echo "[env] creating env at $ENV_PREFIX from $ENV_YAML"
-    conda env create -p "$ENV_PREFIX" -f "$ENV_YAML"
-else
-    echo "[env] updating env at $ENV_PREFIX from $ENV_YAML"
-    conda env update -p "$ENV_PREFIX" -f "$ENV_YAML" --prune
-fi
-
-echo "[env] python:"
-conda run -p "$ENV_PREFIX" python --version
-conda run -p "$ENV_PREFIX" python -c "import sys; print(sys.executable)"
+echo "[env] python: $(command -v python)"
+python --version
 
 export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
@@ -109,6 +90,6 @@ if [[ "${SKIP_ADS:-0}" == "1" ]]; then ARGS+=(--skip-ads); fi
 if [[ "${SKIP_PFAS:-0}" == "1" ]]; then ARGS+=(--skip-pfas); fi
 if [[ "${SKIP_COMPLEX:-0}" == "1" ]]; then ARGS+=(--skip-complex); fi
 
-conda run -p "$ENV_PREFIX" python qespresso_pipeline/run_adsorption_case.py "${ARGS[@]}"
+python qespresso_pipeline/run_adsorption_case.py "${ARGS[@]}"
 
 echo "[job] finished successfully at $(date)"

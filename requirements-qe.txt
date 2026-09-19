@@ -1,0 +1,6 @@
+# Python dependencies only; Quantum ESPRESSO and MPI come from the cluster module.
+numpy
+pymatgen
+ase
+openbabel-wheel
+cif2cell

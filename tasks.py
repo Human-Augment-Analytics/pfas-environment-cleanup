@@ -1,4 +1,4 @@
-"""Fast local quality checks, run with ``./scripts/dev <task>``."""
+"""Environment setup and quality checks, run with ``./scripts/dev <task>``."""
 
 from pathlib import Path
 from shlex import quote
@@ -8,6 +8,7 @@ from invoke import task
 
 ROOT = Path(__file__).parent
 TOOL_BIN = ROOT / ".env-pfas-ci" / "bin"
+QE_ENV = ROOT / ".env-qe"
 
 
 def _run(context, label: str, command: str) -> None:
@@ -46,6 +47,19 @@ def slow_test(context) -> None:
         context,
         "slow pytest suite in the pfas Conda environment",
         "conda run -n pfas python -m pytest -q -m slow --timeout=0 --session-timeout=0",
+    )
+
+
+@task
+def qe_setup(context, python="3.12.5") -> None:
+    """Create the QE Python environment if missing and install its requirements."""
+    qe_python = QE_ENV / "bin" / "python"
+    if not qe_python.exists():
+        _run(context, "create QE environment", f"uv venv --python {quote(python)} {quote(str(QE_ENV))}")
+    _run(
+        context,
+        "install QE requirements",
+        f"uv pip install --python {quote(str(qe_python))} -r requirements-qe.txt",
     )
 
 

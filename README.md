@@ -2,12 +2,12 @@
 
 ## Setup
 
-This repository ships **three** conda environment files, one per workflow. Create only the one you need.
+This repository ships two Conda environment files and a uv-compatible requirements file for DFT. Create only the environment you need.
 
-| Environment file | Conda env name | Used for | Where it runs |
+| Environment file | Environment | Used for | Where it runs |
 |---|---|---|---|
 | `environment.yaml` | `pfas` | Data fetching and ML screening (`scripts/fetch_data.py`, `scripts/run_local_screening.sh`) | Your machine |
-| `qe_environment.yaml` | `qe` | DFT adsorption runs (`qespresso_pipeline/run_adsorption_case.py`; python=3.10, qe, numpy, scipy, pandas, pymatgen, openbabel, cif2cell, ase) | The cluster — built automatically, see below |
+| `requirements-qe.txt` | `.env-qe` (uv) | DFT adsorption runs (`qespresso_pipeline/run_adsorption_case.py`) | The cluster — set up before submitting jobs, see below |
 | `basic_molecule_gnn/environment.yml` | `pfas_gnn_env` | GNN modeling in `basic_molecule_gnn/` | Your machine |
 
 ### Developer checks
@@ -24,7 +24,13 @@ avoids Quantum ESPRESSO, Open Babel, and the ML stack:
 ./scripts/dev fast-test   # fast pytest suite (also used by CI)
 ./scripts/dev slow-test   # tests marked @pytest.mark.slow
 ./scripts/dev update      # reinstall developer requirements
+./scripts/dev qe-setup    # create/update the separate QE Python environment
 ```
+
+`update` targets `.env-pfas-ci`; `qe-setup` targets `.env-qe`. Both pass the
+environment's Python path to `uv pip install --python`, so no activation is
+needed. `update` reinstalls the pinned developer packages; it does not upgrade
+their version pins or update the QE environment.
 
 GitHub Actions runs `./scripts/dev ci` on pushes and pull requests. Ruff
 is initially scoped to syntax and high-confidence correctness errors across
@@ -49,9 +55,31 @@ conda activate pfas
 
 conda env update -f environment.yaml --prune
 
-#### The DFT (`qe`) environment on the cluster
+#### The DFT (`.env-qe`) environment on the cluster
 
-You normally do **not** create the `qe` environment yourself. `scripts/run_dft_workflow.sh` (the entrypoint the SLURM jobs run) creates or updates it on the cluster automatically from `qe_environment.yaml`, at the prefix `~/.conda/envs/qe_pfas`, and then runs `qespresso_pipeline/run_adsorption_case.py` inside it. Jobs are submitted from your machine with `scripts/dft_wrapper.py` (see [Important Scripts](#important-scripts)); `run_adsorption_case.py` runs inside the SLURM job under this environment. If you need it by name for interactive use, `conda env create -f qe_environment.yaml && conda activate qe` builds the same package set.
+From the repository root on PACE, create the Python environment once before
+submitting jobs. Start from a shell with no Conda environment active:
+
+```bash
+module load python/3.12.5 uv/0.9.17
+./scripts/dev qe-setup --python "$(command -v python3)"
+```
+
+Rerun `./scripts/dev qe-setup` after changing `requirements-qe.txt`. It reuses
+an existing `.env-qe`; `--python` selects the interpreter only when creating it.
+It installs missing requirements without forcing upgrades of satisfied versions.
+The file lists NumPy, pymatgen, ASE, Open Babel (`openbabel-wheel`), and
+cif2cell; their dependencies are installed automatically. It is not a lockfile.
+
+`scripts/run_dft_workflow.sh` loads `quantum-espresso/7.3` and `python/3.12.5`,
+activates `.env-qe`, and runs the pipeline. Jobs do not install or update packages.
+QE and its MPI runtime are supplied by the cluster module, outside the Python
+environment. Jobs are submitted with `scripts/dft_wrapper.py` (see
+[Important Scripts](#important-scripts)).
+
+For local use, run `./scripts/dev qe-setup` (defaults to Python 3.12.5).
+Provide a working QE installation and its
+matching MPI launcher on `PATH` before running the workflow.
 
 ## Scripts 
 
@@ -157,7 +185,7 @@ You can skip parts of the workflow if outputs already exist:
 ├── qespresso_pipeline/
 ├── scripts/
 │   └── run_dft_workflow.sh
-└── qe_environment.yaml
+└── requirements-qe.txt
 ```
 
 #### Important Scripts
@@ -217,8 +245,8 @@ Cluster-side workflow script.
 
 This is the entrypoint used by SLURM jobs. It:
 
-loads Anaconda
-creates or updates the QE conda environment
+loads the QE and Python modules
+activates the prepared `.env-qe` virtual environment
 reads environment variables from the SLURM job
 runs run_adsorption_case.py
 
@@ -275,7 +303,8 @@ rsync -av --delete \
 ```
 
 `run_dft_workflow.sh` locates the repository root on its own (it walks up from
-its own location until it finds `qe_environment.yaml`), so it runs correctly
+its own location until it finds `qespresso_pipeline/`, then checks for
+`requirements-qe.txt`), so it runs correctly
 from `scripts/` without copying files to the root or creating symlinks.
 
 #### Explicit Slurm Scheduling on PACE-ICE
@@ -403,7 +432,6 @@ Fe   0.833333333333333   0.333333333333333   0.355649309796759 0 0 0 ! 0s repres
 
 These files can be run on PACE ICE with parallelization as follows:
 ```
-module load quantum-espresso
-module load openmpi
+module load quantum-espresso/7.3
 mpirun -np [number_of_processors] pw.x -in [input_file].in > [output_file].out
 ```
