@@ -39,7 +39,7 @@ jobs:
           enable-cache: true
           cache-suffix: ty
       - name: Run ty
-        run: uv run --locked --group dev ty check
+        run: uv run --group dev --group qe --group data --group chemistry ty check
 
   fast-tests:
     name: Fast tests
