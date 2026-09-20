@@ -4,9 +4,8 @@
 # script may be invoked from the repo root, from scripts/, or via
 # "bash scripts/run_local_screening.sh", so walk up from this script until the
 # repo root is found instead of assuming a fixed working directory. Anchor the
-# walk-up on the root-only qespresso_pipeline/ directory: qe_environment.yaml
-# is also tracked under scripts/ (audit finding B3) and must not anchor root
-# detection.
+# walk-up on the root-only qespresso_pipeline/ directory; it exists only at
+# the repo root, so it reliably marks the project root.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR"
 while [[ "$PROJECT_ROOT" != "/" && ! -d "$PROJECT_ROOT/qespresso_pipeline" ]]; do
