@@ -24,7 +24,7 @@ jobs:
           enable-cache: true
           cache-suffix: ruff
       - name: Check formatting
-        run: uv format --check
+        run: uv run --locked --group dev ruff format --check
 
   typecheck:
     name: Type checks
@@ -39,7 +39,7 @@ jobs:
           enable-cache: true
           cache-suffix: ty
       - name: Run ty
-        run: uv check --locked
+        run: uv run --locked --group dev ty check
 
   fast-tests:
     name: Fast tests
