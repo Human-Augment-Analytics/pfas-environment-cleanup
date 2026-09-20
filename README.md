@@ -333,7 +333,10 @@ Note that the `quantum-espresso` module can only be loaded and run inside
 compute-node jobs: on a login node, `module load quantum-espresso` appears to
 succeed, but `pw.x` is unavailable (the module is guarded by Lmod so that it
 only activates within jobs). Run the workflows via `sbatch` from
-`dft_wrapper.py` or the array script, not directly on the login node.
+`dft_wrapper.py` or the array script, not directly on the login node. When
+loading the module anywhere (workflow script or manual run), pin the native
+build explicitly — `module load quantum-espresso/7.3`; the note under Manual
+DFT Simulation below explains why the unpinned default is unreliable.
 
 #### Memory sizing (`--mem-gb`)
 
@@ -446,10 +449,16 @@ Fe   0.833333333333333   0.333333333333333   0.355649309796759 0 0 0 ! 0s repres
 
 These files can be run on PACE ICE with parallelization as follows:
 ```
-module load quantum-espresso
+module load quantum-espresso/7.3
 module load openmpi
 mpirun -np [number_of_processors] pw.x -in [input_file].in > [output_file].out
 ```
+
+Pin the Quantum ESPRESSO build explicitly (`quantum-espresso/7.3`): the
+cluster's unpinned default can resolve to a container-based build whose `pw.x`
+fails under `mpirun`, and loading `openmpi` afterwards can silently swap the
+active build. 7.3 is the native build the repository workflows are verified
+against on PACE-ICE; `scripts/run_dft_workflow.sh` pins the same version.
 
 ## Machine Learning in This Repository
 
