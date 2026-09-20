@@ -9,6 +9,5 @@ dft_runs/
 logs/
 /master_results.txt
 __pycache__/
-.env-pfas-ci/
 # keep the one legacy tracked cache dir visible (do not untrack committed files)
 !qespresso_pipeline/__pycache__/

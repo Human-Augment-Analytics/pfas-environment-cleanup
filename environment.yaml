@@ -98,8 +98,6 @@ dependencies:
   - pycparser=2.23
   - pynacl=1.6.0
   - pyparsing=3.3.2
-  - pytest=8.4.2
-  - pytest-timeout=2.4.0
   - pysocks=1.7.1
   - python=3.11.14
   - python-dateutil=2.9.0.post0
