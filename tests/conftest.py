@@ -11,7 +11,7 @@ SLOW_TEST_WARNING_SECONDS = 1.0
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    config._slow_fast_test_reports: list[tuple[str, float]] = []  # type: ignore[attr-defined]
+    config._slow_fast_test_reports: list[tuple[str, float]] = []  # ty: ignore[unresolved-attribute, invalid-type-form]
 
 
 def pytest_collection_modifyitems(
@@ -32,13 +32,13 @@ def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo[Any]):
         and not item.get_closest_marker("slow")
         and report.duration > SLOW_TEST_WARNING_SECONDS
     ):
-        item.config._slow_fast_test_reports.append((report.nodeid, report.duration))  # type: ignore[attr-defined]
+        item.config._slow_fast_test_reports.append((report.nodeid, report.duration))  # ty: ignore[unresolved-attribute]
 
 
 def pytest_terminal_summary(
     terminalreporter: pytest.TerminalReporter, exitstatus: int, config: pytest.Config
 ) -> None:
-    slow_reports = config._slow_fast_test_reports  # type: ignore[attr-defined]
+    slow_reports = config._slow_fast_test_reports  # ty: ignore[unresolved-attribute]
     if not slow_reports:
         return
 
