@@ -36,13 +36,15 @@ conda env create -f environment.yaml
 
 conda activate pfas
 
+`environment.yaml` lists only the direct dependencies these local workflows import, and conda resolves the rest from conda-forge. Most of the same packages are also tracked per workflow in `pyproject.toml`'s dependency groups (e.g. `data`: pandas/requests/scikit-learn; `chemistry`: rdkit/paramiko) and pinned in `uv.lock` for CI — when you add a new import, update both places.
+
 #### Updating the environment.yaml files
 
 conda env update -f environment.yaml --prune
 
 #### The DFT (`qe`) environment on the cluster
 
-You normally do **not** create the `qe` environment yourself. `scripts/run_dft_workflow.sh` (the entrypoint the SLURM jobs run) creates or updates it on the cluster automatically from `qe_environment.yaml`, at the prefix `~/.conda/envs/qe_pfas`, and then runs `qespresso_pipeline/run_adsorption_case.py` inside it. Jobs are submitted from your machine with `scripts/dft_wrapper.py` (see [Important Scripts](#important-scripts)); `run_adsorption_case.py` runs inside the SLURM job under this environment. If you need it by name for interactive use, `conda env create -f qe_environment.yaml && conda activate qe` builds the same package set.
+You normally do **not** create the `qe` environment yourself. `scripts/run_dft_workflow.sh` (the entrypoint the SLURM jobs run) creates or updates it on the cluster automatically from `qe_environment.yaml`, at the prefix `~/.conda/envs/qe_pfas`, and then runs `qespresso_pipeline/run_adsorption_case.py` inside it. Jobs are submitted from your machine with `scripts/dft_wrapper.py` (see [Important Scripts](#important-scripts)); `run_adsorption_case.py` runs inside the SLURM job under this environment. If you need it by name for interactive use, `conda env create -f qe_environment.yaml && conda activate qe` builds the same package set. If you run `qespresso_pipeline` scripts by hand, activate this environment first — they are only supported under its Python interpreter, not a system Python (which will be missing pymatgen/ase).
 
 ## Scripts 
 
