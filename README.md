@@ -337,12 +337,42 @@ changes nothing. It checks:
 - `scripts/*.sh` line endings — CRLF checkouts of these scripts fail on the
   cluster
 
+- `deploy_to_cluster.sh`
+
+Deploys this checkout to the cluster and verifies the result. It refuses to
+run when any `scripts/*.sh` in this checkout has Windows (CRLF) line endings,
+and refuses to overwrite a cluster copy that has drifted from this checkout
+unless `--force` is given. Run it from the repository root:
+
+```
+bash scripts/deploy_to_cluster.sh --user <gatech-user>
+```
+
+It wraps the same `rsync --delete` documented under "Deploying to the
+Cluster" below, and takes the same `--cluster` and `--cluster-root` flags
+with the same defaults as `dft_wrapper.py`.
+
+- `check_cluster_drift.sh`
+
+Compares the cluster copy of this repository against this checkout, printing
+a diff and exiting non-zero when they differ — safe to run before submitting
+a batch of jobs. It ships itself over SSH, so nothing needs to be installed
+on the cluster first:
+
+```
+bash scripts/check_cluster_drift.sh --user <gatech-user>
+```
+
+Line endings are ignored, and the bulk data / run / cache directories the
+deploy excludes are skipped, so a Windows checkout does not show up as
+drift.
+
 #### Deploying to the Cluster
 
 The SLURM jobs submitted by `dft_wrapper.py` run `scripts/run_dft_workflow.sh`
 from this repository on the cluster, so the copy on the cluster must match this
-checkout. Deploy the whole repository in one command, run from the repository
-root on any machine with SSH access to PACE-ICE:
+checkout. Deploy from the repository root on any machine with SSH access to
+PACE-ICE — either the plain command:
 
 ```
 rsync -av --delete \
@@ -353,6 +383,19 @@ rsync -av --delete \
 `run_dft_workflow.sh` locates the repository root on its own (it walks up from
 its own location until it finds `qe_environment.yaml`), so it runs correctly
 from `scripts/` without copying files to the root or creating symlinks.
+
+Or use the guarded script, which runs the same rsync with two refusals in
+front of it (CRLF shell scripts in this checkout; a cluster copy with
+hand-edits, overridable with `--force`) and re-checks the deployed copy
+afterwards:
+
+```
+bash scripts/deploy_to_cluster.sh --user <gatech-user>
+```
+
+To compare the two copies without deploying anything, run
+`scripts/check_cluster_drift.sh` with the same `--user` flag; it prints a
+diff and exits non-zero on drift.
 
 #### Explicit Slurm Scheduling on PACE-ICE
 
