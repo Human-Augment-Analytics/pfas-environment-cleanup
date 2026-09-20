@@ -2,11 +2,16 @@
 #SBATCH --job-name=pfas_screen
 #SBATCH --output=logs/screen_%A_%a.out
 #SBATCH --nodes=1
-#SBATCH --ntasks=16
-#SBATCH --time=24:00:00
+#SBATCH --ntasks=4
+#SBATCH --time=18:00:00
+#SBATCH --mem=64G
 #SBATCH --array=2-101  # one task per CSV data row: 101 = 1 header + 100 data rows (IDs 001-100); update if the CSV changes
-# Explicit PACE-ICE scheduling values verified during the audit (account coc,
-# qos coc-ice, partition ice-cpu); adjust if the cluster re-allocates resources.
+# Explicit PACE-ICE scheduling values verified on the cluster (account coc,
+# qos coc-ice, partition ice-cpu). Each array task runs one adsorption case
+# with a single pw.x at a time, so 4 tasks and 64 GB match the per-case
+# defaults of dft_wrapper.py (see the memory table in the README), and the
+# partition caps walltime at 18 hours. Adjust if the cluster re-allocates
+# resources.
 #SBATCH --partition=ice-cpu
 #SBATCH --account=coc
 #SBATCH --qos=coc-ice

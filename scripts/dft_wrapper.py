@@ -253,7 +253,7 @@ def fetch(c: Cluster, case_name: str, local_cache: str) -> Path:
 
 def validate_submit_args(args: argparse.Namespace) -> list[str]:
     """Submit-time validation of argument combinations that are statically
-    known to be fatal inside the SLURM job (audit finding A8).
+    known to be fatal inside the SLURM job.
 
     Before this check, `--adsorbent-source smiles` without `--adsorbent-smiles`
     was only discovered on the compute node, after the wrapper had already
@@ -323,9 +323,22 @@ def main() -> int:
         default=None,
         help="Optional Slurm QOS to submit the job under (e.g. 'coc-ice' on PACE-ICE).",
     )
-    ap.add_argument("--time", default="12:00:00")
+    ap.add_argument(
+        "--time",
+        default="18:00:00",
+        help="Walltime limit for the job. 18 h matches the walltime cap "
+        "of the ice-cpu partition that the repository's screening "
+        "scripts submit to on PACE-ICE.",
+    )
     ap.add_argument("--cpus", type=int, default=8)
-    ap.add_argument("--mem-gb", type=int, default=32)
+    ap.add_argument(
+        "--mem-gb",
+        type=int,
+        default=64,
+        help="Memory request in GB. 64 covers the roughly 30 angstrom "
+        "cells produced by large adsorbents; see the memory-sizing "
+        "table in the README.",
+    )
     ap.add_argument("--no-auth-check", action="store_true")
 
     ap.add_argument("--skip-ads", action="store_true")
