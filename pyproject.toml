@@ -35,6 +35,7 @@ data = [
 
 [tool.uv]
 package = false
+default-groups = "all"
 
 [tool.ruff]
 target-version = "py312"

@@ -24,7 +24,7 @@ jobs:
           enable-cache: true
           cache-suffix: ruff
       - name: Check formatting
-        run: uv run --locked --group dev ruff format --check
+        run: uv run --locked --only-dev ruff format --check
 
   typecheck:
     name: Type checks
@@ -39,7 +39,7 @@ jobs:
           enable-cache: true
           cache-suffix: ty
       - name: Run ty
-        run: uv run --group dev --group qe --group data --group chemistry ty check
+        run: uv run --locked ty check
 
   fast-tests:
     name: Fast tests
@@ -54,4 +54,4 @@ jobs:
           enable-cache: true
           cache-suffix: fast-tests
       - name: Run fast tests
-        run: uv run --locked --group dev pytest -m 'not slow'
+        run: uv run --locked pytest -m 'not slow'
