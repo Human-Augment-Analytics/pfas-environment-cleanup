@@ -74,7 +74,6 @@ jobs:
           files = [
               "environment.yaml",
               "qe_environment.yaml",
-              "scripts/qe_environment.yaml",
               "basic_molecule_gnn/environment.yml",
           ]
           # Documented allowlist: what the README/docs tell users to activate.
