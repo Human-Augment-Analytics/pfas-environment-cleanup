@@ -7,7 +7,11 @@ echo "[job] pwd: $(pwd)"
 
 if command -v module &> /dev/null; then
     module load anaconda3
-    module load quantum-espresso
+    # Pin Quantum ESPRESSO to the native 7.3 build verified on PACE-ICE.
+    # The unpinned default can resolve to a container-based build whose
+    # pw.x fails under "mpirun -np ... pw.x", and loading openmpi after
+    # an unpinned QE load can silently swap in a different build.
+    module load quantum-espresso/7.3
     module load openmpi
 fi
 
