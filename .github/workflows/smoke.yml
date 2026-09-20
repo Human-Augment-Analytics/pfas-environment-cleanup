@@ -35,10 +35,14 @@ jobs:
       - uses: mamba-org/setup-micromamba@v2
         with:
           environment-name: pfas-smoke
+          # pymatgen is pinned: 2026.x releases dropped built-in .mol file
+          # reading (Molecule.from_file raises "Cannot determine file type"),
+          # which breaks the pipeline's MOL -> CIF step. 2025.10.7 is the
+          # newest release that still reads obabel .mol output.
           create-args: >-
             python=3.11
             openbabel
-            pymatgen
+            pymatgen=2025.10.7
             cif2cell
             ase
           cache-downloads: true
