@@ -282,7 +282,7 @@ python3 scripts/dft_wrapper.py \
   --submit-if-missing \
   --cpus 4 \
   --mem-gb 64 \
-  --time 12:00:00
+  --time 18:00:00
 ```
 
 The `--workflow-script` flag is optional: by default the wrapper submits
@@ -340,15 +340,18 @@ DFT Simulation below explains why the unpinned default is unreliable.
 
 #### Memory sizing (`--mem-gb`)
 
-`pw.x` memory grows with the simulation cell, and the wrapper's default
-`--mem-gb 32` is only safe for small cells. Size the request to the largest
-cell the case will build:
+`pw.x` memory grows with the simulation cell. The wrapper now defaults to
+`--mem-gb 64` and `--time 18:00:00` (8 CPUs), and the array script requests
+`--ntasks=4` with `--mem=64G` — enough for typical screening cases, including
+the ~30 Å cells produced by long alkyl chains; the walltime matches the 18 h
+cap on the `ice-cpu` partition. Size the request to the largest cell the case
+will build:
 
 | Case | Typical largest cell dimension | Suggested `--mem-gb` |
 |---|---|---|
-| Small adsorbents / short molecules (e.g. TFA pairs) | up to ~20 Å | 32 (the default) |
-| Large adsorbents or long alkyl chains | ~30 Å | 64 |
-| Adsorbent–PFAS complex of a large pair | larger than the adsorbent cell | 64–96, then check the job |
+| Small adsorbents / short molecules (e.g. TFA pairs) | up to ~20 Å | 32 |
+| Large adsorbents or long alkyl chains | ~30 Å | 64 (the default) |
+| Adsorbent–PFAS complex of a large pair | larger than the adsorbent cell | 96 if the 64 default is OOM-killed |
 
 After a run, `seff <jobid>` shows the memory actually used. If `pw.x` exits
 with return code 137 or the epilog reports `oom_kill`, the job ran out of
