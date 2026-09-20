@@ -46,7 +46,12 @@ conda env update -f environment.yaml --prune
 
 You normally do **not** create the `qe` environment yourself. `scripts/run_dft_workflow.sh` (the entrypoint the SLURM jobs run) creates or updates it on the cluster automatically from `qe_environment.yaml`, at the prefix `~/.conda/envs/qe_pfas`, and then runs `qespresso_pipeline/run_adsorption_case.py` inside it. Jobs are submitted from your machine with `scripts/dft_wrapper.py` (see [Important Scripts](#important-scripts)); `run_adsorption_case.py` runs inside the SLURM job under this environment. If you need it by name for interactive use, `conda env create -f qe_environment.yaml && conda activate qe` builds the same package set. If you run `qespresso_pipeline` scripts by hand, activate this environment first — they are only supported under its Python interpreter, not a system Python (which will be missing pymatgen/ase).
 
-## Scripts 
+## Scripts
+
+New to the repository, or something behaving oddly? `bash scripts/verify_setup.sh`
+checks your setup in one command — conda and the `pfas` environment, the DFT
+toolchain, and the checkout itself — and prints one PASS / SKIP / FAIL line per
+check. See [Important Scripts](#important-scripts) for what it covers.
 
 ### Running the script to fetch data
 
@@ -308,6 +313,29 @@ python3 scripts/dft_wrapper.py \
 
 The `--workflow-script` flag is optional: by default the wrapper submits
 `<cluster-root>/scripts/run_dft_workflow.sh`, matching the layout above.
+
+- `verify_setup.sh`
+
+Checks the local setup in one command — useful right after cloning, or when
+something behaves oddly. Run it from anywhere inside the repository:
+
+```
+bash scripts/verify_setup.sh
+```
+
+It prints one PASS / SKIP / FAIL line per check and exits non-zero when
+anything failed. It only inspects the environment and the checkout — it
+changes nothing. It checks:
+
+- conda on PATH, and whether the `pfas` environment exists (create it from
+  `environment.yaml` if the check fails)
+- the DFT toolchain (`pw.x`, `obabel`, `cif2cell`) — found on PATH or in the
+  qe environment at `~/.conda/envs/qe_pfas`; on the PACE-ICE login nodes a
+  missing `pw.x` is reported as expected (the quantum-espresso module only
+  activates inside SLURM jobs)
+- optional VESTA (`VESTA_PATH` or on PATH) — skipped when absent
+- `scripts/*.sh` line endings — CRLF checkouts of these scripts fail on the
+  cluster
 
 #### Deploying to the Cluster
 
