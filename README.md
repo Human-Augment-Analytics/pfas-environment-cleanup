@@ -28,21 +28,59 @@ You normally do **not** create the `qe` environment yourself. `scripts/run_dft_w
 ## Scripts 
 
 ### Running the script to fetch data
-Fetch the data from the PACE ICE cluster from the directory `/storage/ice-shared/cs8903onl/mussmann-pfas/data/` and copied into the `data/` directory.
+
+`scripts/fetch_data.py` builds the PFAS candidate dataset. With no flags it
+queries the PubChem API directly: it collects candidate compounds, downloads
+their properties, applies sanity filters, computes RDKit structure flags, and
+writes two CSVs into `data/`:
+
+- `data/pubchem_properties.csv` — raw PubChem properties per compound
+- `data/pfas_adsorption_candidates.csv` — the merged, filtered candidate table
 
 ```
 cd pfas-environment-cleanup
 python3 scripts/fetch_data.py
 ```
 
-If you would like to fetch the data from the ICE cluster:
+If the dataset has already been generated on the PACE ICE cluster (under
+`/storage/ice-shared/cs8903onl/mussmann-pfas/data/`), you can download those
+CSVs over SFTP instead of re-querying PubChem:
 
 ```
 cd pfas-environment-cleanup
 python3 scripts/fetch_data.py --from-ice
 ```
 
-This would prompt you to enter your username and password. Make sure to be connected to the VPN.
+This prompts for your ICE username and password (override the host or remote
+directory with `--ice-host` / `--ice-remote-dir` if needed). Make sure to be
+connected to the VPN.
+
+### Screening the adsorbent library
+
+The repository ships a 100-row adsorbent library
+(`scripts/molecular_adsorbents_smiles.csv`, columns `ID,Name,SMILES,Category`)
+and two ways to run DFT adsorption energies for every row against a fixed
+PFAS (TFA, `FC(F)(F)C(=O)O`):
+
+- `scripts/run_local_screening.sh` — runs the whole library sequentially on
+  your machine through `scripts/run_dft_workflow.sh` (mode `lowmem`). Each
+  finished case appends one line
+  `case=<name> adsorption_energy_ev=<value>` to
+  `scripts/master_results.txt` (harvested from
+  `dft_cases/<case>/results.json`); if a case's harvest fails, its `Outputs/`
+  directory is kept as debugging evidence instead of being deleted.
+- `scripts/run_batch_screening.sh` — the cluster version: a SLURM array job
+  (`#SBATCH --array=2-101`, one task per CSV data row) that runs the same
+  workflow in `production` mode with 16 MPI tasks. It references the CSV and
+  `run_dft_workflow.sh` relative to the working directory, so submit it from
+  inside `scripts/` on the cluster: `sbatch run_batch_screening.sh`.
+
+Both scripts parse the CSV with Python's `csv` module (several adsorbent
+names contain commas) and sanitize names into filesystem-safe case names.
+When running DFT, be sure to save the results from all runs — including
+failed and intermediate ones — together with their input config files, so
+the exact inputs behind any energy number in `scripts/master_results.txt`
+can always be recovered.
 
 ## DFT Calculation Process
 
@@ -91,6 +129,21 @@ python qespresso_pipeline/run_adsorption_case.py \
   --mode cluster \
   --pw-command "pw.x"
 ```
+
+#### Pseudopotentials in this repository
+
+The repository ships two distinct pseudopotential sets:
+
+- `qespresso_pipeline/Pseudopotentials/` — the canonical set for the
+  automated pipeline: ~94 per-element `.UPF` files (SSSP-style). Every
+  example above passes this directory via `--pseudo-dir`, and
+  `run_adsorption_case.py` symlinks it into each case directory under
+  `dft_cases/`.
+- `TFAsim/*.UPF` — a small kjpaw set (C, F, H, N, O plus
+  `Fe.pbesol-spn-kjpaw_psl.1.0.0.UPF`) used by the earlier manual iron/TFA
+  calculations whose inputs and outputs live in `TFAsim/`.
+
+New automated runs should use the `qespresso_pipeline/Pseudopotentials/` set.
 
 #### Reusing Existing Calculations
 
@@ -280,6 +333,22 @@ succeed, but `pw.x` is unavailable (the module is guarded by Lmod so that it
 only activates within jobs). Run the workflows via `sbatch` from
 `dft_wrapper.py` or the array script, not directly on the login node.
 
+#### Memory sizing (`--mem-gb`)
+
+`pw.x` memory grows with the simulation cell, and the wrapper's default
+`--mem-gb 32` is only safe for small cells. Size the request to the largest
+cell the case will build:
+
+| Case | Typical largest cell dimension | Suggested `--mem-gb` |
+|---|---|---|
+| Small adsorbents / short molecules (e.g. TFA pairs) | up to ~20 Å | 32 (the default) |
+| Large adsorbents or long alkyl chains | ~30 Å | 64 |
+| Adsorbent–PFAS complex of a large pair | larger than the adsorbent cell | 64–96, then check the job |
+
+After a run, `seff <jobid>` shows the memory actually used. If `pw.x` exits
+with return code 137 or the epilog reports `oom_kill`, the job ran out of
+memory: resubmit with a higher `--mem-gb` rather than assuming a code failure.
+
 ### Manual DFT Simulation
 
 For tuning purposes, it will likely be necessary to manually create a DFT input file from a CIF file, created either via ase, pymatgen, or sourced from a crystallographic database. You begin by running a command of this following structure to create an input file:
@@ -379,3 +448,51 @@ module load quantum-espresso
 module load openmpi
 mpirun -np [number_of_processors] pw.x -in [input_file].in > [output_file].out
 ```
+
+## Machine Learning in This Repository
+
+Besides the DFT pipeline, the repository carries three independent machine
+learning efforts. They are research and exploration code, separate from the
+DFT pipeline.
+
+### Fast tree-based screening models (`ml/`)
+
+`ml/fast_tree_based_training_demo.py` trains quick tabular regressors on a
+candidate table produced by the data pipeline:
+
+```
+python3 ml/fast_tree_based_training_demo.py --in data/quantum_espress_placeholder.csv --model hgb
+```
+
+Three model families are supported (`--model hgb | extratrees | rf`:
+HistGradientBoosting, ExtraTrees, RandomForest). The script does a stratified
+train/test split, a small randomized hyperparameter search on the training
+set only, and writes `models/fast_tree_<model>.joblib` plus
+`models/fast_tree_<model>_metrics.json`. The committed `models/` files are
+the metrics JSONs and captured console logs (`*_out.txt`, including
+top-feature importances) from example runs; the `.joblib` model files are
+gitignored.
+
+### Basic molecule GNN playground (`basic_molecule_gnn/`)
+
+`basic_molecule_gnn/basic_gnn_molecule.py` is a self-contained introduction
+to molecular graph neural networks: it loads the ESOL dataset from
+MoleculeNet and trains small GCN and GAT models for property regression. It
+runs in the repository's third conda environment (`pfas_gnn_env`, see the
+table at the top).
+
+### Early scikit-learn baselines (`shivani_ml_models/`)
+
+`shivani_ml_models/ml_model.py` trains baseline scikit-learn regressors
+(support-vector, random forest, gradient boosting) on
+`data/pubchem_properties.csv` (target `MolecularWeight`); `gnn.py` is a
+minimal PyTorch-Geometric GCN on the ENZYMES dataset, and `ml_model.ipynb`
+is the accompanying notebook.
+
+### Feature documentation and team ops
+
+- `docs/ml_features.md` documents every feature used by the tabular models
+  (PubChem descriptors, RDKit structure flags, PFAS identity features) with
+  the literature rationale for each.
+- `mgmt_ops.md` is the team's project-operations note (roles, meetings,
+  reporting cadence) — not needed to run any code.
