@@ -1,0 +1,26 @@
+[project]
+name = "pfas-materials-discovery"
+version = "0.1.0"
+description = "PFAS materials discovery workflows and Quantum ESPRESSO orchestration"
+requires-python = ">=3.12,<3.13"
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-timeout",
+    "ruff",
+    "ty",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.pytest.ini_options]
+timeout = 2
+session_timeout = 60
+markers = [
+    "slow: test is excluded from the fast local and CI test suites",
+]

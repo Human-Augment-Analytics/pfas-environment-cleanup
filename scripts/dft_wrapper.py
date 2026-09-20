@@ -24,7 +24,7 @@ def run(
             cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
     else:
-        p = subprocess.run(cmd, shell=True)
+        p = subprocess.run(cmd, shell=True, text=True)
 
     if check and p.returncode != 0:
         if capture:

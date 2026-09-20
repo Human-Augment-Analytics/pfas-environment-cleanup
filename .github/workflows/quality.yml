@@ -1,0 +1,57 @@
+name: Python quality checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: "0.12.3"
+          python-version: "3.12"
+          enable-cache: true
+          cache-suffix: ruff
+      - name: Check formatting
+        run: uv run --locked --group dev ruff format --check
+
+  typecheck:
+    name: Type checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: "0.12.3"
+          python-version: "3.12"
+          enable-cache: true
+          cache-suffix: ty
+      - name: Run ty
+        run: uv run --locked --group dev ty check
+
+  fast-tests:
+    name: Fast tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: "0.12.3"
+          python-version: "3.12"
+          enable-cache: true
+          cache-suffix: fast-tests
+      - name: Run fast tests
+        run: uv run --locked --group dev pytest -m 'not slow'

@@ -10,6 +10,34 @@ This repository ships **three** conda environment files, one per workflow. Creat
 | `qe_environment.yaml` | `qe` | DFT adsorption runs (`qespresso_pipeline/run_adsorption_case.py`; python=3.10, qe, numpy, scipy, pandas, pymatgen, openbabel, cif2cell, ase) | The cluster — built automatically, see below |
 | `basic_molecule_gnn/environment.yml` | `pfas_gnn_env` | GNN modeling in `basic_molecule_gnn/` | Your machine |
 
+### Developer checks
+
+Install [uv](https://docs.astral.sh/uv/) and use the local developer launcher.
+It creates a lightweight `.env-pfas-ci`, installs only the developer tools, and
+avoids Quantum ESPRESSO, Open Babel, and the ML stack:
+
+```bash
+./scripts/dev             # all checks (the default is "ci")
+./scripts/dev ruff        # Ruff
+./scripts/dev mypy        # mypy
+./scripts/dev quality     # Ruff and mypy
+./scripts/dev fast-test   # fast pytest suite (also used by CI)
+./scripts/dev slow-test   # tests marked @pytest.mark.slow
+./scripts/dev update      # reinstall developer requirements
+```
+
+GitHub Actions runs `./scripts/dev ci` on pushes and pull requests. Ruff
+is initially scoped to syntax and high-confidence correctness errors across
+the repository; mypy currently checks the dependency-free DFT submission
+wrapper and can expand as the scientific modules gain annotations. A fast test
+that exceeds one second is reported in pytest's summary; one that reaches two
+seconds fails. The full session is capped at 60 seconds, and CI has a
+five-minute backstop for setup or collection hangs. Mark longer-running tests
+with `@pytest.mark.slow`; they are excluded from `fast-test`, `ci`, and CI, and
+are run only through `./scripts/dev slow-test`. That task uses the full
+`pfas` Conda environment, which must be created or updated from
+`environment.yaml` first.
+
 ### For fetching the data
 
 #### Installing the required packages
