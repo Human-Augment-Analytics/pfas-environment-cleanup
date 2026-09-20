@@ -38,19 +38,33 @@ from sklearn.ensemble import (
 MAX_ROWS = 200_000
 
 BASE_NUMERIC = [
-    "Charge", "XLogP", "TPSA",
-    "HBondDonorCount", "HBondAcceptorCount",
-    "RotatableBondCount", "MolecularWeight", "ExactMass",
+    "Charge",
+    "XLogP",
+    "TPSA",
+    "HBondDonorCount",
+    "HBondAcceptorCount",
+    "RotatableBondCount",
+    "MolecularWeight",
+    "ExactMass",
 ]
 
 DROP_COLS = {
-    "bucket", "CID", "source_query",
-    "SMILES", "ConnectivitySMILES", "ConnectivitySMILES.1",
-    "InChIKey", "MolecularFormula",
-    "IUPACName", "Title", "compound_name",
+    "bucket",
+    "CID",
+    "source_query",
+    "SMILES",
+    "ConnectivitySMILES",
+    "ConnectivitySMILES.1",
+    "InChIKey",
+    "MolecularFormula",
+    "IUPACName",
+    "Title",
+    "compound_name",
     "bucket_membership",
-    "pfas_id", "pfas_class",
+    "pfas_id",
+    "pfas_class",
 }
+
 
 def _to_01_bool(df: pd.DataFrame, cols: List[str]) -> None:
     for c in cols:
@@ -68,12 +82,26 @@ def _to_01_bool(df: pd.DataFrame, cols: List[str]) -> None:
                 .astype(int)
             )
 
+
 def infer_feature_columns(df: pd.DataFrame, target: str) -> List[str]:
     flag_cols = [c for c in df.columns if c.startswith("flag_")]
-    pfas_onehot = [c for c in df.columns if c.startswith("pfas_") and c not in ("pfas_id", "pfas_class")]
-    pfas_class_cols = [c for c in ["pfas_is_long", "pfas_is_short", "pfas_is_ultrashort"] if c in df.columns]
+    pfas_onehot = [
+        c
+        for c in df.columns
+        if c.startswith("pfas_") and c not in ("pfas_id", "pfas_class")
+    ]
+    pfas_class_cols = [
+        c
+        for c in ["pfas_is_long", "pfas_is_short", "pfas_is_ultrashort"]
+        if c in df.columns
+    ]
 
-    feat_cols = [c for c in BASE_NUMERIC if c in df.columns] + flag_cols + pfas_onehot + pfas_class_cols
+    feat_cols = (
+        [c for c in BASE_NUMERIC if c in df.columns]
+        + flag_cols
+        + pfas_onehot
+        + pfas_class_cols
+    )
     feat_cols = [c for c in feat_cols if c != target]
     feat_cols = [c for c in feat_cols if c not in DROP_COLS]
 
@@ -86,6 +114,7 @@ def infer_feature_columns(df: pd.DataFrame, target: str) -> List[str]:
             seen.add(c)
     return out
 
+
 def make_strat_bins(y: np.ndarray, n_bins: int = 10) -> np.ndarray:
     """
     Create bins for stratified regression split.
@@ -93,9 +122,16 @@ def make_strat_bins(y: np.ndarray, n_bins: int = 10) -> np.ndarray:
     """
     y_series = pd.Series(y)
     try:
-        bins = pd.qcut(y_series, q=min(n_bins, y_series.nunique()), labels=False, duplicates="drop")
+        bins = pd.qcut(
+            y_series, q=min(n_bins, y_series.nunique()), labels=False, duplicates="drop"
+        )
     except ValueError:
-        bins = pd.cut(y_series, bins=min(n_bins, max(2, y_series.nunique())), labels=False, duplicates="drop")
+        bins = pd.cut(
+            y_series,
+            bins=min(n_bins, max(2, y_series.nunique())),
+            labels=False,
+            duplicates="drop",
+        )
 
     bins = bins.astype(int)
 
@@ -105,9 +141,12 @@ def make_strat_bins(y: np.ndarray, n_bins: int = 10) -> np.ndarray:
         try:
             bins = pd.qcut(y_series, q=nb, labels=False, duplicates="drop").astype(int)
         except ValueError:
-            bins = pd.cut(y_series, bins=nb, labels=False, duplicates="drop").astype(int)
+            bins = pd.cut(y_series, bins=nb, labels=False, duplicates="drop").astype(
+                int
+            )
 
     return bins.to_numpy()
+
 
 def get_model_and_space(model_name: str, seed: int):
     if model_name == "hgb":
@@ -158,6 +197,7 @@ def get_model_and_space(model_name: str, seed: int):
 
     return base_model, param_space
 
+
 def cv_score_regression_stratified(
     model,
     X: pd.DataFrame,
@@ -184,6 +224,7 @@ def cv_score_regression_stratified(
         r2s.append(r2_score(y_val, pred))
 
     return float(np.mean(maes)), float(np.mean(r2s))
+
 
 def small_random_search(
     base_model,
@@ -215,11 +256,13 @@ def small_random_search(
             seed=seed,
         )
 
-        results.append({
-            "params": params,
-            "cv_mae": cv_mae,
-            "cv_r2": cv_r2,
-        })
+        results.append(
+            {
+                "params": params,
+                "cv_mae": cv_mae,
+                "cv_r2": cv_r2,
+            }
+        )
 
         if cv_mae < best_mae:
             best_mae = cv_mae
@@ -231,6 +274,7 @@ def small_random_search(
     best_model.fit(X_train, y_train)
     return best_model, best_params, results, best_mae, best_r2
 
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--in", dest="inp", default="data/quantum_espress_placeholder.csv")
@@ -239,7 +283,12 @@ def main():
     ap.add_argument("--outdir", default="models")
     ap.add_argument("--test-size", type=float, default=0.20)
     ap.add_argument("--seed", type=int, default=42)
-    ap.add_argument("--n-search", type=int, default=12, help="number of random hyperparameter configs to try")
+    ap.add_argument(
+        "--n-search",
+        type=int,
+        default=12,
+        help="number of random hyperparameter configs to try",
+    )
     ap.add_argument("--n-strat-bins", type=int, default=10)
     args = ap.parse_args()
 
@@ -255,8 +304,16 @@ def main():
         raise SystemExit(f"Target column '{args.target}' not found in {args.inp}")
 
     flag_cols = [c for c in df.columns if c.startswith("flag_")]
-    pfas_cols = [c for c in df.columns if c.startswith("pfas_") and c not in ("pfas_id", "pfas_class")]
-    class_cols = [c for c in ["pfas_is_long", "pfas_is_short", "pfas_is_ultrashort"] if c in df.columns]
+    pfas_cols = [
+        c
+        for c in df.columns
+        if c.startswith("pfas_") and c not in ("pfas_id", "pfas_class")
+    ]
+    class_cols = [
+        c
+        for c in ["pfas_is_long", "pfas_is_short", "pfas_is_ultrashort"]
+        if c in df.columns
+    ]
     _to_01_bool(df, flag_cols + pfas_cols + class_cols)
 
     feat_cols = infer_feature_columns(df, args.target)
@@ -285,7 +342,9 @@ def main():
     y_bins = make_strat_bins(y, n_bins=args.n_strat_bins)
 
     X_train, X_test, y_train, y_test, y_train_bins, y_test_bins = train_test_split(
-        X, y, y_bins,
+        X,
+        y,
+        y_bins,
         test_size=args.test_size,
         random_state=args.seed,
         stratify=y_bins,
@@ -298,14 +357,16 @@ def main():
 
     base_model, param_space = get_model_and_space(args.model, args.seed)
 
-    best_model, best_params, search_results, best_cv_mae, best_cv_r2 = small_random_search(
-        base_model=base_model,
-        param_space=param_space,
-        X_train=X_train,
-        y_train=y_train,
-        y_train_bins=y_train_bins,
-        n_iter=args.n_search,
-        seed=args.seed,
+    best_model, best_params, search_results, best_cv_mae, best_cv_r2 = (
+        small_random_search(
+            base_model=base_model,
+            param_space=param_space,
+            X_train=X_train,
+            y_train=y_train,
+            y_train_bins=y_train_bins,
+            n_iter=args.n_search,
+            seed=args.seed,
+        )
     )
 
     pred = best_model.predict(X_test)
@@ -363,6 +424,7 @@ def main():
         print("\n[top 25 features]")
         for i in top_idx:
             print(f"{feat_cols[i]:<30} {importances[i]:.6f}")
+
 
 if __name__ == "__main__":
     main()

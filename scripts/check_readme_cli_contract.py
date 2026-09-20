@@ -5,6 +5,7 @@ Extracts every --flag used in the README's dft_wrapper.py example block and
 asserts each one is declared by scripts/dft_wrapper.py's argparse. Exits 1
 with a precise message on any drift. Stdlib only.
 """
+
 import re
 import sys
 from pathlib import Path
