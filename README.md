@@ -27,10 +27,7 @@ uv run --locked --group dev ty check && \
 uv run --locked --group dev pytest -m 'not slow'
 ```
 
-If a file should be temporarily excluded from ty, add its repository-relative
-path to `[tool.ty.src].exclude` in `pyproject.toml`. For a localized exception,
-use a `# ty: ignore[...]` comment. See the [ty configuration
-reference](https://docs.astral.sh/ty/reference/configuration/) and [suppression
+If a file should be temporarily excluded from ty, add its repository-relative path to `[tool.ty.src].exclude` in `pyproject.toml`. For a localized exception, use a `# ty: ignore[...]` comment. See the [ty configuration reference](https://docs.astral.sh/ty/reference/configuration/) and [suppression
 documentation](https://docs.astral.sh/ty/suppression/).
 
 ### For fetching the data
