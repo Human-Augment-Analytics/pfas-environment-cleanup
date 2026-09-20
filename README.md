@@ -185,6 +185,8 @@ You can skip parts of the workflow if outputs already exist:
 └── qe_environment.yaml
 ```
 
+The `qe_environment.yaml` at the repo root is the single canonical copy: the workflow reads it from there, and no duplicate is kept under `scripts/`.
+
 #### Important Scripts
 
 - `run_adsorption_case.py`

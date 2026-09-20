@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# block commits to main
+branch="$(git symbolic-ref --short HEAD 2>/dev/null || true)"
+
+if [[ "$branch" == "main" && "${ALLOW_MAIN_COMMIT:-}" != "1" ]]; then
+    echo "❌ Direct commits to main are blocked."
+    echo "Create a feature branch instead."
+    echo
+    echo "Emergency override:"
+    echo "  ALLOW_MAIN_COMMIT=1 git commit ..."
+    exit 1
+fi

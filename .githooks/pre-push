@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# block pushes to main
+while read -r local_ref local_sha remote_ref remote_sha; do
+    if [[ "$remote_ref" == "refs/heads/main" ]]; then
+        if [[ "${ALLOW_MAIN_PUSH:-}" == "1" ]]; then
+            echo "⚠️  ALLOW_MAIN_PUSH=1 set; allowing push to main"
+        else
+            echo "❌ Push to main blocked."
+            echo
+            echo "Push a feature branch and merge via GitHub instead."
+            echo
+            echo "Emergency override:"
+            echo "  ALLOW_MAIN_PUSH=1 git push ..."
+            exit 1
+        fi
+    fi
+done
