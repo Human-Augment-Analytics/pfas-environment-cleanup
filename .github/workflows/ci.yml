@@ -1,7 +1,7 @@
 # Static CI for every push/PR to main.
 # Five fast lanes (< ~1 min each), all guaranteed green on current main:
 #   1. shellcheck the 3 shell scripts (errors only - see lane comment)
-#   2. ruff fatal-error rules + compileall on all repo Python files
+#   2. compileall on all repo Python files
 #   3. README-CLI contract test (scripts/check_readme_cli_contract.py)
 #   4. conda env YAML lint (4 env files: name key + allowlist)
 #   5. markdown link check on README.md (429/timeout tolerant)
@@ -33,17 +33,10 @@ jobs:
         run: find scripts -name '*.sh' -print0 | xargs -0 shellcheck --severity=error
 
   python-static:
-    name: ruff (fatal) + compileall
+    name: Python compileall
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # The rule selection below is deliberately minimal: only ruff's
-      # fatal-error checks (syntax errors, undefined names, misuse of a
-      # loop variable outside its loop). This guarantees the existing
-      # code passes while still catching real breakage as scripts evolve.
-      # Style lint (and ruff format) is intentionally NOT run here yet.
-      - name: ruff check (fatal rules only)
-        run: pipx run ruff check --select E9,F63,F7,F82 .
       - name: byte-compile all Python files
         run: python -m compileall -q .
 

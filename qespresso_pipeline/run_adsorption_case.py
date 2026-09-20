@@ -12,6 +12,8 @@ from pymatgen.core import Molecule, Lattice, Structure
 from pymatgen.io.cif import CifWriter
 from pymatgen.io.ase import AseAtomsAdaptor
 
+import typing as tp
+
 from smiles_to_qe import run_obabel, mol_to_cif_pymatgen, run_cif2cell, modify_qe_input
 
 RY_TO_EV = 13.605693009
@@ -45,7 +47,7 @@ def get_mode_settings(mode: str, system_type: str):
     if mode not in base:
         raise ValueError(f"Unknown mode: {mode}")
 
-    s = dict(base[mode])
+    s: dict[str, tp.Any] = dict(base[mode])
 
     if system_type == "molecule":
         s.update(
@@ -130,7 +132,8 @@ def clean_structure_from_cif(input_cif: Path) -> Structure:
         from ase.io import read
 
         ase_atoms = read(str(input_cif))
-        return AseAtomsAdaptor.get_structure(ase_atoms)
+        # ASE may return multiple frames; this workflow currently assumes one.
+        return AseAtomsAdaptor.get_structure(ase_atoms)  # ty: ignore[invalid-argument-type]
 
 
 def patch_qe_input(in_path: Path, settings: dict, nspin: int, tot_mag: float):
@@ -435,13 +438,17 @@ def main():
         return
 
     if not args.skip_ads:
+        assert ads_in is not None  # for ty
         ads_out = run_pwscf(ads_in, args.pw_command)
+        e_ads = extract_total_energy_ry(ads_out)
+    else:
+        e_ads = 0.0
     if args.pfas_energy_ry is None and not args.skip_pfas:
+        assert pfas_in is not None  # for ty
         pfas_out = run_pwscf(pfas_in, args.pw_command)
     if not args.skip_complex:
         complex_out = run_pwscf(complex_in, args.pw_command)
 
-    e_ads = extract_total_energy_ry(ads_out) if not args.skip_ads else 0.0
     e_pfas = (
         args.pfas_energy_ry
         if args.pfas_energy_ry

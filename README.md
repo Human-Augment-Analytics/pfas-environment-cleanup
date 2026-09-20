@@ -10,6 +10,25 @@ This repository ships **three** conda environment files, one per workflow. Creat
 | `qe_environment.yaml` | `qe` | DFT adsorption runs (`qespresso_pipeline/run_adsorption_case.py`; python=3.10, qe, numpy, scipy, pandas, pymatgen, openbabel, cif2cell, ase) | The cluster — built automatically, see below |
 | `basic_molecule_gnn/environment.yml` | `pfas_gnn_env` | GNN modeling in `basic_molecule_gnn/` | Your machine |
 
+### Local quality checks
+
+Install [uv](https://docs.astral.sh/uv/) and run these commands from the
+repository root:
+
+- Format check: `uv run --locked --only-dev ruff format --check`
+- Type check: `uv run --locked ty check`
+- Fast tests: `uv run --locked pytest -m 'not slow'`
+
+To run the full local quality check sequence:
+
+```bash
+uv run --locked --only-dev ruff format --check && \
+uv run --locked ty check && \
+uv run --locked pytest -m 'not slow'
+```
+
+If a file should be temporarily excluded from ty, add its repository-relative path to `[tool.ty.src].exclude` in `pyproject.toml`. For a localized exception, use a `# ty: ignore[...]` comment. See the [ty configuration reference](https://docs.astral.sh/ty/reference/configuration/) and [suppression documentation](https://docs.astral.sh/ty/suppression/).
+
 ### For fetching the data
 
 #### Installing the required packages
