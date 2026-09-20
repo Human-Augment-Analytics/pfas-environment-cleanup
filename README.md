@@ -15,16 +15,16 @@ This repository ships **three** conda environment files, one per workflow. Creat
 Install [uv](https://docs.astral.sh/uv/) and run these commands from the
 repository root:
 
-- Format check: `uv run --locked --group dev ruff format --check`
-- Type check: `uv run --locked --group dev ty check`
-- Fast tests: `uv run --locked --group dev pytest -m 'not slow'`
+- Format check: `uv run --locked --only-dev ruff format --check`
+- Type check: `uv run --locked ty check`
+- Fast tests: `uv run --locked pytest -m 'not slow'`
 
 To run the full local quality check sequence:
 
 ```bash
-uv run --locked --group dev ruff format --check && \
-uv run --locked --group dev ty check && \
-uv run --locked --group dev pytest -m 'not slow'
+uv run --locked --only-dev ruff format --check && \
+uv run --locked ty check && \
+uv run --locked pytest -m 'not slow'
 ```
 
 If a file should be temporarily excluded from ty, add its repository-relative path to `[tool.ty.src].exclude` in `pyproject.toml`. For a localized exception, use a `# ty: ignore[...]` comment. See the [ty configuration reference](https://docs.astral.sh/ty/reference/configuration/) and [suppression documentation](https://docs.astral.sh/ty/suppression/).
