@@ -18,6 +18,22 @@ package = false
 [tool.ruff]
 target-version = "py312"
 
+[tool.ty.src]
+exclude = [
+    "TFAsim/New\\ Outputs\\,\\ from\\ Paper/ironsetup.py",
+    "basic_molecule_gnn/basic_gnn_molecule.py",
+    "ml/fast_tree_based_training_demo.py",
+    "qespresso_pipeline/run_adsorption_case.py",
+    "qespresso_pipeline/smiles_qespresso.py",
+    "qespresso_pipeline/smiles_to_qe.py",
+    "scripts/build_periodic_adsorbent.py",
+    "scripts/build_placeholder_dataset.py",
+    "scripts/fetch_data.py",
+    "shivani_ml_models/gnn.py",
+    "shivani_ml_models/ml_model.py",
+    "shivani_ml_models/ml_model.ipynb",
+]
+
 [tool.pytest.ini_options]
 timeout = 2
 session_timeout = 60
