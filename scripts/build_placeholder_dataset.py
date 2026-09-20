@@ -18,9 +18,16 @@ PFAS_CLASS = {
 }
 
 BASE_NUMERIC = [
-    "Charge", "XLogP", "TPSA", "HBondDonorCount", "HBondAcceptorCount",
-    "RotatableBondCount", "MolecularWeight", "ExactMass",
+    "Charge",
+    "XLogP",
+    "TPSA",
+    "HBondDonorCount",
+    "HBondAcceptorCount",
+    "RotatableBondCount",
+    "MolecularWeight",
+    "ExactMass",
 ]
+
 
 def make_placeholder_score(df: pd.DataFrame, seed: int = 7) -> np.ndarray:
     rng = np.random.default_rng(seed)
@@ -47,20 +54,24 @@ def make_placeholder_score(df: pd.DataFrame, seed: int = 7) -> np.ndarray:
         + 0.35 * g("flag_thiourea")
         + 0.15 * g("flag_sulfonamide")
     )
-    hydroph = 0.25 * (xlogp / 2.0) + 0.15 * g("flag_aromatic") + 0.25 * g("flag_fluorinated")
+    hydroph = (
+        0.25 * (xlogp / 2.0) + 0.15 * g("flag_aromatic") + 0.25 * g("flag_fluorinated")
+    )
 
-    penalty = 0.0008 * np.clip(mw - 450, 0, None) + 0.0020 * np.clip(tpsa - 120, 0, None)
+    penalty = 0.0008 * np.clip(mw - 450, 0, None) + 0.0020 * np.clip(
+        tpsa - 120, 0, None
+    )
 
     pfas_offset = np.zeros(len(df))
     for p in PFAS_LIST:
         col = f"pfas_{p}"
         if col in df.columns:
             if p in ("PFOS", "PFOA"):
-                pfas_offset += 0.35 * df[col].to_numpy()       # long-chain stronger baseline
+                pfas_offset += 0.35 * df[col].to_numpy()  # long-chain stronger baseline
             elif p in ("PFBS", "PFBA", "HFPO-DA"):
-                pfas_offset += 0.20 * df[col].to_numpy()       # short-chain mid
+                pfas_offset += 0.20 * df[col].to_numpy()  # short-chain mid
             elif p in ("PFPrA", "TFSI", "TFA"):
-                pfas_offset += 0.10 * df[col].to_numpy()       # ultrashort lower
+                pfas_offset += 0.10 * df[col].to_numpy()  # ultrashort lower
 
     electrostatics = 0.9 * np.clip(charge, 0, 3)
 
@@ -68,12 +79,15 @@ def make_placeholder_score(df: pd.DataFrame, seed: int = 7) -> np.ndarray:
     score = score + rng.normal(0, 0.15, size=len(score))
     return score
 
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--in", dest="inp", default="data/pfas_adsorption_candidates.csv")
     ap.add_argument("--out", dest="out", default="data/quantum_espress_placeholder.csv")
     ap.add_argument("--seed", type=int, default=7)
-    ap.add_argument("--dedup", action="store_true", help="Deduplicate by CID before pairing")
+    ap.add_argument(
+        "--dedup", action="store_true", help="Deduplicate by CID before pairing"
+    )
     args = ap.parse_args()
 
     df = pd.read_csv(args.inp)
@@ -108,6 +122,7 @@ def main():
 
     pairs.to_csv(args.out, index=False)
     print(f"[done] wrote {args.out} rows={len(pairs)} cols={len(pairs.columns)}")
+
 
 if __name__ == "__main__":
     main()
