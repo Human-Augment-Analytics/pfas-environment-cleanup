@@ -48,19 +48,23 @@ def get_mode_settings(mode: str, system_type: str):
     s = dict(base[mode])
 
     if system_type == "molecule":
-        s.update({
-            "job_type": "molecule",
-            "use_gamma": True,
-            "kpts": (1, 1, 1),
-            "padding": 12.0,
-        })
+        s.update(
+            {
+                "job_type": "molecule",
+                "use_gamma": True,
+                "kpts": (1, 1, 1),
+                "padding": 12.0,
+            }
+        )
     elif system_type == "periodic":
-        s.update({
-            "job_type": "periodic",
-            "use_gamma": False,
-            "kpts": (6, 6, 1),
-            "padding": 0.0,
-        })
+        s.update(
+            {
+                "job_type": "periodic",
+                "use_gamma": False,
+                "kpts": (6, 6, 1),
+                "padding": 0.0,
+            }
+        )
     else:
         raise ValueError(f"Unknown system_type: {system_type}")
 
@@ -97,7 +101,9 @@ def run_pwscf(input_path: Path, pw_command="mpirun -np 1 pw.x"):
         result = subprocess.run(cmd, cwd=workdir, stdout=f_out, stderr=f_err)
 
     if result.returncode != 0:
-        raise RuntimeError(f"pw.x failed. Return code: {result.returncode}\nSee {stderr_path}")
+        raise RuntimeError(
+            f"pw.x failed. Return code: {result.returncode}\nSee {stderr_path}"
+        )
     return output_path
 
 
@@ -106,9 +112,12 @@ def extract_total_energy_ry(path: Path) -> float:
     with open(path, "r", errors="ignore") as f:
         for line in f:
             if "!" in line and "total energy" in line:
-                try: energy = float(line.split()[4])
-                except IndexError: pass
-    if energy is None: raise ValueError(f"No total energy found in {path}")
+                try:
+                    energy = float(line.split()[4])
+                except IndexError:
+                    pass
+    if energy is None:
+        raise ValueError(f"No total energy found in {path}")
     return energy
 
 
@@ -119,8 +128,10 @@ def clean_structure_from_cif(input_cif: Path) -> Structure:
         print(f"[warn] Pymatgen failed to parse CIF directly: {e}")
         print("[warn] Falling back to ASE -> pymatgen conversion")
         from ase.io import read
+
         ase_atoms = read(str(input_cif))
         return AseAtomsAdaptor.get_structure(ase_atoms)
+
 
 def patch_qe_input(in_path: Path, settings: dict, nspin: int, tot_mag: float):
     modify_qe_input(
@@ -134,7 +145,7 @@ def patch_qe_input(in_path: Path, settings: dict, nspin: int, tot_mag: float):
         kpts=settings["kpts"],
         calculation="relax",
         nspin=nspin,
-        tot_magnetization=tot_mag
+        tot_magnetization=tot_mag,
     )
 
 
@@ -179,7 +190,9 @@ def prepare_from_cif(input_cif: Path, outbase: Path, settings: dict):
     return cif_path, in_path
 
 
-def build_molecular_complex_cif(adsorbent_mol: Path, pfas_mol: Path, output_cif: Path, padding=12.0, vdw_gap=2.5):
+def build_molecular_complex_cif(
+    adsorbent_mol: Path, pfas_mol: Path, output_cif: Path, padding=12.0, vdw_gap=2.5
+):
     ads = Molecule.from_file(str(adsorbent_mol))
     pfas = Molecule.from_file(str(pfas_mol))
 
@@ -191,9 +204,9 @@ def build_molecular_complex_cif(adsorbent_mol: Path, pfas_mol: Path, output_cif:
 
     ads_top_z = ads_coords[:, 2].max()
     pfas_bottom_z = pfas_coords[:, 2].min()
-    
+
     z_shift = ads_top_z - pfas_bottom_z + vdw_gap
-    
+
     shifted_pfas = pfas_coords - pfas_center
     shifted_pfas[:, 0] += ads_center[0]
     shifted_pfas[:, 1] += ads_center[1]
@@ -213,7 +226,10 @@ def build_molecular_complex_cif(adsorbent_mol: Path, pfas_mol: Path, output_cif:
     )
     CifWriter(structure, symprec=None).write_file(str(output_cif))
 
-def build_periodic_pfas_reference_cif(adsorbent_cif: Path, pfas_mol: Path, output_cif: Path, vdw_gap=2.5):
+
+def build_periodic_pfas_reference_cif(
+    adsorbent_cif: Path, pfas_mol: Path, output_cif: Path, vdw_gap=2.5
+):
     # wrapped with above
     ads_structure = clean_structure_from_cif(adsorbent_cif)
     pfas = Molecule.from_file(str(pfas_mol))
@@ -223,10 +239,10 @@ def build_periodic_pfas_reference_cif(adsorbent_cif: Path, pfas_mol: Path, outpu
 
     cell_center_frac = np.array([0.5, 0.5, 0.5])
     cell_center_cart = ads_structure.lattice.get_cartesian_coords(cell_center_frac)
-    
+
     pfas_xy_center = pfas_coords[:, :2].mean(axis=0)
     shifted = pfas_coords.copy()
-    
+
     shifted[:, 0] += cell_center_cart[0] - pfas_xy_center[0]
     shifted[:, 1] += cell_center_cart[1] - pfas_xy_center[1]
 
@@ -242,7 +258,10 @@ def build_periodic_pfas_reference_cif(adsorbent_cif: Path, pfas_mol: Path, outpu
     )
     CifWriter(structure, symprec=None).write_file(str(output_cif))
 
-def build_periodic_complex_cif_nopfas(adsorbent_cif: Path, pfas_mol: Path, output_cif: Path, vdw_gap=2.5):
+
+def build_periodic_complex_cif_nopfas(
+    adsorbent_cif: Path, pfas_mol: Path, output_cif: Path, vdw_gap=2.5
+):
     # wrapped with above
     ads_structure = clean_structure_from_cif(adsorbent_cif)
     pfas = Molecule.from_file(str(pfas_mol))
@@ -252,10 +271,10 @@ def build_periodic_complex_cif_nopfas(adsorbent_cif: Path, pfas_mol: Path, outpu
 
     cell_center_frac = np.array([0.5, 0.5, 0.5])
     cell_center_cart = ads_structure.lattice.get_cartesian_coords(cell_center_frac)
-    
+
     pfas_xy_center = pfas_coords[:, :2].mean(axis=0)
     shifted = pfas_coords.copy()
-    
+
     shifted[:, 0] += cell_center_cart[0] - pfas_xy_center[0]
     shifted[:, 1] += cell_center_cart[1] - pfas_xy_center[1]
 
@@ -271,7 +290,10 @@ def build_periodic_complex_cif_nopfas(adsorbent_cif: Path, pfas_mol: Path, outpu
     )
     CifWriter(structure, symprec=None).write_file(str(output_cif))
 
-def build_periodic_complex_cif(adsorbent_cif: Path, pfas_mol: Path, output_cif: Path, vdw_gap=2.5):
+
+def build_periodic_complex_cif(
+    adsorbent_cif: Path, pfas_mol: Path, output_cif: Path, vdw_gap=2.5
+):
     # wrapped with above
     ads_structure = clean_structure_from_cif(adsorbent_cif)
     pfas = Molecule.from_file(str(pfas_mol))
@@ -281,10 +303,10 @@ def build_periodic_complex_cif(adsorbent_cif: Path, pfas_mol: Path, output_cif: 
 
     cell_center_frac = np.array([0.5, 0.5, 0.5])
     cell_center_cart = ads_structure.lattice.get_cartesian_coords(cell_center_frac)
-    
+
     pfas_xy_center = pfas_coords[:, :2].mean(axis=0)
     shifted = pfas_coords.copy()
-    
+
     shifted[:, 0] += cell_center_cart[0] - pfas_xy_center[0]
     shifted[:, 1] += cell_center_cart[1] - pfas_xy_center[1]
 
@@ -311,17 +333,30 @@ def main():
     parser.add_argument("--adsorbent-cif", required=False)
     parser.add_argument("--pfas-smiles", required=False)
     parser.add_argument("--pfas-energy-ry", type=float, default=None)
-    parser.add_argument("--system-type", choices=["molecule", "periodic"], default="molecule")
-    parser.add_argument("--mode", choices=["lowmem", "cluster", "production"], default="cluster")
+    parser.add_argument(
+        "--system-type", choices=["molecule", "periodic"], default="molecule"
+    )
+    parser.add_argument(
+        "--mode", choices=["lowmem", "cluster", "production"], default="cluster"
+    )
     parser.add_argument("--workdir", default="dft_cases")
     parser.add_argument("--compound-root", default="compounds")
     parser.add_argument("--pseudo-dir", required=True)
     parser.add_argument("--pw-command", default="pw.x")
-    
-    parser.add_argument("--vdw-gap", type=float, default=2.5, help="Initial Z-distance between adsorbate and slab")
-    parser.add_argument("--nspin", type=int, default=1, help="Set to 2 for magnetic transition metals")
-    parser.add_argument("--tot-magnetization", type=float, default=0.0, help="Initial magnetization")
-    
+
+    parser.add_argument(
+        "--vdw-gap",
+        type=float,
+        default=2.5,
+        help="Initial Z-distance between adsorbate and slab",
+    )
+    parser.add_argument(
+        "--nspin", type=int, default=1, help="Set to 2 for magnetic transition metals"
+    )
+    parser.add_argument(
+        "--tot-magnetization", type=float, default=0.0, help="Initial magnetization"
+    )
+
     parser.add_argument("--prepare-only", action="store_true")
     parser.add_argument("--skip-ads", action="store_true")
     parser.add_argument("--skip-pfas", action="store_true")
@@ -333,75 +368,116 @@ def main():
     case_dir = Path(args.workdir) / args.case_name
     compound_root = Path(args.compound_root)
 
-    ads_dir, pfas_dir, complex_dir = compound_root / "adsorbents" / args.adsorbent_name, compound_root / "pfas" / args.pfas_name, case_dir / "complex"
-    for d in [ads_dir, pfas_dir, complex_dir]: ensure_dir(d)
+    ads_dir, pfas_dir, complex_dir = (
+        compound_root / "adsorbents" / args.adsorbent_name,
+        compound_root / "pfas" / args.pfas_name,
+        case_dir / "complex",
+    )
+    for d in [ads_dir, pfas_dir, complex_dir]:
+        ensure_dir(d)
 
     pseudo_source = Path(args.pseudo_dir).resolve()
-    for d in [ads_dir, pfas_dir, complex_dir]: link_pseudos(d, pseudo_source)
+    for d in [ads_dir, pfas_dir, complex_dir]:
+        link_pseudos(d, pseudo_source)
 
-    ads_base, pfas_base, complex_base = ads_dir / "adsorbent", pfas_dir / "pfas", complex_dir / "complex"
+    ads_base, pfas_base, complex_base = (
+        ads_dir / "adsorbent",
+        pfas_dir / "pfas",
+        complex_dir / "complex",
+    )
 
     ads_mol, ads_cif, ads_in, ads_out = None, None, None, None
     if not args.skip_ads:
         if args.adsorbent_source == "smiles":
             ads_mol = run_obabel(args.adsorbent_smiles, str(ads_base))
-            ads_cif = mol_to_cif_pymatgen(ads_mol, str(ads_base), padding=settings["padding"])
+            ads_cif = mol_to_cif_pymatgen(
+                ads_mol, str(ads_base), padding=settings["padding"]
+            )
         else:
             ads_cif = Path(args.adsorbent_cif)
-            CifWriter(clean_structure_from_cif(ads_cif), symprec=None).write_file(str(ads_base.with_suffix(".cif")))
-        
+            CifWriter(clean_structure_from_cif(ads_cif), symprec=None).write_file(
+                str(ads_base.with_suffix(".cif"))
+            )
+
         ads_in = run_cif2cell(ads_base.with_suffix(".cif"), str(ads_base))
         patch_qe_input(ads_in, settings, args.nspin, args.tot_magnetization)
 
     pfas_mol, pfas_in = None, None
     if args.pfas_energy_ry is None and not args.skip_pfas:
         pfas_mol = run_obabel(args.pfas_smiles, str(pfas_base))
-        pfas_cif = mol_to_cif_pymatgen(pfas_mol, str(pfas_base), padding=settings.get("padding", 12.0))
+        pfas_cif = mol_to_cif_pymatgen(
+            pfas_mol, str(pfas_base), padding=settings.get("padding", 12.0)
+        )
         pfas_in = run_cif2cell(pfas_cif, str(pfas_base))
         patch_qe_input(pfas_in, get_mode_settings(args.mode, "molecule"), 1, 0.0)
 
     if not args.skip_complex:
         if args.system_type == "molecule":
-            build_molecular_complex_cif(ads_base.with_suffix(".mol"), pfas_base.with_suffix(".mol"), complex_base.with_suffix(".cif"), padding=settings["padding"], vdw_gap=args.vdw_gap)
+            build_molecular_complex_cif(
+                ads_base.with_suffix(".mol"),
+                pfas_base.with_suffix(".mol"),
+                complex_base.with_suffix(".cif"),
+                padding=settings["padding"],
+                vdw_gap=args.vdw_gap,
+            )
         else:
-            build_periodic_complex_cif(ads_base.with_suffix(".cif"), pfas_base.with_suffix(".mol"), complex_base.with_suffix(".cif"), vdw_gap=args.vdw_gap)
-            
+            build_periodic_complex_cif(
+                ads_base.with_suffix(".cif"),
+                pfas_base.with_suffix(".mol"),
+                complex_base.with_suffix(".cif"),
+                vdw_gap=args.vdw_gap,
+            )
+
         complex_in = run_cif2cell(complex_base.with_suffix(".cif"), str(complex_base))
         patch_qe_input(complex_in, settings, args.nspin, args.tot_magnetization)
 
-    if args.prepare_only: return
+    if args.prepare_only:
+        return
 
-    if not args.skip_ads: ads_out = run_pwscf(ads_in, args.pw_command)
-    if args.pfas_energy_ry is None and not args.skip_pfas: pfas_out = run_pwscf(pfas_in, args.pw_command)
-    if not args.skip_complex: complex_out = run_pwscf(complex_in, args.pw_command)
+    if not args.skip_ads:
+        ads_out = run_pwscf(ads_in, args.pw_command)
+    if args.pfas_energy_ry is None and not args.skip_pfas:
+        pfas_out = run_pwscf(pfas_in, args.pw_command)
+    if not args.skip_complex:
+        complex_out = run_pwscf(complex_in, args.pw_command)
 
     e_ads = extract_total_energy_ry(ads_out) if not args.skip_ads else 0.0
-    e_pfas = args.pfas_energy_ry if args.pfas_energy_ry else (extract_total_energy_ry(pfas_out) if not args.skip_pfas else 0.0)
+    e_pfas = (
+        args.pfas_energy_ry
+        if args.pfas_energy_ry
+        else (extract_total_energy_ry(pfas_out) if not args.skip_pfas else 0.0)
+    )
     e_comp = extract_total_energy_ry(complex_out) if not args.skip_complex else 0.0
 
     if e_ads and e_pfas and e_comp:
-        e_adsorption_ry = (e_comp - e_ads - e_pfas) 
+        e_adsorption_ry = e_comp - e_ads - e_pfas
         e_adsorption_ev = e_adsorption_ry * RY_TO_EV
-        results = {
-            "case_name": args.case_name,
-            "adsorbent_name": args.adsorbent_name,
-            "pfas_name": args.pfas_name,
-            "adsorbent_source": args.adsorbent_source,
-            "system_type": args.system_type,
-            "mode": args.mode,
-            "pfas_energy_source": "provided" if args.pfas_energy_ry is not None else "parsed",
-            "energies_ry": {
-                "adsorbent": e_ads,
-                "pfas": e_pfas,
-                "complex": e_comp,
-                "adsorption": e_adsorption_ry,
+        results = (
+            {
+                "case_name": args.case_name,
+                "adsorbent_name": args.adsorbent_name,
+                "pfas_name": args.pfas_name,
+                "adsorbent_source": args.adsorbent_source,
+                "system_type": args.system_type,
+                "mode": args.mode,
+                "pfas_energy_source": "provided"
+                if args.pfas_energy_ry is not None
+                else "parsed",
+                "energies_ry": {
+                    "adsorbent": e_ads,
+                    "pfas": e_pfas,
+                    "complex": e_comp,
+                    "adsorption": e_adsorption_ry,
+                },
+                "energies_ev": {
+                    "adsorption": e_adsorption_ev,
+                },
             },
-            "energies_ev": {
-                "adsorption": e_adsorption_ev,
-            }
-        },
-        with open(case_dir / "results.json", "w") as f: json.dump(results, f, indent=2)
+        )
+        with open(case_dir / "results.json", "w") as f:
+            json.dump(results, f, indent=2)
         print(f"\n[SUCCESS] Adsorption Energy: {e_adsorption_ev:.4f} eV")
+
 
 if __name__ == "__main__":
     main()

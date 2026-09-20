@@ -42,7 +42,7 @@ PUBCHEM_PROPS = [
 
 ALLOWED_ELEMENTS = set(["C", "H", "O", "N", "F", "S", "P", "Cl", "Br", "I"])
 MW_MAX = 900.0
-ALLOW_CHARGED = True    # set False if you want only neutral candidates
+ALLOW_CHARGED = True  # set False if you want only neutral candidates
 
 # PubChem request batching
 CID_BATCH_SIZE = 200
@@ -53,8 +53,9 @@ SLEEP_BETWEEN_CALLS = 0.35  # ~3 req/sec, limit set by pubchem
 @dataclass(frozen=True)
 class QuerySpec:
     bucket: str
-    qtype: str        # "keyword" or "substructure"
-    term: str         # keyword string or SMILES
+    qtype: str  # "keyword" or "substructure"
+    term: str  # keyword string or SMILES
+
 
 QUERIES: List[QuerySpec] = [
     # Bucket 1: Anion-exchange / cationic binders
@@ -62,7 +63,6 @@ QUERIES: List[QuerySpec] = [
     QuerySpec("anion_exchange", "keyword", "imidazolium"),
     QuerySpec("anion_exchange", "keyword", "pyridinium"),
     # QuerySpec("anion_exchange", "substructure", "[N+](C)(C)(C)C"),
-
     # Bucket 2: H-bond / polar binders
     QuerySpec("hbond_polar", "keyword", "urea"),
     QuerySpec("hbond_polar", "keyword", "thiourea"),
@@ -72,18 +72,15 @@ QUERIES: List[QuerySpec] = [
     # QuerySpec("hbond_polar", "substructure", "NC(=O)N"),
     # QuerySpec("hbond_polar", "substructure", "NC(=S)N"),
     # QuerySpec("hbond_polar", "substructure", "S(=O)(=O)N"),
-
     # Bucket 3: Hydrophobic / fluorophilic binders
     # QuerySpec("hydrophobic_fluorophilic", "keyword", "fluorinated aromatic"),
     # QuerySpec("hydrophobic_fluorophilic", "keyword", "perfluoroaryl"),
     # QuerySpec("hydrophobic_fluorophilic", "substructure", "c1ccccc1"),
     # QuerySpec("hydrophobic_fluorophilic", "substructure", "C(F)(F)"),
-
     # Bucket 4: Host–guest
     QuerySpec("host_guest", "keyword", "cyclodextrin"),
     QuerySpec("host_guest", "keyword", "calixarene"),
     QuerySpec("host_guest", "keyword", "cucurbituril"),
-
     # Bucket 5: Graftable monomers / surface-functional monomers
     QuerySpec("graftable_monomers", "keyword", "methacrylate"),
     QuerySpec("graftable_monomers", "keyword", "acrylate"),
@@ -159,7 +156,10 @@ def fetch_data_from_ice_sftp(
     finally:
         client.close()
 
-def request_with_backoff(method: str, url: str, *, max_tries: int = 8, timeout: int = 120, **kwargs) -> requests.Response:
+
+def request_with_backoff(
+    method: str, url: str, *, max_tries: int = 8, timeout: int = 120, **kwargs
+) -> requests.Response:
     """Retry transient PubChem errors (403/429/5xx) with exponential backoff + jitter."""
     last_exc: Optional[Exception] = None
     for attempt in range(max_tries):
@@ -177,31 +177,37 @@ def request_with_backoff(method: str, url: str, *, max_tries: int = 8, timeout: 
                     wait = None
 
             if r.status_code in (403, 429, 500, 502, 503, 504):
-                base = 2 ** attempt
+                base = 2**attempt
                 jitter = random.uniform(0.0, 1.0)
                 sleep_s = wait if wait is not None else min(120.0, float(base) + jitter)
-                print(f"[warn] HTTP {r.status_code} for {url}. Backing off {sleep_s:.1f}s (attempt {attempt+1}/{max_tries})")
+                print(
+                    f"[warn] HTTP {r.status_code} for {url}. Backing off {sleep_s:.1f}s (attempt {attempt + 1}/{max_tries})"
+                )
                 time.sleep(sleep_s)
                 continue
 
             r.raise_for_status()
         except Exception as e:
             last_exc = e
-            base = 2 ** attempt
+            base = 2**attempt
             jitter = random.uniform(0.0, 1.0)
             sleep_s = min(120.0, float(base) + jitter)
-            print(f"[warn] Request error {type(e).__name__}: {e}. Backing off {sleep_s:.1f}s (attempt {attempt+1}/{max_tries})")
+            print(
+                f"[warn] Request error {type(e).__name__}: {e}. Backing off {sleep_s:.1f}s (attempt {attempt + 1}/{max_tries})"
+            )
             time.sleep(sleep_s)
 
     if last_exc:
         raise last_exc
     raise RuntimeError("request_with_backoff failed without exception")
 
+
 def ensure_parent_dir(path: str):
     parent = os.path.dirname(path)
     if parent:
         os.makedirs(parent, exist_ok=True)
-        
+
+
 def load_done_cids_from_csv(path: str) -> Set[int]:
     """Return set of CIDs already written to a CSV (for resume)."""
     if not os.path.exists(path):
@@ -211,6 +217,7 @@ def load_done_cids_from_csv(path: str) -> Set[int]:
         return set(done["CID"].dropna().astype(int).tolist())
     except Exception:
         return set()
+
 
 def name_word_cids(term: str):
     """
@@ -234,11 +241,17 @@ def substructure_cids(smiles: str) -> Tuple[List[int], Optional[str]]:
     if "Waiting" in data and "ListKey" in data["Waiting"]:
         return [], data["Waiting"]["ListKey"]
     if "Fault" in data:
-        raise RuntimeError(f"PubChem Fault for substructure smiles='{smiles}': {data['Fault']}")
-    raise RuntimeError(f"Unexpected substructure response for smiles='{smiles}': {data.keys()}")
+        raise RuntimeError(
+            f"PubChem Fault for substructure smiles='{smiles}': {data['Fault']}"
+        )
+    raise RuntimeError(
+        f"Unexpected substructure response for smiles='{smiles}': {data.keys()}"
+    )
 
 
-def page_listkey_cids(listkey: str, page_size: int = LISTKEY_PAGE_SIZE, max_total: Optional[int] = None) -> List[int]:
+def page_listkey_cids(
+    listkey: str, page_size: int = LISTKEY_PAGE_SIZE, max_total: Optional[int] = None
+) -> List[int]:
     """
     Pages CIDs from a ListKey.
     """
@@ -261,7 +274,13 @@ def page_listkey_cids(listkey: str, page_size: int = LISTKEY_PAGE_SIZE, max_tota
 
 # ---- Property fetching ----
 
-def fetch_properties_for_cids(cids: List[int], props: List[str], out_csv: str = PROPS_CSV, batch_size: int = CID_BATCH_SIZE) -> pd.DataFrame:
+
+def fetch_properties_for_cids(
+    cids: List[int],
+    props: List[str],
+    out_csv: str = PROPS_CSV,
+    batch_size: int = CID_BATCH_SIZE,
+) -> pd.DataFrame:
     """Fetch PubChem properties in CSV form for given CIDs (batched, resumable, incremental save).
 
     This avoids losing progress and reduces chance of PubChem throttling/temporary blocks.
@@ -270,12 +289,14 @@ def fetch_properties_for_cids(cids: List[int], props: List[str], out_csv: str = 
     done = load_done_cids_from_csv(out_csv)
     todo = [int(cid) for cid in cids if int(cid) not in done]
 
-    print(f"[info] properties cache: {out_csv} (done={len(done)}; remaining={len(todo)})")
+    print(
+        f"[info] properties cache: {out_csv} (done={len(done)}; remaining={len(todo)})"
+    )
 
     first_write = not os.path.exists(out_csv)
 
     for i in range(0, len(todo), batch_size):
-        batch = todo[i:i + batch_size]
+        batch = todo[i : i + batch_size]
         cid_str = ",".join(map(str, batch))
         url = f"{BASE}/compound/cid/{cid_str}/property/{','.join(props)}/CSV"
 
@@ -288,7 +309,9 @@ def fetch_properties_for_cids(cids: List[int], props: List[str], out_csv: str = 
 
         # Progress log every ~10 batches
         if ((i // batch_size) % 10) == 0:
-            print(f"[info] fetched {min(i + batch_size, len(todo))}/{len(todo)} remaining CIDs")
+            print(
+                f"[info] fetched {min(i + batch_size, len(todo))}/{len(todo)} remaining CIDs"
+            )
 
         time.sleep(SLEEP_BETWEEN_CALLS)
 
@@ -342,6 +365,7 @@ def apply_sanity_filters(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+
 def try_add_bucket_flags(df: pd.DataFrame) -> pd.DataFrame:
     """
     Adds boolean columns based on SMILES substructure (SMARTS) if RDKit is installed.
@@ -361,7 +385,9 @@ def try_add_bucket_flags(df: pd.DataFrame) -> pd.DataFrame:
             break
 
     if smiles_col is None:
-        print("[warn] No SMILES column found (expected one of IsomericSMILES/SMILES/CanonicalSMILES).")
+        print(
+            "[warn] No SMILES column found (expected one of IsomericSMILES/SMILES/CanonicalSMILES)."
+        )
         return df
 
     smarts_map = {
@@ -427,7 +453,13 @@ def build_candidate_table(queries: List[QuerySpec]) -> pd.DataFrame:
             if key in seen_pairs:
                 continue
             seen_pairs.add(key)
-            rows.append({"bucket": qs.bucket, "CID": int(cid), "source_query": f"{qs.qtype}:{qs.term}"})
+            rows.append(
+                {
+                    "bucket": qs.bucket,
+                    "CID": int(cid),
+                    "source_query": f"{qs.qtype}:{qs.term}",
+                }
+            )
 
         time.sleep(SLEEP_BETWEEN_CALLS)
 
@@ -439,7 +471,7 @@ def build_candidate_table(queries: List[QuerySpec]) -> pd.DataFrame:
 def main():
     ensure_parent_dir(OUT_CSV)
     ensure_parent_dir(PROPS_CSV)
-    
+
     # 1) Collect candidates (CID lists) by bucket
     candidates = build_candidate_table(QUERIES)
     if candidates.empty:
@@ -449,16 +481,16 @@ def main():
     unique_cids = sorted(candidates["CID"].unique().tolist())
     print(f"[info] unique CIDs: {len(unique_cids)}")
 
-    props_df = fetch_properties_for_cids(unique_cids, PUBCHEM_PROPS, out_csv=PROPS_CSV, batch_size=CID_BATCH_SIZE)
+    props_df = fetch_properties_for_cids(
+        unique_cids, PUBCHEM_PROPS, out_csv=PROPS_CSV, batch_size=CID_BATCH_SIZE
+    )
     if props_df.empty:
         raise SystemExit("Property fetch returned empty.")
 
     # 3) Merge bucket info back (many buckets per CID possible)
     merged = candidates.merge(props_df, on="CID", how="left")
     merged["compound_name"] = (
-        merged.get("Title")
-        .fillna(merged.get("IUPACName"))
-        .fillna("")
+        merged.get("Title").fillna(merged.get("IUPACName")).fillna("")
     )
 
     # 4) Deduplicate & filter
@@ -471,8 +503,16 @@ def main():
     # 6) remove exact duplicates of same CID+bucket
     merged = merged.drop_duplicates(subset=["CID", "bucket"])
 
-    bucket_list = merged.groupby("CID")["bucket"].apply(lambda x: "|".join(sorted(set(x)))).reset_index()
-    merged = merged.merge(bucket_list.rename(columns={"bucket": "bucket_membership"}), on="CID", how="left")
+    bucket_list = (
+        merged.groupby("CID")["bucket"]
+        .apply(lambda x: "|".join(sorted(set(x))))
+        .reset_index()
+    )
+    merged = merged.merge(
+        bucket_list.rename(columns={"bucket": "bucket_membership"}),
+        on="CID",
+        how="left",
+    )
 
     # 7) Save
     merged.to_csv(OUT_CSV, index=False)
@@ -483,19 +523,39 @@ def main():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Fetch PFAS data from PubChem or ICE cluster")
+    parser = argparse.ArgumentParser(
+        description="Fetch PFAS data from PubChem or ICE cluster"
+    )
 
-    parser.add_argument("--from-ice", action="store_true",
-                    help="Download required CSVs from ICE cluster into the local data directory.")
-    parser.add_argument("--ice-host", type=str, default="login-ice.pace.gatech.edu",
-                        help="ICE SSH host (e.g., ice.pace.gatech.edu or your login node).")
-    parser.add_argument("--ice-username", type=str, default=None,
-                        help="ICE username. If omitted, you will be prompted.")
-    parser.add_argument("--ice-remote-dir", type=str,
-                        default="/storage/ice-shared/cs8903onl/mussmann-pfas/data",
-                        help="Remote directory on ICE containing the CSVs.")
-    parser.add_argument("--local-data-dir", type=str, default="data",
-                        help="Local directory to store downloaded data (same as PubChem outputs).")
+    parser.add_argument(
+        "--from-ice",
+        action="store_true",
+        help="Download required CSVs from ICE cluster into the local data directory.",
+    )
+    parser.add_argument(
+        "--ice-host",
+        type=str,
+        default="login-ice.pace.gatech.edu",
+        help="ICE SSH host (e.g., ice.pace.gatech.edu or your login node).",
+    )
+    parser.add_argument(
+        "--ice-username",
+        type=str,
+        default=None,
+        help="ICE username. If omitted, you will be prompted.",
+    )
+    parser.add_argument(
+        "--ice-remote-dir",
+        type=str,
+        default="/storage/ice-shared/cs8903onl/mussmann-pfas/data",
+        help="Remote directory on ICE containing the CSVs.",
+    )
+    parser.add_argument(
+        "--local-data-dir",
+        type=str,
+        default="data",
+        help="Local directory to store downloaded data (same as PubChem outputs).",
+    )
 
     args = parser.parse_args()
 

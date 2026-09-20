@@ -8,8 +8,7 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, global_mean_pool
 
 
-
-dataset = MoleculeNet(root ="data", name = "ESOL")
+dataset = MoleculeNet(root="data", name="ESOL")
 print(dataset)
 
 print("Number of molecules: ", len(dataset))
@@ -21,22 +20,16 @@ print("item structure: ", data)
 torch.manual_seed(42)
 
 train_idx, temp_idx = train_test_split(
-    list(range(len(dataset))),
-    test_size = 0.2,
-    random_state = 42
+    list(range(len(dataset))), test_size=0.2, random_state=42
 )
 
-val_idx, test_idx = train_test_split(
-    temp_idx,
-    test_size = 0.5,
-    random_state = 42
-)
+val_idx, test_idx = train_test_split(temp_idx, test_size=0.5, random_state=42)
 
 
 class GCNModel(nn.Module):
     def __init__(self, in_channels, hidden_dim):
         super().__init__()
-        
+
         self.conv1 = GCNConv(in_channels, hidden_dim)
         self.conv2 = GCNConv(hidden_dim, hidden_dim)
         self.lin = nn.Linear(hidden_dim, 1)
@@ -47,23 +40,24 @@ class GCNModel(nn.Module):
 
         x = self.conv1(x, edge_index)
         x = F.relu(x)
-        x  = self.conv2(x, edge_index)
+        x = self.conv2(x, edge_index)
         x = F.relu(x)
 
         x = global_mean_pool(x, batch)
         x = self.lin(x)
-        
+
         return x.squeeze()
-    
+
 
 from torch_geometric.nn import GATConv
+
 
 class GATModel(torch.nn.Module):
     def __init__(self, in_channels, hidden_dim):
         super().__init__()
 
-        self.conv1 = GATConv(in_channels, hidden_dim, heads = 4)
-        self.conv2 = GATConv(hidden_dim*4, hidden_dim, heads = 1)
+        self.conv1 = GATConv(in_channels, hidden_dim, heads=4)
+        self.conv2 = GATConv(hidden_dim * 4, hidden_dim, heads=1)
         self.lin = torch.nn.Linear(hidden_dim, 1)
 
     def forward(self, data):
@@ -76,7 +70,8 @@ class GATModel(torch.nn.Module):
 
         x = global_mean_pool(x, batch)
         x = self.lin(x)
-        return x.squeeze()  
+        return x.squeeze()
+
 
 # Model Orchestration
 def get_model(model_name, in_channels, hidden_dim=64):
@@ -86,6 +81,7 @@ def get_model(model_name, in_channels, hidden_dim=64):
         return GATModel(in_channels, hidden_dim)
     else:
         raise ValueError("Model Name NOT Found")
+
 
 def train(model, loader, optimizer, criterion):
     model.train()
@@ -104,7 +100,9 @@ def train(model, loader, optimizer, criterion):
 
     return total_loss / len(loader)
 
+
 from sklearn.metrics import mean_absolute_error
+
 
 @torch.no_grad()
 def evaluate(model, loader, device):
@@ -117,7 +115,7 @@ def evaluate(model, loader, device):
         out = model(data)
         preds.append(out.cpu())
         targets.append(data.y.view(-1).cpu())
-    
+
     preds = torch.cat(preds)
     targets = torch.cat(targets)
 
@@ -125,20 +123,21 @@ def evaluate(model, loader, device):
 
     return mae
 
+
 import copy
 
+
 def run_experiment(model_name, device):
-    
-    train_loader = DataLoader(dataset[train_idx], batch_size = 32, shuffle = True)
-    val_loader = DataLoader(dataset[val_idx], batch_size = 32)
-    test_loader = DataLoader(dataset[test_idx], batch_size = 32)
+
+    train_loader = DataLoader(dataset[train_idx], batch_size=32, shuffle=True)
+    val_loader = DataLoader(dataset[val_idx], batch_size=32)
+    test_loader = DataLoader(dataset[test_idx], batch_size=32)
 
     model = get_model(model_name, dataset.num_node_features).to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr = 0.001, weight_decay = 1e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
     criterion = nn.MSELoss()
 
-
-    best_val = float('inf')
+    best_val = float("inf")
     best_model_state = None
     patience = 50
     counter = 0
@@ -150,23 +149,28 @@ def run_experiment(model_name, device):
         val_mae = evaluate(model, val_loader, device)
 
         if epoch % 10 == 0:
-            print(f"Epoch {epoch:03d} | Loss: {loss:0.4f}  |  Validation MAE: {val_mae:0.4f}")
-        
+            print(
+                f"Epoch {epoch:03d} | Loss: {loss:0.4f}  |  Validation MAE: {val_mae:0.4f}"
+            )
+
         if val_mae < best_val:
             best_val = val_mae
             best_model_state = copy.deepcopy(model.state_dict())
             counter = 0
         else:
             counter += 1
-        
+
         if counter >= patience:
-            print(f"Early stopping triggered: {patience} iterations with no improvement")
+            print(
+                f"Early stopping triggered: {patience} iterations with no improvement"
+            )
             break
 
     model.load_state_dict(best_model_state)
 
     test_mae = evaluate(model, test_loader, device)
     return best_val, test_mae
+
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

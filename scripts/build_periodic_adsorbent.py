@@ -38,7 +38,7 @@ def find_cc_pairs(atoms, max_dist: float = 1.7):
     pairs = []
 
     for i, a in enumerate(c_inds):
-        for b in c_inds[i + 1:]:
+        for b in c_inds[i + 1 :]:
             d = atoms.get_distance(a, b, mic=True)
             if d < max_dist:
                 pairs.append((a, b))
@@ -74,7 +74,9 @@ def pick_nonoverlapping_carbons(atoms, count: int, seed: int):
             break
 
     if len(chosen) < count:
-        raise RuntimeError(f"Could only place {len(chosen)} hydroxyl sites, needed {count}")
+        raise RuntimeError(
+            f"Could only place {len(chosen)} hydroxyl sites, needed {count}"
+        )
 
     return chosen
 
@@ -97,7 +99,9 @@ def pick_nonoverlapping_pairs(atoms, count: int, seed: int):
             break
 
     if len(chosen) < count:
-        raise RuntimeError(f"Could only place {len(chosen)} epoxide sites, needed {count}")
+        raise RuntimeError(
+            f"Could only place {len(chosen)} epoxide sites, needed {count}"
+        )
 
     return chosen
 
@@ -140,11 +144,13 @@ def build_sic4h_si_terminated(
     Bottom surface is C-terminated and H-passivated.
     """
 
-    lattice = Lattice([
-        [nx * a, 0.0, 0.0],
-        [-0.5 * ny * a, np.sqrt(3) * 0.5 * ny * a, 0.0],
-        [0.0, 0.0, 4 * layer_spacing + vacuum],
-    ])
+    lattice = Lattice(
+        [
+            [nx * a, 0.0, 0.0],
+            [-0.5 * ny * a, np.sqrt(3) * 0.5 * ny * a, 0.0],
+            [0.0, 0.0, 4 * layer_spacing + vacuum],
+        ]
+    )
 
     z_offset = vacuum / 2.0
 
@@ -219,7 +225,9 @@ def write_output(path: Path, obj):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Build a periodic adsorbent slab and export CIF")
+    parser = argparse.ArgumentParser(
+        description="Build a periodic adsorbent slab and export CIF"
+    )
 
     parser.add_argument(
         "--template",

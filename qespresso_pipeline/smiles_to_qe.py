@@ -29,13 +29,15 @@ def check_executable(name: str):
 # interface, so a "force field without conformer search" combination is not
 # expressible — the final rung is plain --gen3d distance geometry.
 OBABEL_LADDER = [
-    ("MMFF94", True),   # status quo: best geometry for neutral species
-    ("UFF", True),      # UFF parameterizes ionic species
-    (None, False),      # plain --gen3d: distance geometry only, last resort
+    ("MMFF94", True),  # status quo: best geometry for neutral species
+    ("UFF", True),  # UFF parameterizes ionic species
+    (None, False),  # plain --gen3d: distance geometry only, last resort
 ]
 
 
-def _obabel_command(input_string: str, output_mol: Path, force_field: Optional[str], conformer: bool) -> list:
+def _obabel_command(
+    input_string: str, output_mol: Path, force_field: Optional[str], conformer: bool
+) -> list:
     command = ["obabel", f"-:{input_string}", "-O", str(output_mol), "--gen3d"]
     if conformer:
         command += ["--conformer", "--minimize", "--steps", "1000"]
@@ -44,9 +46,12 @@ def _obabel_command(input_string: str, output_mol: Path, force_field: Optional[s
     return command
 
 
-def run_obabel(input_string: str, output_name: str,
-               force_field: Optional[str] = None,
-               conformer: Optional[bool] = None) -> Path:
+def run_obabel(
+    input_string: str,
+    output_name: str,
+    force_field: Optional[str] = None,
+    conformer: Optional[bool] = None,
+) -> Path:
     """Generate a 3-D MOL file from a SMILES string.
 
     With defaults, the OBABEL_LADDER rungs are tried in order and the first
@@ -79,19 +84,28 @@ def run_obabel(input_string: str, output_name: str,
                 detail = f"killed by signal {-e.returncode} (crash)"
             else:
                 detail = f"exit code {e.returncode}"
-            print(f"[warn] obabel failed ({_label(ff, use_conformer)}): {detail}; trying next rung",
-                  file=sys.stderr)
+            print(
+                f"[warn] obabel failed ({_label(ff, use_conformer)}): {detail}; trying next rung",
+                file=sys.stderr,
+            )
             last_error = e
             continue
         if output_mol.exists() and output_mol.stat().st_size > 0:
-            print(f"[info] MOL created: {output_mol} (rung: {_label(ff, use_conformer)})")
+            print(
+                f"[info] MOL created: {output_mol} (rung: {_label(ff, use_conformer)})"
+            )
             return output_mol
-        print(f"[warn] obabel rung {_label(ff, use_conformer)} produced no MOL output; trying next rung",
-              file=sys.stderr)
+        print(
+            f"[warn] obabel rung {_label(ff, use_conformer)} produced no MOL output; trying next rung",
+            file=sys.stderr,
+        )
 
     tried = ", ".join(_label(ff, conf) for ff, conf in ladder)
     if last_error is not None:
-        print(f"[error] last obabel failure: returncode {last_error.returncode}", file=sys.stderr)
+        print(
+            f"[error] last obabel failure: returncode {last_error.returncode}",
+            file=sys.stderr,
+        )
     raise RuntimeError(
         f"obabel could not generate a 3-D structure for '{input_string}' (tried: {tried}). "
         "If this is an ionic/dissociated SMILES, try --force-field UFF or --no-conformer, "
@@ -99,7 +113,9 @@ def run_obabel(input_string: str, output_name: str,
     )
 
 
-def mol_to_cif_pymatgen(input_mol: Path, output_name: str, padding: float = 12.0) -> Path:
+def mol_to_cif_pymatgen(
+    input_mol: Path, output_name: str, padding: float = 12.0
+) -> Path:
     output_cif = Path(f"{output_name}.cif")
     print(f"[info] Creating CIF from MOL: {output_cif}")
 
@@ -125,14 +141,21 @@ def mol_to_cif_pymatgen(input_mol: Path, output_name: str, padding: float = 12.0
 
     if not output_cif.exists():
         raise FileNotFoundError(f"CIF file not created: {output_cif}")
-    
+
     print(f"[info] CIF created: {output_cif} (box = {box_lengths})")
     return output_cif
 
 
 def run_cif2cell(input_cif: Path, output_name: str) -> Path:
     output_in = Path(f"{output_name}.in")
-    command = ["cif2cell", str(input_cif), "-p", "quantum-espresso", "-o", str(output_in)]
+    command = [
+        "cif2cell",
+        str(input_cif),
+        "-p",
+        "quantum-espresso",
+        "-o",
+        str(output_in),
+    ]
     print(f"[info] Creating QE input: {output_in}")
     subprocess.run(command, check=True)
 
@@ -151,9 +174,9 @@ def modify_qe_input(
     mixing_beta=None,
     input_dft="pbe",
     kpts=(1, 1, 1),
-    calculation="relax", 
+    calculation="relax",
     nspin=1,
-    tot_magnetization=0.0
+    tot_magnetization=0.0,
 ):
     input_path = Path(input_file)
     prefix = input_path.stem
@@ -182,32 +205,43 @@ def modify_qe_input(
 
     if "vdW" not in input_dft and "vdw" not in input_dft:
         system_extra.append("  vdw_corr='dft-d3',\n")
-    
+
     if nspin == 2:
-        system_extra.extend([
-            f"  nspin=2,\n",
-            f"  tot_magnetization={tot_magnetization},\n"
-        ])
+        system_extra.extend(
+            [f"  nspin=2,\n", f"  tot_magnetization={tot_magnetization},\n"]
+        )
 
     if job_type == "molecule":
-        if mixing_beta is None: mixing_beta = 0.2
-        system_extra.extend([
-            "  assume_isolated='mt',\n",
-            "  occupations='smearing',\n", 
-            "  smearing='m-p',\n",
-            "  degauss=0.005d0,\n",
-        ])
+        if mixing_beta is None:
+            mixing_beta = 0.2
+        system_extra.extend(
+            [
+                "  assume_isolated='mt',\n",
+                "  occupations='smearing',\n",
+                "  smearing='m-p',\n",
+                "  degauss=0.005d0,\n",
+            ]
+        )
         electrons_block = f"&ELECTRONS\n  conv_thr=1d-07,\n  mixing_beta={mixing_beta}d0,\n  electron_maxstep=200,\n/\n"
-        kpoints_block = "K_POINTS gamma\n" if use_gamma else f"K_POINTS {{automatic}}\n  {kpts[0]} {kpts[1]} {kpts[2]} 0 0 0\n"
+        kpoints_block = (
+            "K_POINTS gamma\n"
+            if use_gamma
+            else f"K_POINTS {{automatic}}\n  {kpts[0]} {kpts[1]} {kpts[2]} 0 0 0\n"
+        )
     else:
-        if mixing_beta is None: mixing_beta = 0.4
-        system_extra.extend([
-            "  occupations='smearing',\n",
-            "  smearing='cold',\n",      
-            "  degauss=0.01d0,\n",
-        ])
+        if mixing_beta is None:
+            mixing_beta = 0.4
+        system_extra.extend(
+            [
+                "  occupations='smearing',\n",
+                "  smearing='cold',\n",
+                "  degauss=0.01d0,\n",
+            ]
+        )
         electrons_block = f"&ELECTRONS\n  conv_thr=1d-06,\n  mixing_beta={mixing_beta}d0,\n  electron_maxstep=150,\n/\n"
-        kpoints_block = f"K_POINTS {{automatic}}\n  {kpts[0]} {kpts[1]} {kpts[2]} 0 0 0\n"
+        kpoints_block = (
+            f"K_POINTS {{automatic}}\n  {kpts[0]} {kpts[1]} {kpts[2]} 0 0 0\n"
+        )
 
     ions_block = "&IONS\n  ion_dynamics='bfgs',\n/\n"
 
@@ -253,7 +287,7 @@ def modify_qe_input(
         if line.strip() == "/" and not inserted_electrons:
             final_body.append("\n")
             final_body.append(electrons_block)
-            if calculation == 'relax' or calculation == 'vc-relax':
+            if calculation == "relax" or calculation == "vc-relax":
                 final_body.append(ions_block)
             inserted_electrons = True
 
@@ -272,25 +306,37 @@ def main():
     parser.add_argument("input", help="Input SMILES")
     parser.add_argument("output", help="Base output filename")
     parser.add_argument("--padding", type=float, default=10.0)
-    parser.add_argument("--job-type", choices=["molecule", "periodic"], default="molecule")
+    parser.add_argument(
+        "--job-type", choices=["molecule", "periodic"], default="molecule"
+    )
     parser.add_argument("--ecutwfc", type=float, default=35)
     parser.add_argument("--ecutrho", type=float, default=280)
     parser.add_argument("--input-dft", default="pbe")
     parser.add_argument("--kpts", nargs=3, type=int, default=[1, 1, 1])
     parser.add_argument("--no-gamma", action="store_true")
-    parser.add_argument("--force-field", choices=["MMFF94", "UFF", "GAFF"], default=None,
-                        help="pin one obabel force field (default: automatic MMFF94->UFF->gen3d fallback)")
-    parser.add_argument("--no-conformer", action="store_true",
-                        help="skip the obabel conformer search (combined with --force-field)")
+    parser.add_argument(
+        "--force-field",
+        choices=["MMFF94", "UFF", "GAFF"],
+        default=None,
+        help="pin one obabel force field (default: automatic MMFF94->UFF->gen3d fallback)",
+    )
+    parser.add_argument(
+        "--no-conformer",
+        action="store_true",
+        help="skip the obabel conformer search (combined with --force-field)",
+    )
     args = parser.parse_args()
 
     check_executable("obabel")
     check_executable("cif2cell")
 
     try:
-        mol_file = run_obabel(args.input, args.output,
-                              force_field=args.force_field,
-                              conformer=False if args.no_conformer else None)
+        mol_file = run_obabel(
+            args.input,
+            args.output,
+            force_field=args.force_field,
+            conformer=False if args.no_conformer else None,
+        )
         cif_file = mol_to_cif_pymatgen(mol_file, args.output, padding=args.padding)
         qe_input = run_cif2cell(cif_file, args.output)
         modify_qe_input(
