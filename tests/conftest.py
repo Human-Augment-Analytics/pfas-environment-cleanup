@@ -14,7 +14,9 @@ def pytest_configure(config: pytest.Config) -> None:
     config._slow_fast_test_reports: list[tuple[str, float]] = []  # type: ignore[attr-defined]
 
 
-def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: list[pytest.Item]
+) -> None:
     """Keep explicitly slow tests out of the fast-test performance budget."""
     for item in items:
         if item.get_closest_marker("slow"):
