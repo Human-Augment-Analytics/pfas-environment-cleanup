@@ -10,33 +10,28 @@ This repository ships **three** conda environment files, one per workflow. Creat
 | `qe_environment.yaml` | `qe` | DFT adsorption runs (`qespresso_pipeline/run_adsorption_case.py`; python=3.10, qe, numpy, scipy, pandas, pymatgen, openbabel, cif2cell, ase) | The cluster — built automatically, see below |
 | `basic_molecule_gnn/environment.yml` | `pfas_gnn_env` | GNN modeling in `basic_molecule_gnn/` | Your machine |
 
-### Developer checks
+### Local quality checks
 
-Install [uv](https://docs.astral.sh/uv/) and use the local developer launcher.
-It creates a lightweight `.env-pfas-ci`, installs only the developer tools, and
-avoids Quantum ESPRESSO, Open Babel, and the ML stack:
+Install [uv](https://docs.astral.sh/uv/) and run these commands from the
+repository root:
+
+- Format check: `uv run --locked --group dev ruff format --check`
+- Type check: `uv run --locked --group dev ty check`
+- Fast tests: `uv run --locked --group dev pytest -m 'not slow'`
+
+To run the full local quality check sequence:
 
 ```bash
-./scripts/dev             # all checks (the default is "ci")
-./scripts/dev ruff        # Ruff
-./scripts/dev mypy        # mypy
-./scripts/dev quality     # Ruff and mypy
-./scripts/dev fast-test   # fast pytest suite (also used by CI)
-./scripts/dev slow-test   # tests marked @pytest.mark.slow
-./scripts/dev update      # reinstall developer requirements
+uv run --locked --group dev ruff format --check && \
+uv run --locked --group dev ty check && \
+uv run --locked --group dev pytest -m 'not slow'
 ```
 
-GitHub Actions runs `./scripts/dev ci` on pushes and pull requests. Ruff
-is initially scoped to syntax and high-confidence correctness errors across
-the repository; mypy currently checks the dependency-free DFT submission
-wrapper and can expand as the scientific modules gain annotations. A fast test
-that exceeds one second is reported in pytest's summary; one that reaches two
-seconds fails. The full session is capped at 60 seconds, and CI has a
-five-minute backstop for setup or collection hangs. Mark longer-running tests
-with `@pytest.mark.slow`; they are excluded from `fast-test`, `ci`, and CI, and
-are run only through `./scripts/dev slow-test`. That task uses the full
-`pfas` Conda environment, which must be created or updated from
-`environment.yaml` first.
+If a file should be temporarily excluded from ty, add its repository-relative
+path to `[tool.ty.src].exclude` in `pyproject.toml`. For a localized exception,
+use a `# ty: ignore[...]` comment. See the [ty configuration
+reference](https://docs.astral.sh/ty/reference/configuration/) and [suppression
+documentation](https://docs.astral.sh/ty/suppression/).
 
 ### For fetching the data
 
@@ -361,7 +356,10 @@ Note that the `quantum-espresso` module can only be loaded and run inside
 compute-node jobs: on a login node, `module load quantum-espresso` appears to
 succeed, but `pw.x` is unavailable (the module is guarded by Lmod so that it
 only activates within jobs). Run the workflows via `sbatch` from
-`dft_wrapper.py` or the array script, not directly on the login node.
+`dft_wrapper.py` or the array script, not directly on the login node. When
+loading the module anywhere (workflow script or manual run), pin the native
+build explicitly — `module load quantum-espresso/7.3`; the note under Manual
+DFT Simulation below explains why the unpinned default is unreliable.
 
 #### Memory sizing (`--mem-gb`)
 
@@ -474,10 +472,16 @@ Fe   0.833333333333333   0.333333333333333   0.355649309796759 0 0 0 ! 0s repres
 
 These files can be run on PACE ICE with parallelization as follows:
 ```
-module load quantum-espresso
+module load quantum-espresso/7.3
 module load openmpi
 mpirun -np [number_of_processors] pw.x -in [input_file].in > [output_file].out
 ```
+
+Pin the Quantum ESPRESSO build explicitly (`quantum-espresso/7.3`): the
+cluster's unpinned default can resolve to a container-based build whose `pw.x`
+fails under `mpirun`, and loading `openmpi` afterwards can silently swap the
+active build. 7.3 is the native build the repository workflows are verified
+against on PACE-ICE; `scripts/run_dft_workflow.sh` pins the same version.
 
 ## Machine Learning in This Repository
 
