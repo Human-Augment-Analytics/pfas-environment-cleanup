@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shlex
 import subprocess
 from dataclasses import dataclass
@@ -251,6 +252,87 @@ def fetch(c: Cluster, case_name: str, local_cache: str) -> Path:
     return dst
 
 
+# Rough SMILES size estimation for the submit-time memory hint. A chemistry
+# toolkit is deliberately not used: the wrapper stays dependency-free, and
+# the heavy-atom count only feeds an advisory message.
+_SMILES_ATOM = re.compile(
+    r"\[\d*(?:Br|Cl|Se|As|B|C|N|O|P|S|F|I|b|c|n|o|p|s)"
+    r"|(?:Br|Cl|B|C|N|O|P|S|F|I)"
+    r"|(?:se|as|[bcnops])"
+)
+# Size bands from the README memory table: a TFA-sized pair (~14 heavy atoms
+# across both SMILES) fits in 32 GB; CTAB-sized single molecules (~21) and
+# large pairs build ~30 angstrom cells that want 64 GB; complexes much larger
+# than that occasionally run out of memory even at 64 GB and need 96 on
+# resubmit.
+_SMALL_SYSTEM_HEAVY_ATOMS = 14
+_LARGE_SYSTEM_HEAVY_ATOMS = 28
+
+
+def heavy_atom_count(smiles: Optional[str]) -> int:
+    """Rough heavy-atom (non-hydrogen) count for a SMILES string.
+
+    Counts bracketed elements ([N+], [Br-], [13C], [nH]), the bare organic
+    subset (Br Cl B C N O P S F I), and the bare aromatic subset
+    (b c n o p s se as). Bonds, charges, ring-closure digits, and isotopes
+    are ignored; hydrogens are excluded so the count tracks molecular size
+    the same way the memory-sizing table in the README does.
+    """
+    if not smiles:
+        return 0
+    return len(_SMILES_ATOM.findall(smiles))
+
+
+def memory_warnings(
+    *,
+    adsorbent_smiles: Optional[str],
+    pfas_smiles: Optional[str],
+    mem_gb: int,
+    skip_ads: bool = False,
+    skip_pfas: bool = False,
+    skip_complex: bool = False,
+    pfas_energy_ry: Optional[float] = None,
+) -> list[str]:
+    """Advisory submit-time memory hints, mirroring the README table.
+
+    `pw.x` memory grows with the simulation cell, but the cell is only built
+    on the compute node: at submit time only the SMILES are known, so system
+    size is estimated as a heavy-atom count over what the job will actually
+    run (the skip flags and --pfas-energy-ry drop their side; the complex
+    sums adsorbent + PFAS). A CIF-sourced adsorbent has no SMILES and is
+    invisible to this estimate.
+
+    Returns at most one warning: a suggestion line when the requested
+    --mem-gb is below the README band for the estimated size, or a
+    return-code-137 note when a very large complex is cutting it close at
+    64 GB. Purely advisory - submission proceeds either way, and
+    `seff <jobid>` after the run remains the ground truth.
+    """
+    ads = 0 if skip_ads else heavy_atom_count(adsorbent_smiles)
+    if skip_pfas or pfas_energy_ry is not None:
+        pfas = 0
+    else:
+        pfas = heavy_atom_count(pfas_smiles)
+    complex_atoms = ads + pfas if not skip_complex else 0
+    largest = max(ads, pfas, complex_atoms)
+
+    if largest > _SMALL_SYSTEM_HEAVY_ATOMS and mem_gb < 64:
+        return [
+            f"--mem-gb {mem_gb} looks small for this case (~{largest} heavy "
+            "atoms across the SMILES given); the README memory table "
+            "suggests 64 GB for the ~30 angstrom cells built by large "
+            "adsorbents and long alkyl chains - consider --mem-gb 64"
+        ]
+    if largest > _LARGE_SYSTEM_HEAVY_ATOMS and mem_gb >= 64:
+        return [
+            f"this case looks very large (~{largest} heavy atoms across "
+            "the adsorbent + PFAS complex); 64 GB covers most cases, but "
+            "if pw.x is OOM-killed (return code 137 / oom_kill), resubmit "
+            "with --mem-gb 96 - see the memory-sizing table in the README"
+        ]
+    return []
+
+
 def validate_submit_args(args: argparse.Namespace) -> list[str]:
     """Submit-time validation of argument combinations that are statically
     known to be fatal inside the SLURM job.
@@ -406,6 +488,16 @@ def main() -> int:
                 f"[SKIP] {args.case_name}: results already exist (DONE + summary.json)."
             )
         else:
+            for warning in memory_warnings(
+                adsorbent_smiles=args.adsorbent_smiles,
+                pfas_smiles=args.pfas_smiles,
+                mem_gb=args.mem_gb,
+                skip_ads=args.skip_ads,
+                skip_pfas=args.skip_pfas,
+                skip_complex=args.skip_complex,
+                pfas_energy_ry=args.pfas_energy_ry,
+            ):
+                print(f"[WARN] {warning}")
             print(
                 f"[SUBMIT] {args.case_name}: preparing directory and submitting SLURM job."
             )

@@ -449,6 +449,13 @@ After a run, `seff <jobid>` shows the memory actually used. If `pw.x` exits
 with return code 137 or the epilog reports `oom_kill`, the job ran out of
 memory: resubmit with a higher `--mem-gb` rather than assuming a code failure.
 
+At submit time `dft_wrapper.py` also prints a `[WARN]` line when the requested
+`--mem-gb` looks small for the SMILES given (a rough heavy-atom count over
+what the job will actually run, honoring the skip flags and
+`--pfas-energy-ry`). It is advisory only — submission proceeds — and it
+cannot see CIF-sourced adsorbents or the final simulation cell, so the table
+and `seff` remain the authority.
+
 ### Manual DFT Simulation
 
 For tuning purposes, it will likely be necessary to manually create a DFT input file from a CIF file, created either via ase, pymatgen, or sourced from a crystallographic database. You begin by running a command of this following structure to create an input file:
