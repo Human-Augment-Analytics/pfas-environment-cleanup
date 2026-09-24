@@ -134,7 +134,8 @@ def submit_slurm_job(
     lines = [
         "#!/bin/bash",
         f"#SBATCH --job-name=dft_{case_name}",
-        f"#SBATCH --cpus-per-task={cpus}",
+        f"#SBATCH --ntasks={cpus}",
+        f"#SBATCH --cpus-per-task=1",
         f"#SBATCH --mem={mem_gb}G",
         f"#SBATCH --time={time_limit}",
         "#SBATCH --output=outputs/slurm-%j.out",
