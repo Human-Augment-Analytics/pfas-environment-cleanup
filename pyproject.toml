@@ -3,6 +3,9 @@ name = "pfas-materials-discovery"
 version = "0.1.0"
 description = "PFAS materials discovery workflows and Quantum ESPRESSO orchestration"
 requires-python = ">=3.12,<3.13"
+dependencies = [
+    "visidata>=3.4",
+]
 
 [dependency-groups]
 dev = [
