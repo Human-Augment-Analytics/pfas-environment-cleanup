@@ -50,6 +50,12 @@ if not out:
 sys.stdout.write("\n".join(out))
 ' "$CSV_FILE") || exit 1
 
+# Windows Python's text-mode stdout translates the embedded \n row separators
+# above to \r\n, and bash $( ) keeps the \r, gluing it onto each row's last
+# field (the SMILES). Neither Names nor SMILES legitimately contain CR, so
+# strip it; on Linux this is a no-op.
+PARSED="${PARSED//$'\r'/}"
+
 while IFS=$'\t' read -r ADS_NAME ADS_SMILES; do
 
     if [[ -z "$ADS_NAME" || -z "$ADS_SMILES" ]]; then
