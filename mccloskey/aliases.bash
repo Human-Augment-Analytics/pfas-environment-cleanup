@@ -34,11 +34,19 @@ pf_dft_wrapper_cluster_tfa() {
     [[ "$x" =~ ^[Yy]$ ]] && python scripts/dft_wrapper.py --user jmccloskey30 --pfas-name tfa --pfas-smiles 'FC(F)(F)C(=O)O' --adsorbent-source smiles --submit-if-missing --cluster-root /home/hice1/jmccloskey30/test_runs --workflow-script /home/hice1/jmccloskey30/pfas-environment-cleanup/scripts/run_dft_workflow.sh --adsorbent-name "c$PF_CLUSTER_NO" --case-name "jmccloskey30-c$PF_CLUSTER_NO" --adsorbent-smiles "$PF_CLUSTER_SMILE"
 }
 
-pf_update_email() {
+pf_slurm_update_email() {
     scontrol update JobId="${1:?Usage: pf_update_email JOBID}" \
         MailUser=jmccloskey30@gatech.edu MailType=END,FAIL
 }
 
 pf_shortest_smiles() {
     mlr --csv put '$len = strlen($medoid_SMILES)' then sort -n len shivani_ml_models/cluster_centers.csv
+}
+
+alias pf_slurm_show_queue="squeue -u $USER"
+alias pf_slurm_recent_ids="ls -1r ~/outputs | sed -n 's/^slurm-\([0-9]\+\)\..*/\1/p' | uniq | head -n 5"
+pf_slurm_recent_logs() {
+    local id
+    id="$(pf_slurm_recent_ids | head -n 1)"
+    code ~/outputs/slurm-"$id".out ~/outputs/slurm-"$id".err
 }
