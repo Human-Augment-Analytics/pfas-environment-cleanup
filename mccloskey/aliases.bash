@@ -38,3 +38,7 @@ pf_update_email() {
     scontrol update JobId="${1:?Usage: pf_update_email JOBID}" \
         MailUser=jmccloskey30@gatech.edu MailType=END,FAIL
 }
+
+pf_shortest_smiles() {
+    mlr --csv put '$len = strlen($medoid_SMILES)' then sort -n len shivani_ml_models/cluster_centers.csv
+}
