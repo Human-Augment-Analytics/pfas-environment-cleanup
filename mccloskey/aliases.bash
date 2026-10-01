@@ -43,10 +43,21 @@ pf_shortest_smiles() {
     mlr --csv put '$len = strlen($medoid_SMILES)' then sort -n len shivani_ml_models/cluster_centers.csv
 }
 
-alias pf_slurm_show_queue="squeue -u $USER"
-alias pf_slurm_recent_ids="ls -1r ~/outputs | sed -n 's/^slurm-\([0-9]\+\)\..*/\1/p' | uniq | head -n 5"
+alias pf_slurm_squeue="squeue -u $USER"
+alias pf_slurm_running_ids='pf_slurm_squeue -t RUNNING -h -o "%A"'
+pf_slurm_sstat_all() {
+    local jobs
+    jobs="$(pf_slurm_running_ids | sed 's/$/.batch/' | paste -sd, -)"
+    [[ -n "$jobs" ]] && sstat -j "$jobs" "$@"
+}
+alias pf_slurm_sstat="pf_slurm_sstat_all --format=JobID,AveCPU,MaxRSS,AveRSS,MaxDiskRead,MaxDiskWrite"
+alias pf_slurm_recent_ids="ls -1r ~/outputs | sed -n 's/^slurm-\([0-9]\+\)\..*/\1/p' | uniq | head"
 pf_slurm_recent_logs() {
     local id
     id="$(pf_slurm_recent_ids | head -n 1)"
     code ~/outputs/slurm-"$id".out ~/outputs/slurm-"$id".err
+}
+
+alias pf_slurm_srun_bash() {
+    srun --jobid=${1:?Usage: pf_update_email JOBID} --overlap --pty bash
 }
