@@ -62,6 +62,6 @@ pf_slurm_recent_logs() {
     code ~/outputs/slurm-"$id".out ~/outputs/slurm-"$id".err
 }
 
-alias pf_slurm_srun_bash() {
+pf_slurm_srun_bash() {
     srun --jobid=${1:?Usage: pf_update_email JOBID} --overlap --pty bash
 }
