@@ -52,7 +52,15 @@ pf_slurm_sstat_all() {
 }
 pf_slurm_sstat() {
     pf_slurm_sstat_all --parsable2 --format=JobID,AveCPU,MaxRSS,AveRSS,MaxDiskRead,MaxDiskWrite |
-    awk -F'|' 'BEGIN{OFS="|"} NR==1{$3="MaxRSS_GiB"; $4="AveRSS_GiB"} NR>1{gsub(/K/,"",$3); gsub(/K/,"",$4); $3=sprintf("%.2f",$3/1048576); $4=sprintf("%.2f",$4/1048576)} 1' |
+    awk -F'|' 'BEGIN{OFS="|"}
+        NR==1 {$3="MaxRSS_GiB"; $4="AveRSS_GiB"; $5="DiskRead_GiB"; $6="DiskWrite_GiB"}
+        NR>1 {
+            gsub(/K/,"",$3); gsub(/K/,"",$4)
+            $3=sprintf("%.2f",$3/1048576)
+            $4=sprintf("%.2f",$4/1048576)
+            $5=sprintf("%.2f",$5/1073741824)
+            $6=sprintf("%.2f",$6/1073741824)
+        } 1' |
     column -t -s'|'
 }
 alias pf_slurm_recent_ids="ls -1r ~/outputs | sed -n 's/^slurm-\([0-9]\+\)\..*/\1/p' | uniq | head"
