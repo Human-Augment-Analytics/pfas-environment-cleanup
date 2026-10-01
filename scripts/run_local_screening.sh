@@ -17,7 +17,10 @@ if [[ ! -f "$PROJECT_ROOT/qe_environment.yaml" ]]; then
     exit 1
 fi
 
-CSV_FILE="$PROJECT_ROOT/scripts/molecular_adsorbents_smiles.csv"
+# Adsorbent manifest (header ID,Name,SMILES,Category). Override to screen a
+# different manifest, e.g. the seed-campaign one:
+#   CSV_FILE="$PWD/scripts/seed_campaign_v1.csv" bash scripts/run_local_screening.sh
+CSV_FILE="${CSV_FILE:-$PROJECT_ROOT/scripts/molecular_adsorbents_smiles.csv}"
 WORKFLOW_SCRIPT="$PROJECT_ROOT/scripts/run_dft_workflow.sh"
 MASTER_RESULTS="$PROJECT_ROOT/scripts/master_results.txt"
 PFAS_SMILES_TARGET="FC(F)(F)C(=O)O"

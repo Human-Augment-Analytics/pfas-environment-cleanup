@@ -16,7 +16,11 @@
 #SBATCH --account=coc
 #SBATCH --qos=coc-ice
 
-CSV_FILE="molecular_adsorbents_smiles.csv"
+# Adsorbent manifest (header ID,Name,SMILES,Category; task id = 1-based CSV
+# line). Override to screen a different manifest, e.g. the seed-campaign one:
+#   sbatch --export=ALL,CSV_FILE=scripts/seed_campaign_v1.csv --array=2-895 \
+#       scripts/run_batch_screening.sh
+CSV_FILE="${CSV_FILE:-molecular_adsorbents_smiles.csv}"
 
 # CSV header: ID,Name,SMILES,Category. Parse with python's csv module because
 # several fields are quoted and contain commas (e.g. row 045's Name), which
