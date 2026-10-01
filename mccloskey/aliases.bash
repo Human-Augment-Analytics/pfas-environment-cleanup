@@ -73,3 +73,36 @@ pf_slurm_recent_logs() {
 pf_slurm_srun_bash() {
     srun --jobid=${1:?Usage: pf_update_email JOBID} --overlap --pty bash
 }
+
+# Show only the selected job's processes, once on each allocated node.
+pf_slurm_processes() {
+    local jobs job_id node_count
+    jobs="$(squeue -u "$USER" -t RUNNING -h -o '%i %D')" || return
+    [[ -n "$jobs" ]] || { echo "No running jobs."; return 0; }
+
+    while read -r job_id node_count; do
+        printf '\nJob %s\n' "$job_id"
+        srun --jobid="$job_id" --overlap --exact --immediate=10 \
+            --nodes="$node_count" --ntasks="$node_count" \
+            --ntasks-per-node=1 --cpus-per-task=1 --label \
+            bash -c '
+                printf "Node: %s\n" "$(hostname)"
+                listing=$(scontrol listpids "$1") || exit
+                pids=$(printf "%s\n" "$listing" |
+                    awk '\''$1 ~ /^[0-9]+$/ {print $1}'\'' | paste -sd, -)
+                if [[ -n "$pids" ]]; then
+                    ps -ww -p "$pids" \
+                        -o pid,ppid,stat,etime,time,pcpu,pmem,rss,args --sort=-rss
+                else
+                    echo "No job processes found."
+                fi
+            ' bash "$job_id" || printf 'Could not inspect job %s.\n' "$job_id" >&2
+    done <<< "$jobs"
+}
+
+pf_largest_files() {
+    find . -type f -printf '%s %p\n' |
+    sort -nr |
+    head -n 30 |
+    numfmt --field=1 --to=iec
+}
