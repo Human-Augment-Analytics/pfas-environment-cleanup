@@ -50,7 +50,11 @@ pf_slurm_sstat_all() {
     jobs="$(pf_slurm_running_ids | sed 's/$/.batch/' | paste -sd, -)"
     [[ -n "$jobs" ]] && sstat -j "$jobs" "$@"
 }
-alias pf_slurm_sstat="pf_slurm_sstat_all --format=JobID,AveCPU,MaxRSS,AveRSS,MaxDiskRead,MaxDiskWrite"
+pf_slurm_sstat() {
+    pf_slurm_sstat_all --parsable2 --format=JobID,AveCPU,MaxRSS,AveRSS,MaxDiskRead,MaxDiskWrite |
+    awk -F'|' 'BEGIN{OFS="|"} NR==1{$3="MaxRSS_GiB"; $4="AveRSS_GiB"} NR>1{gsub(/K/,"",$3); gsub(/K/,"",$4); $3=sprintf("%.2f",$3/1048576); $4=sprintf("%.2f",$4/1048576)} 1' |
+    column -t -s'|'
+}
 alias pf_slurm_recent_ids="ls -1r ~/outputs | sed -n 's/^slurm-\([0-9]\+\)\..*/\1/p' | uniq | head"
 pf_slurm_recent_logs() {
     local id
