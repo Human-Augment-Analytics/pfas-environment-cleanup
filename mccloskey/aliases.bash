@@ -1,3 +1,6 @@
+# Remember the location when sourced so slide exports work from any directory.
+PF_ALIASES_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
 pf_print_line() {
     awk -v n="$1" 'NR == n'
 }
@@ -105,4 +108,42 @@ pf_largest_files() {
     sort -nr |
     head -n 30 |
     numfmt --field=1 --to=iec
+}
+
+# Export Slidev Markdown; default output is beside the input with a .pptx suffix.
+pf_md_to_pptx() {
+    if [[ $# -eq 0 ]]; then
+        echo "Usage: pf_md_to_pptx INPUT.md [OUTPUT.pptx] [Slidev options]" >&2
+        return 1
+    fi
+
+    local input output cli node_bin browser
+    local -a browser_args=()
+    input="$(realpath -e -- "$1")" || return
+    [[ -f "$input" ]] || { echo "Not a file: $input" >&2; return 1; }
+    shift
+    output="${input%.*}.pptx"
+    if [[ $# -gt 0 && "$1" != --* ]]; then
+        output="$1"
+        shift
+    fi
+
+    cli="$PF_ALIASES_DIR/slides/node_modules/.bin/slidev"
+    node_bin="$PF_ALIASES_DIR/slides/node_modules/.bin/node"
+    if [[ ! -x "$cli" || ! -x "$node_bin" ]]; then
+        echo "Install export dependencies first: (cd \"$PF_ALIASES_DIR/slides\" && PLAYWRIGHT_BROWSERS_PATH=\"\$PWD/.playwright\" npm ci)" >&2
+        return 1
+    fi
+
+    # Prefer an available project-local browser, including a reused installation.
+    for browser in "$PF_ALIASES_DIR"/slides/.playwright/chromium-*/chrome-linux64/chrome; do
+        if [[ -x "$browser" ]]; then
+            browser_args=(--executable-path "$browser")
+            break
+        fi
+    done
+
+    PLAYWRIGHT_BROWSERS_PATH="$PF_ALIASES_DIR/slides/.playwright" \
+        "$node_bin" "$cli" export "$input" --format pptx --output "$output" \
+        --wait-until domcontentloaded --wait 1000 "${browser_args[@]}" "$@"
 }
