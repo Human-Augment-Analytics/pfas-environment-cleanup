@@ -6,13 +6,18 @@ echo "[job] host: $(hostname)"
 echo "[job] pwd: $(pwd)"
 
 if command -v module &> /dev/null; then
+    # PACE-ICE (RHEL9 lmod hierarchy), verified 2026-10-02: quantum-espresso/7.3
+    # lives under the openmpi/4.1.5 + gcc/12.3.0 hierarchy and only becomes
+    # loadable once both are active. The login default (mvapich2) cannot be
+    # auto-swapped, and a bare `module load openmpi` fails under this hierarchy
+    # (which would abort under set -e). Follow the sequence documented in the
+    # QE 7.3 module file itself; anaconda3 must come BEFORE QE so QE's pw.x and
+    # Open MPI stay ahead of anaconda's shadowing mpirun in PATH.
+    module purge
+    module load gcc/12.3.0
+    module load openmpi/4.1.5
     module load anaconda3
-    # Pin Quantum ESPRESSO to the native 7.3 build verified on PACE-ICE.
-    # The unpinned default can resolve to a container-based build whose
-    # pw.x fails under "mpirun -np ... pw.x", and loading openmpi after
-    # an unpinned QE load can silently swap in a different build.
     module load quantum-espresso/7.3
-    module load openmpi
 fi
 
 if command -v conda &> /dev/null; then
