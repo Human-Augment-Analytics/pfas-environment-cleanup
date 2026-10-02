@@ -27,6 +27,7 @@ Usage:
 Exit code 0 = contract holds; 1 = it does not (suitable for CI / pre-submit
 gates).  Stdlib-only.
 """
+
 from __future__ import annotations
 
 import csv
@@ -46,10 +47,12 @@ from seedset_utils import (  # noqa: E402
     smiles_issues,
 )
 
-DEFAULT_CSV = Path(__file__).resolve().parents[1] / "shivani_ml_models" / "cluster_centers.csv"
+DEFAULT_CSV = (
+    Path(__file__).resolve().parents[1] / "shivani_ml_models" / "cluster_centers.csv"
+)
 
-HEAVY_CAP = 80     # campaign tractability cap (see make_seed_campaign.py)
-MW_CAP = 1000.0    # loose secondary cap on the CENTROID average MW
+HEAVY_CAP = 80  # campaign tractability cap (see make_seed_campaign.py)
+MW_CAP = 1000.0  # loose secondary cap on the CENTROID average MW
 
 
 def fail(msg: str) -> None:
@@ -117,7 +120,9 @@ def main(argv: list[str]) -> int:
 
     if clusters and clusters != list(range(clusters[0], clusters[0] + n)):
         gaps = sorted(set(range(clusters[0], clusters[-1] + 1)) - set(clusters))
-        fail(f"cluster ids not contiguous; missing: {gaps[:10]}{'...' if len(gaps) > 10 else ''}")
+        fail(
+            f"cluster ids not contiguous; missing: {gaps[:10]}{'...' if len(gaps) > 10 else ''}"
+        )
         errors += 1
 
     cids = [str(r["medoid_CID"]).strip() for r in rows]
@@ -130,7 +135,9 @@ def main(argv: list[str]) -> int:
         dup = [s for s, k in Counter(smis).items() if k > 1]
         fail(f"duplicate medoid_SMILES: {dup[:3]}")
         errors += 1
-    info(f"total clustered molecules (sum n_points): {sum(int(r['n_points']) for r in rows):,}")
+    info(
+        f"total clustered molecules (sum n_points): {sum(int(r['n_points']) for r in rows):,}"
+    )
 
     # 3. elements -----------------------------------------------------------
     unknown: Counter = Counter()
@@ -142,8 +149,10 @@ def main(argv: list[str]) -> int:
         fail(f"elements outside pseudopotential coverage: {dict(unknown)}")
         errors += 1
     else:
-        info("elements: all within repo pseudopotential coverage "
-             f"({', '.join(sorted(SUPPORTED_ELEMENTS))})")
+        info(
+            "elements: all within repo pseudopotential coverage "
+            f"({', '.join(sorted(SUPPORTED_ELEMENTS))})"
+        )
 
     # 4. charge semantics (the reason this validator exists) ----------------
     trap = mixed = agree = 0
@@ -152,7 +161,9 @@ def main(argv: list[str]) -> int:
     for r in rows:
         centroid_q = _safe_float(r["Charge"])
         if centroid_q is None:
-            bad_q.append(f"cluster {r['cluster']}: unparseable/non-finite Charge {r['Charge']!r}")
+            bad_q.append(
+                f"cluster {r['cluster']}: unparseable/non-finite Charge {r['Charge']!r}"
+            )
             continue
         try:
             med_q, src = medoid_charge(r)
@@ -173,34 +184,47 @@ def main(argv: list[str]) -> int:
         errors += 1
 
     if rows:
-        info(f"medoid formal charge (true, via {medoid_charge(rows[0])[1]}): "
-             f"{dict(sorted(charge_hist.items()))}")
-        info(f"centroid-vs-medoid: {agree} agree | {mixed} mixed-cluster averages | "
-             f"{trap} rows whose centroid-average Charge is a tiny nonzero "
-             f"remainder an exact 'Charge != 0' filter would misclassify")
+        info(
+            f"medoid formal charge (true, via {medoid_charge(rows[0])[1]}): "
+            f"{dict(sorted(charge_hist.items()))}"
+        )
+        info(
+            f"centroid-vs-medoid: {agree} agree | {mixed} mixed-cluster averages | "
+            f"{trap} rows whose centroid-average Charge is a tiny nonzero "
+            f"remainder an exact 'Charge != 0' filter would misclassify"
+        )
     if trap:
-        info("NOTE: never filter this CSV on exact 'Charge != 0' -- use "
-             "seedset_utils.medoid_charge() / make_seed_campaign.py instead "
-             "(docs/seed_set_data_dictionary.md)")
+        info(
+            "NOTE: never filter this CSV on exact 'Charge != 0' -- use "
+            "seedset_utils.medoid_charge() / make_seed_campaign.py instead "
+            "(docs/seed_set_data_dictionary.md)"
+        )
     if sum(charge_hist.values()) != n:
         fail("charge check did not cover every row")
         errors += 1
 
     # 5. size caps (informational - lane policy lives in make_seed_campaign) -
-    over_heavy = sum(1 for r in rows if heavy_atoms(r["medoid_SMILES"] or "") > HEAVY_CAP)
-    over_mw = sum(1 for r in rows
-                  if (_safe_float(r["MolecularWeight"]) or 0.0) > MW_CAP)
-    info(f"tractability: {over_heavy} medoids > {HEAVY_CAP} heavy atoms; "
-         f"{over_mw} centroid MW > {MW_CAP:.0f} (caps are campaign lane policy)")
+    over_heavy = sum(
+        1 for r in rows if heavy_atoms(r["medoid_SMILES"] or "") > HEAVY_CAP
+    )
+    over_mw = sum(
+        1 for r in rows if (_safe_float(r["MolecularWeight"]) or 0.0) > MW_CAP
+    )
+    info(
+        f"tractability: {over_heavy} medoids > {HEAVY_CAP} heavy atoms; "
+        f"{over_mw} centroid MW > {MW_CAP:.0f} (caps are campaign lane policy)"
+    )
 
-    print(("PASS " if errors == 0 else "FAILED") +
-          f": {errors} hard error(s), {n} rows checked", flush=True)
+    print(
+        ("PASS " if errors == 0 else "FAILED")
+        + f": {errors} hard error(s), {n} rows checked",
+        flush=True,
+    )
     return 1 if errors else 0
 
 
 if __name__ == "__main__":
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+    _reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if _reconfigure is not None:
+        _reconfigure(encoding="utf-8", errors="replace")
     sys.exit(main(sys.argv))

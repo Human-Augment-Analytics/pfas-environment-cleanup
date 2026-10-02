@@ -26,16 +26,25 @@ Design constraints:
 
 See ``docs/seed_set_data_dictionary.md`` for the full column reference.
 """
+
 from __future__ import annotations
 
 import re
 
 #: Exact expected header of the seed CSV.
 SEED_COLUMNS = [
-    "cluster", "n_points",
-    "MolecularWeight", "ExactMass", "Charge", "XLogP", "TPSA",
-    "HBondDonorCount", "HBondAcceptorCount", "RotatableBondCount",
-    "medoid_CID", "medoid_SMILES",
+    "cluster",
+    "n_points",
+    "MolecularWeight",
+    "ExactMass",
+    "Charge",
+    "XLogP",
+    "TPSA",
+    "HBondDonorCount",
+    "HBondAcceptorCount",
+    "RotatableBondCount",
+    "medoid_CID",
+    "medoid_SMILES",
 ]
 
 #: Columns that are inverse-transformed centroid averages, not medoid values.
@@ -81,7 +90,7 @@ def heavy_atoms(smiles: str) -> int:
     stripped, n_bracket = strip_brackets(smiles)
     i = n = 0
     while i < len(stripped):
-        if stripped[i:i + 2] in ("Cl", "Br"):
+        if stripped[i : i + 2] in ("Cl", "Br"):
             n += 1
             i += 2
             continue
@@ -101,7 +110,7 @@ def elements_of(smiles: str) -> set[str]:
     stripped, _ = strip_brackets(smiles)
     for i, ch in enumerate(stripped):
         if ch in "BCNOPSFIbcnopsf":
-            two = stripped[i:i + 2]
+            two = stripped[i : i + 2]
             if two in ("Cl", "Br"):
                 elems.add(two)
             else:
@@ -135,7 +144,7 @@ def smiles_issues(smiles: str) -> list[str]:
     i = 0
     while i < len(stripped):
         if stripped[i] == "%":
-            label = stripped[i:i + 3]
+            label = stripped[i : i + 3]
             i += 3
         elif stripped[i].isdigit():
             label = stripped[i]
@@ -197,7 +206,10 @@ def _self_test() -> None:
     # digits inside brackets are H-counts/charges, never ring labels (CID 448944)
     assert smiles_issues("COC1=CC(=C(C=C1)OCC[NH+]=C(N)N)C[NH2+]CCCC[NH+]=C(N)N") == []
     assert smiles_issues("C1CC") == ["unbalanced ring-bond digits"]
-    assert medoid_charge({"medoid_SMILES": "CC(=O)[O-]"}) == (-1, "smiles:bracket-atoms")
+    assert medoid_charge({"medoid_SMILES": "CC(=O)[O-]"}) == (
+        -1,
+        "smiles:bracket-atoms",
+    )
     assert classify_centroid_charge(1e-16, 0) == "noise_trap"
     assert classify_centroid_charge(0.0, 0) == "agree"
     assert classify_centroid_charge(0.5, 0) == "mixed"

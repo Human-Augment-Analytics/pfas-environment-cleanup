@@ -25,9 +25,9 @@ fractional (e.g. `0.31`), matching neither member.
 **Correct pattern — derive the medoid's truth from its SMILES:**
 
 ```python
-from seedset_utils import medoid_charge, heavy_atoms   # scripts/
+from seedset_utils import medoid_charge, heavy_atoms  # scripts/
 
-q  = medoid_charge(row)     # (net formal charge, provenance) — SMILES bracket atoms
+q = medoid_charge(row)  # (net formal charge, provenance) — SMILES bracket atoms
 hv = heavy_atoms(row["medoid_SMILES"])
 ```
 
