@@ -2,3 +2,14 @@
 data/*.csv
 models/*.joblib
 note.md
+
+# Workflow outputs (QE runs are large and machine-local)
+dft_cases/
+compounds/
+dft_runs/
+logs/
+/master_results.txt
+__pycache__/
+.env-pfas-ci/
+# keep the one legacy tracked cache dir visible (do not untrack committed files)
+!qespresso_pipeline/__pycache__/

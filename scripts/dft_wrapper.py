@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shlex
 import subprocess
 from dataclasses import dataclass
@@ -16,9 +17,13 @@ DEFAULT_LOCAL_CACHE = "./data/dft_cache"
 DEFAULT_CLUSTER_HOST = "login-ice.pace.gatech.edu"
 
 
-def run(cmd: str, check: bool = True, capture: bool = False) -> subprocess.CompletedProcess:
+def run(
+    cmd: str, check: bool = True, capture: bool = False
+) -> subprocess.CompletedProcess:
     if capture:
-        p = subprocess.run(cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.run(
+            cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
     else:
         p = subprocess.run(cmd, shell=True)
 
@@ -40,7 +45,12 @@ class Cluster:
 
 
 def now_utc_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return (
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 def rdir(c: Cluster, case_name: str) -> str:
@@ -60,23 +70,42 @@ def make_control_path(user: str, host: str) -> str:
 
 def ssh_opts_control(c: Cluster) -> list[str]:
     return [
-        "-o", "ControlMaster=auto",
-        "-o", "ControlPersist=10m",
-        "-o", f"ControlPath={c.control_path}",
-        "-o", "ServerAliveInterval=30",
-        "-o", "LogLevel=ERROR",
+        "-o",
+        "ControlMaster=auto",
+        "-o",
+        "ControlPersist=10m",
+        "-o",
+        f"ControlPath={c.control_path}",
+        "-o",
+        "ServerAliveInterval=30",
+        "-o",
+        "LogLevel=ERROR",
         "-q",
     ]
 
 
 def ssh_cmd_interactive(c: Cluster, remote_cmd: str) -> str:
     opts = ssh_opts_control(c) + ["-tt"]
-    return "ssh " + " ".join(shlex.quote(x) for x in opts) + " " + shlex.quote(c.ssh_target) + " " + shlex.quote(remote_cmd)
+    return (
+        "ssh "
+        + " ".join(shlex.quote(x) for x in opts)
+        + " "
+        + shlex.quote(c.ssh_target)
+        + " "
+        + shlex.quote(remote_cmd)
+    )
 
 
 def ssh_cmd_quiet(c: Cluster, remote_cmd: str) -> str:
     opts = ssh_opts_control(c) + ["-T"]
-    return "ssh " + " ".join(shlex.quote(x) for x in opts) + " " + shlex.quote(c.ssh_target) + " " + shlex.quote(remote_cmd)
+    return (
+        "ssh "
+        + " ".join(shlex.quote(x) for x in opts)
+        + " "
+        + shlex.quote(c.ssh_target)
+        + " "
+        + shlex.quote(remote_cmd)
+    )
 
 
 def open_master_connection(c: Cluster) -> None:
@@ -98,7 +127,9 @@ def remote_dir_exists(c: Cluster, remote_path: str) -> bool:
 
 
 def ensure_remote_dirs(c: Cluster, case_name: str) -> None:
-    cmd = ssh_cmd_quiet(c, f"mkdir -p {shlex.quote(rdir(c, case_name))}/{{inputs,outputs,results}}")
+    cmd = ssh_cmd_quiet(
+        c, f"mkdir -p {shlex.quote(rdir(c, case_name))}/{{inputs,outputs,results}}"
+    )
     run(cmd, check=True, capture=False)
 
 
@@ -112,6 +143,8 @@ def submit_slurm_job(
     case_name: str,
     workflow_script: str,
     partition: Optional[str],
+    account: Optional[str],
+    qos: Optional[str],
     time_limit: str,
     cpus: int,
     mem_gb: int,
@@ -143,6 +176,10 @@ def submit_slurm_job(
     ]
     if partition:
         lines.append(f"#SBATCH --partition={partition}")
+    if account:
+        lines.append(f"#SBATCH --account={account}")
+    if qos:
+        lines.append(f"#SBATCH --qos={qos}")
 
     lines += [
         "set -euo pipefail",
@@ -174,14 +211,14 @@ def submit_slurm_job(
     ]
     if adsorbent_cif:
         lines.append(f"export ADSORBENT_CIF={shlex.quote(adsorbent_cif)}")
-        
+
     lines += [
-        "echo \"[DFT] Starting workflow at $(date)\"",
-        "echo \"[DFT] CASE_NAME=$CASE_NAME ADSORBENT_NAME=$ADSORBENT_NAME PFAS_NAME=$PFAS_NAME\"",
-        "echo \"[DFT] SKIP_ADS=$SKIP_ADS SKIP_PFAS=$SKIP_PFAS SKIP_COMPLEX=$SKIP_COMPLEX\"",
+        'echo "[DFT] Starting workflow at $(date)"',
+        'echo "[DFT] CASE_NAME=$CASE_NAME ADSORBENT_NAME=$ADSORBENT_NAME PFAS_NAME=$PFAS_NAME"',
+        'echo "[DFT] SKIP_ADS=$SKIP_ADS SKIP_PFAS=$SKIP_PFAS SKIP_COMPLEX=$SKIP_COMPLEX"',
         shlex.quote(workflow_script),
-        "echo \"[DFT] Finished at $(date)\"",
-        "echo \"DONE\" > DONE",
+        'echo "[DFT] Finished at $(date)"',
+        'echo "DONE" > DONE',
     ]
 
     write_remote_file(c, jobfile, "\n".join(lines) + "\n")
@@ -216,9 +253,90 @@ def fetch(c: Cluster, case_name: str, local_cache: str) -> Path:
     return dst
 
 
+# Rough SMILES size estimation for the submit-time memory hint. A chemistry
+# toolkit is deliberately not used: the wrapper stays dependency-free, and
+# the heavy-atom count only feeds an advisory message.
+_SMILES_ATOM = re.compile(
+    r"\[\d*(?:Br|Cl|Se|As|B|C|N|O|P|S|F|I|b|c|n|o|p|s)"
+    r"|(?:Br|Cl|B|C|N|O|P|S|F|I)"
+    r"|(?:se|as|[bcnops])"
+)
+# Size bands from the README memory table: a TFA-sized pair (~14 heavy atoms
+# across both SMILES) fits in 32 GB; CTAB-sized single molecules (~21) and
+# large pairs build ~30 angstrom cells that want 64 GB; complexes much larger
+# than that occasionally run out of memory even at 64 GB and need 96 on
+# resubmit.
+_SMALL_SYSTEM_HEAVY_ATOMS = 14
+_LARGE_SYSTEM_HEAVY_ATOMS = 28
+
+
+def heavy_atom_count(smiles: Optional[str]) -> int:
+    """Rough heavy-atom (non-hydrogen) count for a SMILES string.
+
+    Counts bracketed elements ([N+], [Br-], [13C], [nH]), the bare organic
+    subset (Br Cl B C N O P S F I), and the bare aromatic subset
+    (b c n o p s se as). Bonds, charges, ring-closure digits, and isotopes
+    are ignored; hydrogens are excluded so the count tracks molecular size
+    the same way the memory-sizing table in the README does.
+    """
+    if not smiles:
+        return 0
+    return len(_SMILES_ATOM.findall(smiles))
+
+
+def memory_warnings(
+    *,
+    adsorbent_smiles: Optional[str],
+    pfas_smiles: Optional[str],
+    mem_gb: int,
+    skip_ads: bool = False,
+    skip_pfas: bool = False,
+    skip_complex: bool = False,
+    pfas_energy_ry: Optional[float] = None,
+) -> list[str]:
+    """Advisory submit-time memory hints, mirroring the README table.
+
+    `pw.x` memory grows with the simulation cell, but the cell is only built
+    on the compute node: at submit time only the SMILES are known, so system
+    size is estimated as a heavy-atom count over what the job will actually
+    run (the skip flags and --pfas-energy-ry drop their side; the complex
+    sums adsorbent + PFAS). A CIF-sourced adsorbent has no SMILES and is
+    invisible to this estimate.
+
+    Returns at most one warning: a suggestion line when the requested
+    --mem-gb is below the README band for the estimated size, or a
+    return-code-137 note when a very large complex is cutting it close at
+    64 GB. Purely advisory - submission proceeds either way, and
+    `seff <jobid>` after the run remains the ground truth.
+    """
+    ads = 0 if skip_ads else heavy_atom_count(adsorbent_smiles)
+    if skip_pfas or pfas_energy_ry is not None:
+        pfas = 0
+    else:
+        pfas = heavy_atom_count(pfas_smiles)
+    complex_atoms = ads + pfas if not skip_complex else 0
+    largest = max(ads, pfas, complex_atoms)
+
+    if largest > _SMALL_SYSTEM_HEAVY_ATOMS and mem_gb < 64:
+        return [
+            f"--mem-gb {mem_gb} looks small for this case (~{largest} heavy "
+            "atoms across the SMILES given); the README memory table "
+            "suggests 64 GB for the ~30 angstrom cells built by large "
+            "adsorbents and long alkyl chains - consider --mem-gb 64"
+        ]
+    if largest > _LARGE_SYSTEM_HEAVY_ATOMS and mem_gb >= 64:
+        return [
+            f"this case looks very large (~{largest} heavy atoms across "
+            "the adsorbent + PFAS complex); 64 GB covers most cases, but "
+            "if pw.x is OOM-killed (return code 137 / oom_kill), resubmit "
+            "with --mem-gb 96 - see the memory-sizing table in the README"
+        ]
+    return []
+
+
 def validate_submit_args(args: argparse.Namespace) -> list[str]:
     """Submit-time validation of argument combinations that are statically
-    known to be fatal inside the SLURM job (audit finding A8).
+    known to be fatal inside the SLURM job.
 
     Before this check, `--adsorbent-source smiles` without `--adsorbent-smiles`
     was only discovered on the compute node, after the wrapper had already
@@ -258,9 +376,13 @@ def validate_submit_args(args: argparse.Namespace) -> list[str]:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="DFT wrapper: submit-if-missing and fetch results.")
+    ap = argparse.ArgumentParser(
+        description="DFT wrapper: submit-if-missing and fetch results."
+    )
     ap.add_argument("--user", required=True, help="Cluster username.")
-    ap.add_argument("--cluster", default=DEFAULT_CLUSTER_HOST, help="Cluster SSH hostname.")
+    ap.add_argument(
+        "--cluster", default=DEFAULT_CLUSTER_HOST, help="Cluster SSH hostname."
+    )
     ap.add_argument("--cluster-root", default=DEFAULT_CLUSTER_ROOT)
     ap.add_argument("--runs-subdir", default=DEFAULT_RUNS_SUBDIR)
     ap.add_argument("--status", action="store_true")
@@ -271,12 +393,35 @@ def main() -> int:
         "--workflow-script",
         default=None,
         help="Path to run_dft_workflow.sh on the cluster. "
-             f"Default: <cluster-root>/scripts/run_dft_workflow.sh.",
+        f"Default: <cluster-root>/scripts/run_dft_workflow.sh.",
     )
     ap.add_argument("--partition", default=None)
-    ap.add_argument("--time", default="12:00:00")
+    ap.add_argument(
+        "--account",
+        default=None,
+        help="Optional Slurm account to charge the job to (e.g. 'coc' on PACE-ICE).",
+    )
+    ap.add_argument(
+        "--qos",
+        default=None,
+        help="Optional Slurm QOS to submit the job under (e.g. 'coc-ice' on PACE-ICE).",
+    )
+    ap.add_argument(
+        "--time",
+        default="18:00:00",
+        help="Walltime limit for the job. 18 h matches the walltime cap "
+        "of the ice-cpu partition that the repository's screening "
+        "scripts submit to on PACE-ICE.",
+    )
     ap.add_argument("--cpus", type=int, default=8)
-    ap.add_argument("--mem-gb", type=int, default=32)
+    ap.add_argument(
+        "--mem-gb",
+        type=int,
+        default=64,
+        help="Memory request in GB. 64 covers the roughly 30 angstrom "
+        "cells produced by large adsorbents; see the memory-sizing "
+        "table in the README.",
+    )
     ap.add_argument("--no-auth-check", action="store_true")
 
     ap.add_argument("--skip-ads", action="store_true")
@@ -291,12 +436,18 @@ def main() -> int:
     ap.add_argument("--pfas-energy-ry", type=float, default=None)
     ap.add_argument("--adsorbent-source", choices=["smiles", "cif"], required=True)
     ap.add_argument("--adsorbent-cif", default=None)
-    ap.add_argument("--system-type", choices=["molecule", "periodic"], default="molecule")
-    ap.add_argument("--mode", choices=["lowmem", "cluster", "production"], default="cluster")
+    ap.add_argument(
+        "--system-type", choices=["molecule", "periodic"], default="molecule"
+    )
+    ap.add_argument(
+        "--mode", choices=["lowmem", "cluster", "production"], default="cluster"
+    )
     args = ap.parse_args()
 
     if not args.workflow_script:
-        args.workflow_script = args.cluster_root.rstrip("/") + "/scripts/run_dft_workflow.sh"
+        args.workflow_script = (
+            args.cluster_root.rstrip("/") + "/scripts/run_dft_workflow.sh"
+        )
     if args.submit_if_missing:
         errors = validate_submit_args(args)
         if errors:
@@ -319,27 +470,49 @@ def main() -> int:
     summary = remote_file_exists(c, f"{run_dir}/results/summary.json")
 
     if args.status:
-        print(json.dumps(
-            {
-                "case_name": args.case_name,
-                "run_dir": run_dir,
-                "done": done,
-                "summary": summary,
-            },
-            indent=2
-        ))
+        print(
+            json.dumps(
+                {
+                    "case_name": args.case_name,
+                    "run_dir": run_dir,
+                    "done": done,
+                    "summary": summary,
+                },
+                indent=2,
+            )
+        )
         return 0
 
     if args.submit_if_missing:
         if done and summary:
-            print(f"[SKIP] {args.case_name}: results already exist (DONE + summary.json).")
+            print(
+                f"[SKIP] {args.case_name}: results already exist (DONE + summary.json)."
+            )
         else:
-            print(f"[SUBMIT] {args.case_name}: preparing directory and submitting SLURM job.")
+            for warning in memory_warnings(
+                adsorbent_smiles=args.adsorbent_smiles,
+                pfas_smiles=args.pfas_smiles,
+                mem_gb=args.mem_gb,
+                skip_ads=args.skip_ads,
+                skip_pfas=args.skip_pfas,
+                skip_complex=args.skip_complex,
+                pfas_energy_ry=args.pfas_energy_ry,
+            ):
+                print(f"[WARN] {warning}")
+            print(
+                f"[SUBMIT] {args.case_name}: preparing directory and submitting SLURM job."
+            )
             ensure_remote_dirs(c, args.case_name)
 
-            ads_done = remote_file_exists(c, f"{c.root}/compounds/adsorbents/{args.adsorbent_name}/adsorbent.out")
-            pfas_done = remote_file_exists(c, f"{c.root}/compounds/pfas/{args.pfas_name}/pfas.out")
-            complex_done = remote_file_exists(c, f"{c.root}/dft_cases/{args.case_name}/complex/complex.out")
+            ads_done = remote_file_exists(
+                c, f"{c.root}/compounds/adsorbents/{args.adsorbent_name}/adsorbent.out"
+            )
+            pfas_done = remote_file_exists(
+                c, f"{c.root}/compounds/pfas/{args.pfas_name}/pfas.out"
+            )
+            complex_done = remote_file_exists(
+                c, f"{c.root}/dft_cases/{args.case_name}/complex/complex.out"
+            )
 
             skip_ads = args.skip_ads or ads_done
             skip_pfas = args.skip_pfas or pfas_done or (args.pfas_energy_ry is not None)
@@ -367,18 +540,24 @@ def main() -> int:
                 },
                 "slurm": {
                     "partition": args.partition,
+                    "account": args.account,
+                    "qos": args.qos,
                     "time": args.time,
                     "cpus": args.cpus,
                     "mem_gb": args.mem_gb,
                 },
             }
-            write_remote_file(c, f"{run_dir}/meta.json", json.dumps(meta, indent=2) + "\n")
+            write_remote_file(
+                c, f"{run_dir}/meta.json", json.dumps(meta, indent=2) + "\n"
+            )
 
             submit_slurm_job(
                 c=c,
                 case_name=args.case_name,
                 workflow_script=args.workflow_script,
                 partition=args.partition,
+                account=args.account,
+                qos=args.qos,
                 time_limit=args.time,
                 cpus=args.cpus,
                 mem_gb=args.mem_gb,

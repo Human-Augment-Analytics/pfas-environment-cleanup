@@ -1,0 +1,54 @@
+[project]
+name = "pfas-materials-discovery"
+version = "0.1.0"
+description = "PFAS materials discovery workflows and Quantum ESPRESSO orchestration"
+requires-python = ">=3.12,<3.13"
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-timeout",
+    "ruff",
+    "ty",
+]
+
+chemistry = [
+    "paramiko",
+    "rdkit",
+]
+
+qe = [
+    "ase",
+    "cif2cell",
+    "numpy",
+    "openbabel",
+    "pymatgen",
+]
+
+data = [
+    "pandas",
+    "requests",
+    "scikit-learn",
+    "torch-geometric",
+    "torch",
+]
+
+[tool.uv]
+package = false
+default-groups = "all"
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ty.src]
+exclude = [
+    "shivani_ml_models/gnn.py",
+    "basic_molecule_gnn/basic_gnn_molecule.py",
+]
+
+[tool.pytest.ini_options]
+timeout = 2
+session_timeout = 60
+markers = [
+    "slow: test is excluded from the fast local and CI test suites",
+]

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import os
 import subprocess
 import sys
 import shutil
@@ -10,8 +11,11 @@ from pymatgen.core import Molecule, Lattice, Structure
 from pymatgen.io.cif import CifWriter
 from pathlib import Path
 
-# Set the appropriate path for VESTA
-VESTA_PATH = "/home/max/Downloads/VESTA-gtk3/VESTA"
+# Resolve the VESTA binary: $VESTA_PATH if set (non-empty), else the first
+# "VESTA" executable on PATH (shutil.which), else the bare name so that
+# check_executable() reports a clean "not found in PATH" error.
+VESTA_PATH = os.environ.get("VESTA_PATH") or shutil.which("VESTA") or "VESTA"
+
 
 def check_executable(name: str):
     """Ensure required external executable exists."""
@@ -68,7 +72,10 @@ def run_vesta(input_mol: Path, output_name: str) -> Path:
 
     return output_cif
 
-def mol_to_cif_pymatgen(input_mol: Path, output_name: str, padding: float = 5.0) -> Path:
+
+def mol_to_cif_pymatgen(
+    input_mol: Path, output_name: str, padding: float = 5.0
+) -> Path:
     """
     Convert a MOL file to a CIF file using pymatgen:
     Automatically detecting molecule size and placing in a cubic unit cell,
@@ -100,10 +107,7 @@ def mol_to_cif_pymatgen(input_mol: Path, output_name: str, padding: float = 5.0)
 
     # Create structure
     structure = Structure(
-        lattice,
-        mol.species,
-        shifted_coords,
-        coords_are_cartesian=True
+        lattice, mol.species, shifted_coords, coords_are_cartesian=True
     )
 
     # Write CIF
@@ -140,7 +144,8 @@ def run_cif2cell(input_cif: Path, output_name: str) -> Path:
         print("Warning: QE input file not detected after cif2cell.", file=sys.stderr)
 
     return output_in
-    
+
+
 def modify_qe_input(input_file, output_file=None):
     """
     Modify a Quantum Espresso input file produced by cif2cell by:
@@ -227,7 +232,7 @@ def modify_qe_input(input_file, output_file=None):
 /
 """
 
-    # conv_thr can be increase to hasten convergence 
+    # conv_thr can be increase to hasten convergence
     electrons_block = """&ELECTRONS
   conv_thr=1d-07,
   mixing_beta=0.7d0,
@@ -235,7 +240,7 @@ def modify_qe_input(input_file, output_file=None):
 """
 
     # Append K-mesh footer
-    # Depending on compound, K-mesh can be modified for optimality 
+    # Depending on compound, K-mesh can be modified for optimality
     # Typically tested at different values for convergence
     # Can be standardized via Monkhorst-Pack method, or 0.15-0.3 1/A distance
     # Different for non-metals/metals, lattices, etc.
@@ -268,14 +273,8 @@ def main():
     parser = argparse.ArgumentParser(
         description="Full pipeline: SMILES to MOL to CIF to Quantum ESPRESSO input"
     )
-    parser.add_argument(
-        "input",
-        help="Input SMILES format:"
-    )
-    parser.add_argument(
-        "output",
-        help="Base output filename (without extension):"
-    )
+    parser.add_argument("input", help="Input SMILES format:")
+    parser.add_argument("output", help="Base output filename (without extension):")
 
     args = parser.parse_args()
 

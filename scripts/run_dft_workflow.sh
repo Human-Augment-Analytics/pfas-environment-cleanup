@@ -7,7 +7,11 @@ echo "[job] pwd: $(pwd)"
 
 if command -v module &> /dev/null; then
     module load anaconda3
-    module load quantum-espresso
+    # Pin Quantum ESPRESSO to the native 7.3 build verified on PACE-ICE.
+    # The unpinned default can resolve to a container-based build whose
+    # pw.x fails under "mpirun -np ... pw.x", and loading openmpi after
+    # an unpinned QE load can silently swap in a different build.
+    module load quantum-espresso/7.3
     module load openmpi
 fi
 
@@ -22,8 +26,8 @@ fi
 # the repo root (older deployments), or be invoked through a symlink at the
 # repo root, so resolve the physical script path and walk up instead of
 # assuming a fixed relative position. Anchor the walk-up on the root-only
-# qespresso_pipeline/ directory: qe_environment.yaml is also tracked under
-# scripts/ (audit finding B3) and must not anchor root detection.
+# qespresso_pipeline/ directory; it exists only at the repo root, so it
+# reliably marks the project root.
 SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
 PROJECT_ROOT="$(dirname "$SCRIPT_PATH")"
 while [[ "$PROJECT_ROOT" != "/" && ! -d "$PROJECT_ROOT/qespresso_pipeline" ]]; do

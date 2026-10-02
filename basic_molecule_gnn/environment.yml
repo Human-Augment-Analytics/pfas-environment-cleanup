@@ -18,3 +18,8 @@ dependencies:
   - networkx
   - ase            # useful if you later handle structures
   - pymatgen       # useful for CIF/materials workflows
+  # basic_gnn_molecule.py (and shivani_ml_models/gnn.py) import torch and
+  # torch_geometric; pip is PyTorch's supported install route.
+  - pip:
+      - torch
+      - torch_geometric
