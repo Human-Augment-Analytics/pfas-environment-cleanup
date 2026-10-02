@@ -915,6 +915,9 @@ wheels = [
 name = "pfas-materials-discovery"
 version = "0.1.0"
 source = { virtual = "." }
+dependencies = [
+    { name = "visidata" },
+]
 
 [package.dev-dependencies]
 chemistry = [
@@ -943,6 +946,7 @@ qe = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "visidata", specifier = ">=3.4" }]
 
 [package.metadata.requires-dev]
 chemistry = [
@@ -1503,6 +1507,28 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/e3/05/b17359e1cefb4f909b5e40b1b90a496d987258916dbbf88e842c729f510e/urllib3-2.8.0.tar.gz", hash = "sha256:63bf2ead4c879426ebf22ef2a781eeb4aa3b4ae798a0435506f8687fd5bb9b63", size = 458972, upload-time = "2026-09-15T19:29:36.253Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/92/9d/c4e665119135114480843e7ab388fa94d8480650450e6f8e26b70d323a4c/urllib3-2.8.0-py3-none-any.whl", hash = "sha256:0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3", size = 135717, upload-time = "2026-09-15T19:29:34.577Z" },
+]
+
+[[package]]
+name = "visidata"
+version = "3.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "python-dateutil" },
+    { name = "windows-curses", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/eb/dd/682ac00672daf1325a3174d5cb5f32b9d9a2aeb42d3baa18e669278308d0/visidata-3.4.tar.gz", hash = "sha256:f5afcdb6823c570760be9692f33d0642a20cd86925b4cab721d108050d0f8201", size = 13253484, upload-time = "2026-07-01T05:00:16.606Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/52/0a/23878c577da6227faa79c26ec80567e2998f8eb655d61295b18a2f163509/visidata-3.4-py3-none-any.whl", hash = "sha256:9b88473c7bfb5a1752bea5870cc6edd3474cf529ac16c0e465d3ec0014ea99fb", size = 13337076, upload-time = "2026-07-01T05:00:12.004Z" },
+]
+
+[[package]]
+name = "windows-curses"
+version = "2.4.2"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2e/9c/b2a3706c8edadae8ae88b327ba072d6056ad1b492f9996214cff027e9f01/windows_curses-2.4.2-cp312-cp312-win32.whl", hash = "sha256:7ec4629685add716d494e8fbdd0b83485de726e9deeda57d30e742c77a32a156", size = 71547, upload-time = "2026-03-31T12:44:37.797Z" },
+    { url = "https://files.pythonhosted.org/packages/8b/ee/8c5da36191524856fb2c675f8cae99211ccf77bcd4e4a9010477e08000ac/windows_curses-2.4.2-cp312-cp312-win_amd64.whl", hash = "sha256:df782859176f9e8142618e4966d6cee7a53a8b1c819faeb6e606a60fa4f8972a", size = 82282, upload-time = "2026-03-31T12:44:39.106Z" },
 ]
 
 [[package]]
