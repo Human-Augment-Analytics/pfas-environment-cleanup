@@ -16,10 +16,18 @@
 #SBATCH --account=coc
 #SBATCH --qos=coc-ice
 
-# Run from the repo root regardless of where sbatch was invoked, so the
-# relative paths below (logs/, run_dft_workflow.sh, the manifest) resolve.
-SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-cd "$SCRIPT_DIR/.."
+# Work from the repo root so the relative paths below (logs/, the manifest,
+# run_dft_workflow.sh) resolve. Under Slurm the batch script executes from a
+# spool copy, so BASH_SOURCE points into the spool, not the repo — anchor on
+# the submit directory instead (the same anchor sbatch uses to resolve a
+# relative --output). Direct non-Slurm invocation (local sweep, e2e tests)
+# falls back to the script's own location.
+if [ -n "${SLURM_SUBMIT_DIR:-}" ] && [ -f "${SLURM_SUBMIT_DIR}/scripts/run_dft_workflow.sh" ]; then
+    cd "$SLURM_SUBMIT_DIR"
+else
+    SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+    cd "$SCRIPT_DIR/.."
+fi
 
 # Adsorbent manifest (header ID,Name,SMILES,Category; task id = 1-based CSV
 # line). Override to screen a different manifest, e.g. the seed-campaign one:
