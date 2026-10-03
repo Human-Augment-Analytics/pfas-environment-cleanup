@@ -138,7 +138,7 @@ def write_remote_file(c: Cluster, remote_path: str, content: str) -> None:
     run(cmd, check=True, capture=False)
 
 
-def submit_slurm_job(
+def render_job_sbatch(
     c: Cluster,
     case_name: str,
     workflow_script: str,
@@ -160,9 +160,14 @@ def submit_slurm_job(
     adsorbent_cif: Optional[str],
     system_type: str,
     mode: str,
-) -> None:
+) -> str:
+    """Render the job.sbatch script for a case (pure, no SSH side effects).
+
+    Split out of submit_slurm_job so alternative front-ends (dft_easy.py)
+    can reuse the exact same sbatch template - writing the file and
+    calling sbatch their own way - without duplicating the template.
+    """
     run_dir = rdir(c, case_name)
-    jobfile = f"{run_dir}/job.sbatch"
 
     lines = [
         "#!/bin/bash",
@@ -220,7 +225,61 @@ def submit_slurm_job(
         'echo "DONE" > DONE',
     ]
 
-    write_remote_file(c, jobfile, "\n".join(lines) + "\n")
+    return "\n".join(lines) + "\n"
+
+
+def submit_slurm_job(
+    c: Cluster,
+    case_name: str,
+    workflow_script: str,
+    partition: Optional[str],
+    account: Optional[str],
+    qos: Optional[str],
+    time_limit: str,
+    cpus: int,
+    mem_gb: int,
+    skip_ads: bool,
+    skip_pfas: bool,
+    skip_complex: bool,
+    adsorbent_name: str,
+    pfas_name: str,
+    adsorbent_smiles: Optional[str],
+    pfas_smiles: Optional[str],
+    pfas_energy_ry: Optional[float],
+    adsorbent_source: str,
+    adsorbent_cif: Optional[str],
+    system_type: str,
+    mode: str,
+) -> None:
+    """Write job.sbatch (via render_job_sbatch) and submit it with sbatch."""
+    jobfile = f"{rdir(c, case_name)}/job.sbatch"
+    write_remote_file(
+        c,
+        jobfile,
+        render_job_sbatch(
+            c,
+            case_name,
+            workflow_script,
+            partition,
+            account,
+            qos,
+            time_limit,
+            cpus,
+            mem_gb,
+            skip_ads,
+            skip_pfas,
+            skip_complex,
+            adsorbent_name,
+            pfas_name,
+            adsorbent_smiles,
+            pfas_smiles,
+            pfas_energy_ry,
+            adsorbent_source,
+            adsorbent_cif,
+            system_type,
+            mode,
+        ),
+    )
     run(ssh_cmd_quiet(c, f"sbatch {shlex.quote(jobfile)}"), check=True, capture=False)
 
 
