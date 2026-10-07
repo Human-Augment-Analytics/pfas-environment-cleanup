@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ramFields } from "./candidateResults";
 import { Candidate } from "./data";
 import { Filter, filterFields, matchesFilters } from "./filters";
 
@@ -30,7 +31,8 @@ export function AdvancedSearch({
       <p>
         Combine numeric conditions. A cluster must match every condition.
         Average descriptors describe the cluster; CID identifies its
-        representative molecule. Missing values do not match.
+        representative molecule. RAM fields use the latest successful QE
+        estimate for each system, in GiB. Missing values do not match.
       </p>
       <form
         onSubmit={(e) => {
@@ -51,12 +53,21 @@ export function AdvancedSearch({
                 >
                   <optgroup label="Cluster">
                     {Object.entries(filterFields)
-                      .filter(([key]) => key !== "medoid_CID")
+                      .filter(
+                        ([key]) => key !== "medoid_CID" && !(key in ramFields),
+                      )
                       .map(([key, label]) => (
                         <option key={key} value={key}>
                           {label}
                         </option>
                       ))}
+                  </optgroup>
+                  <optgroup label="QE RAM estimates">
+                    {Object.entries(ramFields).map(([key, label]) => (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    ))}
                   </optgroup>
                   <optgroup label="Representative">
                     <option value="medoid_CID">Representative CID</option>

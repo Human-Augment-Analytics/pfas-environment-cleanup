@@ -8,10 +8,16 @@ import {
   parseClusterIDs,
   matchesClusterIDs,
 } from "./filters";
+import {
+  ramFields,
+  preparationLabel,
+  matchesPreparation,
+} from "./candidateResults";
 import { BatchControls } from "./BatchControls";
 import { RunControls } from "./RunControls";
 
 const numericFields = new Set([
+  ...Object.keys(ramFields),
   "cluster",
   "n_points",
   "medoid_CID",
@@ -90,6 +96,16 @@ export function CandidateBrowser({
     [search, setSearch] = useState("");
   const [sort, setSort] = useState(""),
     [direction, setDirection] = useState("asc");
+  const [preparationFilter, setPreparationFilter] = useState("all");
+  const [ramField, setRamField] = useState("complex_ram_per_process_gib");
+  const [minRAM, setMinRAM] = useState(""),
+    [maxRAM, setMaxRAM] = useState("");
+  const ramRangeInvalid =
+    (minRAM !== "" &&
+      (!Number.isFinite(Number(minRAM)) || Number(minRAM) < 0)) ||
+    (maxRAM !== "" &&
+      (!Number.isFinite(Number(maxRAM)) || Number(maxRAM) < 0)) ||
+    (minRAM !== "" && maxRAM !== "" && Number(minRAM) > Number(maxRAM));
   const [run, setRun] = useState<{ candidate: string; system: string } | null>(
     null,
   );
@@ -101,13 +117,34 @@ export function CandidateBrowser({
         data.candidates.filter(
           (c) =>
             !idFilter.error &&
+            !ramRangeInvalid &&
+            matchesPreparation(c, preparationFilter) &&
+            matchesFilters(c, [
+              ...(minRAM !== ""
+                ? [{ field: ramField, operator: ">=", value: minRAM }]
+                : []),
+              ...(maxRAM !== ""
+                ? [{ field: ramField, operator: "<=", value: maxRAM }]
+                : []),
+            ]) &&
             matchesClusterIDs(c.id, idFilter.ranges) &&
             matchesFilters(c, filters),
         ),
         sort,
         direction,
       ),
-    [data.candidates, idFilter, sort, direction, filters],
+    [
+      data.candidates,
+      idFilter,
+      sort,
+      direction,
+      filters,
+      preparationFilter,
+      ramField,
+      minRAM,
+      maxRAM,
+      ramRangeInvalid,
+    ],
   );
   const [selected, setSelected] = useState<Set<string>>(new Set());
   useEffect(() => {
@@ -181,6 +218,64 @@ export function CandidateBrowser({
           />
         </label>
         <label>
+          Preparation{" "}
+          <select
+            aria-label="Filter preparation"
+            value={preparationFilter}
+            onChange={(e) => setPreparationFilter(e.target.value)}
+          >
+            <option value="all">All candidates</option>
+            <option value="prepared">Prepared successfully</option>
+            <option value="not_prepared">No successful preparation</option>
+          </select>
+        </label>
+        <label>
+          RAM field{" "}
+          <select
+            aria-label="RAM field"
+            value={ramField}
+            onChange={(e) => setRamField(e.target.value)}
+          >
+            {Object.entries(ramFields).map(([key, label]) => (
+              <option key={key} value={key}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Min RAM (GiB){" "}
+          <input
+            aria-label="Minimum RAM (GiB)"
+            type="number"
+            min="0"
+            step="any"
+            value={minRAM}
+            onChange={(e) => setMinRAM(e.target.value)}
+          />
+        </label>
+        <label>
+          Max RAM (GiB){" "}
+          <input
+            aria-label="Maximum RAM (GiB)"
+            type="number"
+            min="0"
+            step="any"
+            value={maxRAM}
+            onChange={(e) => setMaxRAM(e.target.value)}
+          />
+        </label>
+        <button
+          disabled={!minRAM && !maxRAM && preparationFilter === "all"}
+          onClick={() => {
+            setMinRAM("");
+            setMaxRAM("");
+            setPreparationFilter("all");
+          }}
+        >
+          Clear RAM/preparation filters
+        </button>
+        <label>
           Sort by{" "}
           <select
             aria-label="Sort by"
@@ -190,15 +285,16 @@ export function CandidateBrowser({
             <option value="">CSV order</option>
             {Object.keys(data.candidates[0]?.fields || {}).map((field) => (
               <option key={field} value={field}>
-                {field === "cluster"
-                  ? "Cluster ID"
-                  : field === "n_points"
-                    ? "Points"
-                    : field === "medoid_CID"
-                      ? "Representative CID"
-                      : field === "medoid_SMILES"
-                        ? "Representative SMILES"
-                        : `Average ${field}`}
+                {ramFields[field] ||
+                  (field === "cluster"
+                    ? "Cluster ID"
+                    : field === "n_points"
+                      ? "Points"
+                      : field === "medoid_CID"
+                        ? "Representative CID"
+                        : field === "medoid_SMILES"
+                          ? "Representative SMILES"
+                          : `Average ${field}`)}
               </option>
             ))}
           </select>
@@ -223,6 +319,17 @@ export function CandidateBrowser({
       >
         {idFilter.error ||
           "Use an ID, a range (20-50), or a comma-separated list (2-10, 15)."}
+      </p>
+      {ramRangeInvalid && (
+        <p className="error" role="alert">
+          Enter nonnegative RAM limits with the minimum no greater than the
+          maximum.
+        </p>
+      )}
+      <p className="filter-help">
+        RAM values are latest successful QE estimates, separately for each
+        system. Missing estimates do not match RAM limits. Use Advanced search
+        to combine RAM conditions.
       </p>
       {filters.length > 0 && (
         <p className="banner">
@@ -303,20 +410,28 @@ export function CandidateBrowser({
         >
           <table className="candidate-table">
             <colgroup>
-              <col style={{ width: "7%" }} />
-              <col style={{ width: "7%" }} />
-              <col style={{ width: "10%" }} />
-              <col style={{ width: "10%" }} />
+              <col style={{ width: "6%" }} />
+              <col style={{ width: "6%" }} />
+              <col style={{ width: "6%" }} />
+              <col style={{ width: "6%" }} />
             </colgroup>
             <colgroup>
-              <col style={{ width: "12%" }} />
-              <col style={{ width: live ? "18%" : "54%" }} />
-              {live && <col style={{ width: "36%" }} />}
+              <col style={{ width: "10%" }} />
+              <col style={{ width: "13%" }} />
+              <col style={{ width: "13%" }} />
+            </colgroup>
+            <colgroup>
+              <col style={{ width: live ? "9%" : "10%" }} />
+              <col style={{ width: live ? "10%" : "30%" }} />
+              {live && <col style={{ width: "21%" }} />}
             </colgroup>
             <thead>
               <tr className="group-headings">
                 <th className="cluster-heading" scope="colgroup" colSpan={4}>
                   Cluster
+                </th>
+                <th className="task-heading" scope="colgroup" colSpan={3}>
+                  Preparation and QE estimates
                 </th>
                 <th
                   className="representative-heading"
@@ -338,6 +453,15 @@ export function CandidateBrowser({
                 </th>
                 <th className="cluster-heading" scope="col">
                   Avg XLogP
+                </th>
+                <th className="task-heading" scope="col">
+                  Inputs
+                </th>
+                <th className="task-heading" scope="col">
+                  Candidate RAM / process (GiB)
+                </th>
+                <th className="task-heading" scope="col">
+                  Complex RAM / process (GiB)
                 </th>
                 <th className="representative-heading" scope="col">
                   CID
@@ -377,6 +501,55 @@ export function CandidateBrowser({
                       <td className="cluster-cell">
                         {Number(c.fields.XLogP).toFixed(2)}
                       </td>
+                      <td className="task-cell">
+                        <strong>{preparationLabel(c)}</strong>
+                        {c.task_summary?.prepared &&
+                          c.task_summary.latestPreparation?.id !==
+                            c.task_summary.prepared.id && (
+                            <small>
+                              Latest attempt:{" "}
+                              {c.task_summary.latestPreparation?.status}
+                            </small>
+                          )}
+                      </td>
+                      {["candidate", "complex"].map((system) => {
+                        const estimate = c.task_summary?.ram[system];
+                        const report = estimate?.ram_estimate;
+                        return (
+                          <td
+                            key={system}
+                            className="task-cell"
+                            title={
+                              estimate
+                                ? `${estimate.created} · ${estimate.runtime || "native"} · QE reported ${report?.per_process?.value} ${report?.per_process?.unit} per process`
+                                : "No successful QE estimate"
+                            }
+                          >
+                            {report?.per_process ? (
+                              <>
+                                <strong>
+                                  {(
+                                    report.per_process.bytes /
+                                    1024 ** 3
+                                  ).toFixed(3)}
+                                </strong>
+                                <small>
+                                  Total:{" "}
+                                  {report.total
+                                    ? `${(report.total.bytes / 1024 ** 3).toFixed(3)} GiB`
+                                    : "unavailable"}
+                                </small>
+                                <small>
+                                  {estimate?.version || "Prepared default"} ·{" "}
+                                  {estimate?.processes} process(es)
+                                </small>
+                              </>
+                            ) : (
+                              "Unavailable"
+                            )}
+                          </td>
+                        );
+                      })}
                       <td className="representative-cell">
                         <PubChemLink cid={c.cid} />
                       </td>
@@ -447,7 +620,7 @@ export function CandidateBrowser({
                     </tr>
                     {live && run?.candidate === c.id && (
                       <tr className="run-row">
-                        <td colSpan={7}>
+                        <td colSpan={10}>
                           <button onClick={() => setRun(null)}>
                             Close run controls
                           </button>
@@ -456,6 +629,7 @@ export function CandidateBrowser({
                             candidate={run.candidate}
                             system={run.system}
                             runtimes={data.queue?.runtimes}
+                            versions={data.input_versions}
                             action={action}
                           />
                         </td>

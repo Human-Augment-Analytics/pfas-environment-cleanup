@@ -27,7 +27,8 @@ all original fields are retained in its detail view.
 
 The default tile view shows five diagrams across on wide screens and adapts to
 smaller screens. Click a tile to open its entry. Switch to Rows for descriptors
-and live action buttons. Both views share a quick filter for **cluster IDs only** and sorting by any CSV field,
+and live action buttons. Both views share a quick filter for **cluster IDs only**,
+preparation and RAM filters, and sorting by CSV or RAM fields,
 with ascending/descending numerical sorting for numeric descriptors and IDs.
 The ID filter accepts exact IDs, inclusive ranges, and comma-separated unions:
 `20-50`, `1,3,5`, and `2-10, 15`. Invalid syntax is flagged beside the filter.
@@ -35,8 +36,28 @@ CSV order remains available. The Advanced search page combines numeric condition
 with AND, for example Avg MW < 500 and Avg XLogP >= 2. Applied conditions remain
 visible above the results and can be cleared. Missing values do not match.
 
-Rows have two header levels: Cluster (ID, Points, Avg MW, Avg XLogP) in green and
-Representative (CID, diagram, actions) in purple. CIDs in rows, tiles, and entries
+Rows show **Inputs** preparation status and separate **Candidate RAM / process**
+and **Complex RAM / process** columns in GiB. These use the latest successful
+QE estimate for each system; failed, queued, and canceled attempts do not replace
+a successful estimate. Each RAM cell includes its version, process count, and
+reported total when available. Totals are never inferred. These are historical
+estimates for the displayed input version, not measured process memory or a
+claim about the current edited input. Hover over a RAM cell for the estimate
+time, runtime, and original reported value/unit.
+
+Use **RAM field**, **Min RAM (GiB)**, and **Max RAM (GiB)** to filter either
+system's per-process maximum or total; bounds are inclusive. Missing values do
+not match RAM limits. RAM fields also appear in **Advanced search**, where they
+can be combined with descriptor conditions, and in **Sort by**.
+**Preparation** filters distinguish candidates with a successful preparation
+from those without one. **Prepared** means a preparation succeeded previously;
+a later retry's status is shown underneath. Otherwise the Inputs column shows
+Not run, Queued, Running, Failed, Canceled, or Interrupted. These fields work
+in exported snapshots too, without requiring exported raw input files.
+
+Rows have two header levels: Cluster (ID, Points, Avg MW, Avg XLogP) in green,
+Preparation and QE estimates in blue, and Representative (CID, diagram, actions)
+in purple. CIDs in rows, tiles, and entries
 open the PubChem compound's 3D Status section in a new tab. The table uses wrapping
 action buttons, a bounded scroll area, and sticky headers so its scrollbars remain
 accessible on narrow screens and at larger zoom levels. Row buttons prepare inputs or open inline QE controls

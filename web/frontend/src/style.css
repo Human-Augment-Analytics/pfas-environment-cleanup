@@ -265,7 +265,7 @@ summary {
 }
 .candidate-table {
   table-layout: fixed;
-  min-width: 780px;
+  min-width: 1180px;
 }
 .candidate-table thead {
   position: sticky;
@@ -396,4 +396,17 @@ input[type="checkbox"] {
   z-index: 2;
   background: #f5f8fa;
   padding: 10px;
+}
+
+.task-heading {
+  background: #dce9f3;
+  color: #264d6a;
+}
+.task-cell {
+  background: #f4f8fc;
+}
+.task-cell small {
+  display: block;
+  margin-top: 0.25rem;
+  overflow-wrap: anywhere;
 }

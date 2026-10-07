@@ -1,6 +1,8 @@
+import { ramFields } from "./candidateResults";
 import { Candidate } from "./data";
 
 export const filterFields: Record<string, string> = {
+  ...ramFields,
   cluster: "Cluster ID",
   n_points: "Points",
   MolecularWeight: "Avg MW",

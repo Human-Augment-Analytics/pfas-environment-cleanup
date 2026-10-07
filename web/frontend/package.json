@@ -7,8 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "format": "prettier --write src vite.config.js tsconfig.json package.json index.html",
-    "format:check": "prettier --check src vite.config.js tsconfig.json package.json index.html"
+    "format": "prettier --write src tests vite.config.js tsconfig.json package.json index.html",
+    "format:check": "prettier --check src tests vite.config.js tsconfig.json package.json index.html",
+    "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "react": "18.3.1",

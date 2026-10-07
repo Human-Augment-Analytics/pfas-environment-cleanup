@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { createRoot } from "react-dom/client";
 import { read, post, Data, Action, Task } from "./data";
+import { withTaskFields } from "./candidateResults";
 import { AdvancedSearch } from "./AdvancedSearch";
 import { Filter } from "./filters";
 import { CandidateBrowser } from "./CandidateBrowser";
@@ -52,6 +53,13 @@ function App() {
       setBusy(false);
     }
   };
+  const browsingData = useMemo(
+    () =>
+      data
+        ? { ...data, candidates: withTaskFields(data.candidates, data.tasks) }
+        : null,
+    [data],
+  );
   const candidate =
     data &&
     (hash === "tfa"
@@ -133,7 +141,7 @@ function App() {
               />
             ) : hash === "advanced-search" ? (
               <AdvancedSearch
-                candidates={data.candidates}
+                candidates={browsingData!.candidates}
                 filters={filters}
                 apply={(next) => {
                   setFilters(next);
@@ -150,7 +158,7 @@ function App() {
               }
             >
               <CandidateBrowser
-                data={data}
+                data={browsingData!}
                 busy={busy}
                 action={action}
                 filters={filters}

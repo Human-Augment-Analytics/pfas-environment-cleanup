@@ -1,4 +1,9 @@
 export type Candidate = {
+  task_summary?: {
+    prepared?: Task;
+    latestPreparation?: Task;
+    ram: Record<string, Task>;
+  };
   id: string;
   cid: string;
   smiles: string;
