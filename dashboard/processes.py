@@ -36,7 +36,11 @@ def execute(
             stdout=out,
             stderr=err,
             start_new_session=True,
-            env={**(env or os.environ), "OMP_NUM_THREADS": "1"},
+            env={
+                **(env or os.environ),
+                "OMP_NUM_THREADS": "1",
+                "PYTHONUNBUFFERED": "1",
+            },
         )
         on_start(process)
         while process.poll() is None:

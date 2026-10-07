@@ -93,8 +93,11 @@ function App() {
             {data.mode === "snapshot" && (
               <p>
                 To generate diagrams, prepare inputs, or run QE locally:{" "}
-                <code>uv run --project web python -m dashboard</code> from the
-                repository. See{" "}
+                <code>
+                  uv run --no-default-groups --group web --group preparation
+                  python -m dashboard
+                </code>{" "}
+                from the repository. See{" "}
                 <a href="https://github.com/Human-Augment-Analytics/pfas-environment-cleanup">
                   repository documentation
                 </a>

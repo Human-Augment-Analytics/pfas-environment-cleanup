@@ -49,3 +49,42 @@ export function describeFilters(filters: Filter[]) {
     .map((f) => `${filterFields[f.field]} ${f.operator} ${f.value}`)
     .join(" AND ");
 }
+
+// IDs are exact; ranges are inclusive. Check intervals without expanding large ranges.
+export function parseClusterIDs(query: string): {
+  ranges: [number, number][];
+  error?: string;
+} {
+  if (!query.trim()) return { ranges: [] };
+  const ranges: [number, number][] = [];
+  for (const part of query.split(",")) {
+    const match = part.trim().match(/^(\d+)\s*(?:-\s*(\d+))?$/);
+    if (!match)
+      return {
+        ranges: [],
+        error:
+          "Use cluster IDs or inclusive ranges separated by commas, e.g. 20-50 or 2-10, 15.",
+      };
+    const start = Number(match[1]),
+      end = Number(match[2] ?? match[1]);
+    if (
+      !Number.isSafeInteger(start) ||
+      !Number.isSafeInteger(end) ||
+      start > end
+    ) {
+      return {
+        ranges: [],
+        error:
+          "Ranges must use nonnegative integer IDs with the smaller ID first, e.g. 20-50.",
+      };
+    }
+    ranges.push([start, end]);
+  }
+  return { ranges };
+}
+export function matchesClusterIDs(id: string, ranges: [number, number][]) {
+  return (
+    !ranges.length ||
+    ranges.some(([start, end]) => Number(id) >= start && Number(id) <= end)
+  );
+}

@@ -21,7 +21,7 @@ def pseudo_names(text):
 
 
 def prepare(request, directory):
-    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "qespresso_pipeline"))
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "qespresso_pipeline"))
     from run_adsorption_case import (
         build_molecular_complex_cif,
         get_mode_settings,

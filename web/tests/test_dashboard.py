@@ -4,6 +4,8 @@ import time
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
+
 from dashboard.candidates import TFA, load
 from dashboard.config import Config
 from dashboard.export import export
@@ -11,7 +13,6 @@ from dashboard.persistence import now
 from dashboard.processes import evidence, execute, tail
 from dashboard.server import create_app
 from dashboard.tasks import Manager
-from fastapi.testclient import TestClient
 
 
 @pytest.fixture
@@ -169,6 +170,7 @@ def test_evidence(text, calc, confirmed):
     assert evidence(text, calc)["confirmed"] is confirmed
 
 
+@pytest.mark.timeout(5)
 def test_api_readonly_bulk_and_origins(manager, monkeypatch):
     app = create_app(manager.config)
     with TestClient(app) as client:
@@ -251,7 +253,7 @@ def test_missing_executables_and_changed_preview(manager):
     manager.preview("500", "candidate", 1, "local")
     with pytest.raises(ValueError, match="Executable unavailable"):
         manager.preview("500", "candidate", 2, "local")
-    manager.config.python = "/missing/python"
+    manager.config.prepare_python = "/missing/python"
     with pytest.raises(OSError):
         manager.queue("prepare", "500")
     assert len(manager.store.tasks()) == 1
@@ -299,3 +301,12 @@ def test_bulk_failure_does_not_block_success(manager, monkeypatch):
     finally:
         manager.close()
     assert manager.store.get(second["id"])["artifacts"]["diagram.png"]
+
+
+def test_preparation_interpreter_selection(monkeypatch):
+
+    monkeypatch.delenv("PFAS_CHEM_PYTHON", raising=False)
+    assert Config().prepare_python == sys.executable
+    assert Config().python == sys.executable
+    monkeypatch.setenv("PFAS_CHEM_PYTHON", "/custom/chem/python")
+    assert Config().prepare_python == "/custom/chem/python"

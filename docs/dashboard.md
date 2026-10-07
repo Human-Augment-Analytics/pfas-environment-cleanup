@@ -3,13 +3,23 @@
 From the repository root, with uv and Node/npm installed:
 
 ```bash
-uv run --project web python -m dashboard
+uv run --no-default-groups --group web python -m dashboard
 ```
 
 Open http://localhost:8000. The launcher installs the locked npm dependencies,
 checks TypeScript, builds React, and serves the frontend and FastAPI from one
-process. The web Python environment includes RDKit for diagrams and is separate from the
-full chemistry environment needed for input preparation.
+process. Python dependencies live in the root `pyproject.toml` and `.venv`.
+The `web` group includes FastAPI, Uvicorn, and RDKit for diagrams. Add the
+`preparation` group (which includes `chemistry` and `qe`) to enable input generation:
+
+```bash
+uv run --no-default-groups --group web --group preparation python -m dashboard
+```
+
+The launcher and preparation subprocess use the same Python interpreter. For an
+existing external chemistry environment, `PFAS_CHEM_PYTHON` remains an optional
+override. `--no-default-groups` keeps unrelated ML/data dependencies out of these
+commands; the repository's existing default-groups setting remains available.
 The dashboard displays **all 1,000 clusters (0–999)** from
 `shivani_ml_models/cluster_centers.csv`. CSV descriptors are
 cluster averages. CID and SMILES identify each cluster's representative molecule;
@@ -19,6 +29,8 @@ The default tile view shows five diagrams across on wide screens and adapts to
 smaller screens. Click a tile to open its entry. Switch to Rows for descriptors
 and live action buttons. Both views share a quick filter for **cluster IDs only** and sorting by any CSV field,
 with ascending/descending numerical sorting for numeric descriptors and IDs.
+The ID filter accepts exact IDs, inclusive ranges, and comma-separated unions:
+`20-50`, `1,3,5`, and `2-10, 15`. Invalid syntax is flagged beside the filter.
 CSV order remains available. The Advanced search page combines numeric conditions
 with AND, for example Avg MW < 500 and Avg XLogP >= 2. Applied conditions remain
 visible above the results and can be cleared. Missing values do not match.
@@ -40,22 +52,22 @@ there is no bulk preparation, bulk QE, or adsorption aggregation.
 
 ## Chemistry configuration
 
-Point the dashboard at a Python interpreter with RDKit, pymatgen, ASE, Open Babel
-Python bindings, and the `obabel` and `cif2cell` commands. Its bin directory is
-prepended to PATH for preparation and diagrams. For example, if the repository's
-chemistry environment is already installed:
+The `preparation` dependency group supplies RDKit, pymatgen, ASE, Open Babel,
+and cif2cell. The selected interpreter's bin directory is prepended to PATH for
+preparation, so `obabel` and `cif2cell` are resolved from the same environment.
+For an existing external chemistry environment, you can instead set:
 
 ```bash
-export PFAS_CHEM_PYTHON="$PWD/.venv/bin/python"
+export PFAS_CHEM_PYTHON="/path/to/chemistry/bin/python"
 export PFAS_PSEUDOS="$PWD/qespresso_pipeline/Pseudopotentials"
-uv run --project web python -m dashboard
+uv run --no-default-groups --group web python -m dashboard
 ```
 
 Missing chemistry tools or element pseudopotentials reject preparation before
-it enters the queue; browsing still works. The full preparation environment is not
-installed by the web launcher. Diagrams work with the default web environment;
+it enters the queue; browsing still works. Select `--group preparation` to install the chemistry dependencies via uv.
+Diagrams work with `--group web` alone;
 if `PFAS_CHEM_PYTHON` is set, that interpreter must also provide RDKit. The preparation child entry point is
-`web/dashboard/preparation.py`; it reuses conversion, molecular-complex, and
+`dashboard/preparation.py`; it reuses conversion, molecular-complex, and
 patching helpers and never executes QE.
 
 Inputs use the molecular `cluster` preset: PBE, D3, 60/600 Ry cutoffs, Gamma
@@ -102,10 +114,21 @@ relaxation completion, and provisional/confirmed last energies.
 `PFAS_ARTIFACTS` selects persistent local storage (default `.dashboard/`). Keep the
 SQLite database on local disk. Attempts and logs are preserved on retry. Graceful
 shutdown stops active children; startup marks unfinished attempts interrupted.
-Retry explicitly. Run only one dashboard server against a given artifact directory.
+Retry explicitly. The server terminal logs queued/started/finished attempts,
+preparation rejections, failures, and each attempt's full log paths. Preparation
+Python output is unbuffered so it is available while the task runs. Follow an
+attempt in another terminal using the paths printed by the server:
 
 ```bash
-uv run --project web python -m dashboard --dev
+tail -f .dashboard/<task-id>/stdout.log .dashboard/<task-id>/stderr.log
+```
+
+Task history includes bounded stdout/stderr tails and full-log downloads when an
+attempt finishes. Preflight rejection occurs before creating an attempt and is
+reported in the browser and server terminal. Run only one dashboard server against a given artifact directory.
+
+```bash
+uv run --no-default-groups --group web python -m dashboard --dev
 ```
 
 Open the Vite URL (normally http://localhost:5173). Vite proxies `/api` to FastAPI;
@@ -127,7 +150,7 @@ remain **unverified**; Slurm execution and a shared live service are deferred.
 ## Read-only public snapshot
 
 ```bash
-uv run --project web python -m dashboard export
+uv run --no-default-groups --group web python -m dashboard export
 ```
 
 Export does not trigger chemistry or QE. It builds the frontend, writes committed
@@ -147,9 +170,9 @@ links use hashes and work under `/pfas-environment-cleanup/` without server rout
 ## Validation
 
 ```bash
-uv run --project web --locked pytest -c web/pyproject.toml web/tests -m 'not slow'
-uv run --project web --locked ty check --project web
-uv run --project web --locked ruff check web/dashboard web/tests dashboard.py
+uv run --locked --no-default-groups --group web --group dev pytest web/tests -m 'not slow'
+uv run --locked ty check
+uv run --locked ruff check dashboard web/tests
 npm run build --prefix web/frontend
 npm run format:check --prefix web/frontend
 ```
@@ -160,8 +183,8 @@ native one- and two-process execution; it does not validate production scientifi
 accuracy or convergence of the candidates:
 
 ```bash
-PFAS_SMOKE=1 PFAS_CHEM_PYTHON="$PWD/.venv/bin/python" \
-  uv run --project web --locked pytest -c web/pyproject.toml web/tests/test_smoke.py -q
+PFAS_SMOKE=1 uv run --locked --no-default-groups --group web --group preparation --group dev \
+  pytest web/tests/test_smoke.py -q
 ```
 
 Deferred: 3D viewing, bulk QE, automatic workflows, adsorption aggregation, Slurm,

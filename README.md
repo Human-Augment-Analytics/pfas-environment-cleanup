@@ -612,5 +612,5 @@ is the accompanying notebook.
 
 ## PFAS candidate dashboard
 
-Run `uv run --project web python -m dashboard` for the React/FastAPI dashboard of
+Run `uv run --no-default-groups --group web --group preparation python -m dashboard` for the React/FastAPI dashboard of
 all clusters. See [dashboard setup, chemistry, QE, and snapshot publishing](docs/dashboard.md).

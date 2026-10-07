@@ -1,7 +1,13 @@
 import { Fragment, useMemo, useState } from "react";
 import { Action, Candidate, Data, Task } from "./data";
 import { PubChemLink } from "./PubChemLink";
-import { Filter, matchesFilters, describeFilters } from "./filters";
+import {
+  Filter,
+  matchesFilters,
+  describeFilters,
+  parseClusterIDs,
+  matchesClusterIDs,
+} from "./filters";
 import { RunControls } from "./RunControls";
 
 const numericFields = new Set([
@@ -85,16 +91,20 @@ export function CandidateBrowser({
     null,
   );
   const index = useMemo(() => taskIndex(data.tasks), [data.tasks]);
+  const idFilter = useMemo(() => parseClusterIDs(search), [search]);
   const candidates = useMemo(
     () =>
       sorted(
         data.candidates.filter(
-          (c) => c.id.includes(search.trim()) && matchesFilters(c, filters),
+          (c) =>
+            !idFilter.error &&
+            matchesClusterIDs(c.id, idFilter.ranges) &&
+            matchesFilters(c, filters),
         ),
         sort,
         direction,
       ),
-    [data.candidates, search, sort, direction, filters],
+    [data.candidates, idFilter, sort, direction, filters],
   );
   const live = data.mode === "live";
   const diagramContent = (c: Candidate, tile: boolean) => {
@@ -144,7 +154,9 @@ export function CandidateBrowser({
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="e.g. 500"
+            placeholder="e.g. 20-50 or 1,3,5 or 2-10, 15"
+            aria-invalid={Boolean(idFilter.error)}
+            aria-describedby="cluster-filter-help"
             aria-label="Filter cluster ID"
           />
         </label>
@@ -189,6 +201,14 @@ export function CandidateBrowser({
           </button>
         )}
       </div>
+      <p
+        id="cluster-filter-help"
+        className={idFilter.error ? "error" : "filter-help"}
+        role={idFilter.error ? "alert" : undefined}
+      >
+        {idFilter.error ||
+          "Use an ID, a range (20-50), or a comma-separated list (2-10, 15)."}
+      </p>
       {filters.length > 0 && (
         <p className="banner">
           Advanced filters: {describeFilters(filters)}.{" "}

@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import os
 import re
 import shutil
@@ -12,6 +13,8 @@ from .persistence import Store, now
 from .preparation import digest, pseudo_names
 from .processes import evidence, execute, tail
 
+logger = logging.getLogger("uvicorn.error")
+
 
 class Manager:
     def __init__(self, config, candidates):
@@ -21,7 +24,7 @@ class Manager:
         self.candidates = candidates
         self.chem_env = {
             **os.environ,
-            "PATH": str(Path(config.python).absolute().parent)
+            "PATH": str(Path(config.prepare_python).absolute().parent)
             + os.pathsep
             + os.environ["PATH"],
         }
@@ -55,7 +58,7 @@ class Manager:
     def preflight(self, candidate):
         probe = subprocess.run(
             [
-                self.config.python,
+                self.config.prepare_python,
                 "-c",
                 "import shutil; import rdkit, pymatgen.core, ase, openbabel; assert shutil.which('obabel'); assert shutil.which('cif2cell')",
             ],
@@ -67,13 +70,14 @@ class Manager:
         )
         if probe.returncode:
             raise ValueError(
-                "Chemistry interpreter requires RDKit, pymatgen, ASE, Open Babel and cif2cell: "
+                f"Preparation interpreter {self.config.prepare_python} requires RDKit, pymatgen, ASE, Open Babel and cif2cell. "
+                "Start with uv run --no-default-groups --group web --group preparation python -m dashboard, or set PFAS_CHEM_PYTHON to a chemistry interpreter. Details: "
                 + probe.stderr[-2000:]
             )
         # RDKit runs in the configured interpreter, keeping the web environment minimal.
         result = subprocess.run(
             [
-                self.config.python,
+                self.config.prepare_python,
                 "-c",
                 "from rdkit import Chem; import sys; m=Chem.MolFromSmiles(sys.argv[1]); assert m is not None; print(' '.join(sorted({a.GetSymbol() for a in m.GetAtoms()} | {'H','C','O','F'})))",
                 candidate["smiles"],
@@ -181,7 +185,13 @@ class Manager:
                 return existing
             preview = None
             if kind == "prepare":
-                self.preflight(self.candidates[candidate])
+                try:
+                    self.preflight(self.candidates[candidate])
+                except (ValueError, OSError, subprocess.SubprocessError) as error:
+                    logger.warning(
+                        "Preparation rejected for cluster %s: %s", candidate, error
+                    )
+                    raise
             if kind == "qe":
                 preview = self.preview(candidate, system, processes, target)
                 if expected_hash != preview["input_hash"]:
@@ -220,6 +230,9 @@ class Manager:
                     (directory / "Pseudopotentials" / name).symlink_to(dest)
                 task.update(preview)
             self.store.put(task)
+            logger.info(
+                "Task %s queued: %s for cluster %s (%s)", id, kind, candidate, system
+            )
             self.wake.set()
             return task
 
@@ -228,7 +241,9 @@ class Manager:
             task = self.store.get(id)
             if task["status"] == "queued":
                 self.store.update(id, status="canceled", ended=now())
+                logger.info("Task %s canceled before starting", id)
             elif task["status"] == "running" and self.active == id:
+                logger.info("Task %s stop requested", id)
                 self.cancel.set()
 
     def worker(self):
@@ -252,6 +267,19 @@ class Manager:
     def run(self, task):
         id = task["id"]
         directory = self.config.artifacts / id
+        logger.info(
+            "Task %s started: %s for cluster %s (%s)",
+            id,
+            task["kind"],
+            task["candidate"],
+            task["system"],
+        )
+        logger.info(
+            "Task %s logs: stdout=%s stderr=%s",
+            id,
+            directory / "stdout.log",
+            directory / "stderr.log",
+        )
         try:
             candidate = self.candidates[task["candidate"]]
             timeout = task["timeout"]
@@ -292,7 +320,7 @@ class Manager:
                                 break
                 (directory / "request.json").write_text(json.dumps(request))
                 command = [
-                    self.config.python,
+                    self.config.prepare_python,
                     str(Path(__file__).with_name("preparation.py")),
                     str(directory / "request.json"),
                     str(directory),
@@ -301,6 +329,10 @@ class Manager:
             else:
                 command = task["command"]
             self.store.update(id, command=command)
+            if task["kind"] == "qe":
+                logger.info(
+                    "Task %s launch command: %s (cwd=%s)", id, command, directory
+                )
             code, status, error = execute(
                 command,
                 directory,
@@ -350,7 +382,8 @@ class Manager:
                     text, calculation[1] if calculation else "scf"
                 )
             self.store.update(id, **values)
-        except Exception as error:  # noqa: BLE001 -- isolate failed attempts; keep queue alive
+        except Exception as error:
+            logger.exception("Task %s could not execute", id)
             self.store.update(id, status="failed", error=str(error), ended=now())
         finally:
             artifacts = {}
@@ -367,7 +400,15 @@ class Manager:
                 path = directory / name
                 if path.is_file():
                     artifacts[name] = self.store.register(id + "-" + name, path)
-            self.store.update(id, artifacts=artifacts)
+            result = self.store.update(id, artifacts=artifacts)
+            logger.info(
+                "Task %s finished: %s (exit=%s)",
+                id,
+                result["status"],
+                result.get("exit_code"),
+            )
+            if result.get("error"):
+                logger.error("Task %s: %s", id, result["error"])
 
     def data(self):
         tasks = self.store.tasks()

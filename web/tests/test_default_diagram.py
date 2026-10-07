@@ -3,11 +3,13 @@
 import time
 
 import pytest
+
 from dashboard.candidates import load
 from dashboard.config import Config
 from dashboard.tasks import Manager
 
 
+@pytest.mark.timeout(5)
 @pytest.mark.parametrize("valid", [True, False])
 def test_default_diagram_environment(tmp_path, monkeypatch, valid):
     monkeypatch.delenv("PFAS_CHEM_PYTHON", raising=False)

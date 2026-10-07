@@ -3,7 +3,14 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def preparation_python():
+    configured = os.getenv("PFAS_CHEM_PYTHON")
+    if configured:
+        return configured
+    return sys.executable
 
 
 @dataclass
@@ -16,6 +23,7 @@ class Config:
     python: str = field(
         default_factory=lambda: os.getenv("PFAS_CHEM_PYTHON", sys.executable)
     )
+    prepare_python: str = field(default_factory=preparation_python)
     pseudos: Path = field(
         default_factory=lambda: Path(
             os.getenv("PFAS_PSEUDOS", ROOT / "qespresso_pipeline/Pseudopotentials")

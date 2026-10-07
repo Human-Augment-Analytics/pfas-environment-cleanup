@@ -55,7 +55,9 @@ def main():
 
         from .server import create_app
 
-        uvicorn.run(create_app(), host=args.host, port=args.port)
+        config = Config()
+        print(f"Preparation interpreter: {config.prepare_python}", flush=True)
+        uvicorn.run(create_app(config), host=args.host, port=args.port)
     finally:
         if vite:
             terminate(vite)

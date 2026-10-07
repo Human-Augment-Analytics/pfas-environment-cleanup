@@ -13,6 +13,18 @@ dev = [
     "pytest-timeout",
     "ruff",
     "ty",
+    "httpx",
+]
+
+web = [
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.30,<1",
+    "rdkit>=2024.9,<2027",
+]
+
+preparation = [
+    { include-group = "chemistry" },
+    { include-group = "qe" },
 ]
 
 chemistry = [
@@ -43,17 +55,17 @@ default-groups = "all"
 [tool.ruff]
 target-version = "py312"
 
+[tool.ty.environment]
+extra-paths = ["qespresso_pipeline"]
+
 [tool.ty.src]
-# The dashboard has its own minimal environment and type-check lane.
 exclude = [
-    "web",
     "shivani_ml_models/gnn.py",
     "basic_molecule_gnn/basic_gnn_molecule.py",
 ]
 
 [tool.pytest.ini_options]
-# Web tests run separately with web/pyproject.toml and its own dependencies.
-testpaths = ["tests"]
+testpaths = ["tests", "web/tests"]
 timeout = 2
 session_timeout = 60
 markers = [

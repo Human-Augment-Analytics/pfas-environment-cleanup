@@ -4,6 +4,7 @@ import os
 import time
 
 import pytest
+
 from dashboard.candidates import TFA
 from dashboard.config import Config
 from dashboard.persistence import now
