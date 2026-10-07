@@ -14,15 +14,16 @@
   pseudo_dir='./Pseudopotentials',
   verbosity='low',
   tprnfor=.true.,
-  tstress=.true.,
-  forc_conv_thr=1.0d-4,
+  tstress=.false.,
+  forc_conv_thr=1.0d-3,
   disk_io='low',
 /
+
 &SYSTEM
-  ibrav = 0
-  A =   20.01580
-  nat = 36
-  ntyp = 5
+  ibrav=0,
+  A=20.01580,
+  nat=36,
+  ntyp=5,
   ecutwfc=60,
   ecutrho=600,
   input_dft='pbe',
@@ -34,10 +35,11 @@
 /
 
 &ELECTRONS
-  conv_thr=1d-07,
+  conv_thr=1.0d-5,
   mixing_beta=0.15d0,
   electron_maxstep=200,
 /
+
 &IONS
   ion_dynamics='bfgs',
 /
