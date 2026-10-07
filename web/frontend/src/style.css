@@ -1,0 +1,179 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #172b36;
+  background: #f5f7f8;
+  line-height: 1.5;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+header {
+  background: #153c46;
+  color: white;
+  padding: 1.2rem 4%;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+header a {
+  color: white;
+  text-decoration: none;
+}
+nav,
+.controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+main {
+  max-width: 1200px;
+  margin: auto;
+  padding: 2rem 4%;
+}
+h1,
+h2 {
+  color: #153c46;
+}
+a {
+  color: #006c80;
+}
+button,
+input,
+select {
+  font: inherit;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #9cb4bb;
+  border-radius: 4px;
+}
+button {
+  background: #e2eff2;
+  color: #153c46;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+}
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.banner {
+  border-left: 4px solid #218b8b;
+  padding: 0.8rem;
+  background: #e3efef;
+}
+.error {
+  color: #8f1725;
+  background: #ffe8e9;
+  padding: 1rem;
+  overflow-wrap: anywhere;
+}
+.table-wrap {
+  overflow: auto;
+  margin-top: 1.5rem;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  background: white;
+}
+td,
+th {
+  text-align: left;
+  padding: 0.8rem;
+  border-bottom: 1px solid #d5e1e4;
+}
+th {
+  background: #e3edef;
+  white-space: nowrap;
+}
+article,
+section {
+  margin: 1.5rem 0;
+}
+article {
+  padding: 1.2rem;
+  background: white;
+  border: 1px solid #d5e1e4;
+  border-radius: 6px;
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #eaf0f2;
+  padding: 1rem;
+  max-height: 440px;
+  overflow: auto;
+}
+code {
+  overflow-wrap: anywhere;
+}
+.diagram {
+  max-width: 100%;
+  width: 600px;
+  background: white;
+}
+.thumbnail {
+  width: 90px;
+  height: 60px;
+  object-fit: contain;
+}
+.placeholder {
+  padding: 3rem;
+  background: #e7edef;
+  text-align: center;
+  color: #526d77;
+}
+dl > div {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 2fr;
+  border-bottom: 1px solid #d5e1e4;
+  padding: 0.5rem;
+  gap: 1rem;
+}
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+dt {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.download {
+  display: inline-block;
+  margin: 0.8rem 0.8rem 0.8rem 0;
+}
+summary {
+  cursor: pointer;
+}
+@media (max-width: 600px) {
+  main {
+    padding: 1rem;
+  }
+  header {
+    padding: 1rem;
+  }
+  nav {
+    gap: 0.6rem;
+  }
+  .controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  dl > div {
+    grid-template-columns: 1fr;
+  }
+  pre {
+    font-size: 0.85rem;
+  }
+  td,
+  th {
+    padding: 0.6rem;
+  }
+}

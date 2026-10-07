@@ -609,3 +609,8 @@ is the accompanying notebook.
   the literature rationale for each.
 - `mgmt_ops.md` is the team's project-operations note (roles, meetings,
   reporting cadence) — not needed to run any code.
+
+## PFAS candidate dashboard
+
+Run `uv run --project web python -m dashboard` for the React/FastAPI dashboard of
+clusters 500–667. See [dashboard setup, chemistry, QE, and snapshot publishing](docs/dashboard.md).

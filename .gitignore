@@ -13,3 +13,11 @@ __pycache__/
 .env-pfas-ci/
 # keep the one legacy tracked cache dir visible (do not untrack committed files)
 # !qespresso_pipeline/__pycache__/
+
+# Dashboard local state; public exports are committed separately.
+.dashboard/
+web/.venv/
+web/frontend/node_modules/
+web/frontend/dist/
+web/frontend/*.tsbuildinfo
+web/public/

@@ -1,0 +1,3208 @@
+{
+  "mode": "snapshot",
+  "timestamp": "2026-10-07T19:07:16.022881+00:00",
+  "candidates": [
+    {
+      "id": "500",
+      "fields": {
+        "cluster": "500",
+        "n_points": "2",
+        "MolecularWeight": "1283.25",
+        "ExactMass": "1282.03125855",
+        "Charge": "0.0",
+        "XLogP": "1.8",
+        "TPSA": "537.9999999999999",
+        "HBondDonorCount": "12.0",
+        "HBondAcceptorCount": "24.0",
+        "RotatableBondCount": "16.0",
+        "medoid_CID": "5361",
+        "medoid_SMILES": "CC1=C(C=C(C=C1)C(=O)NC2=C3C(=CC(=CC3=C(C=C2)S(=O)(=O)O)S(=O)(=O)O)S(=O)(=O)O)NC(=O)C4=CC(=CC=C4)NC(=O)NC5=CC=CC(=C5)C(=O)NC6=C(C=CC(=C6)C(=O)NC7=C8C(=CC(=CC8=C(C=C7)S(=O)(=O)O)S(=O)(=O)O)S(=O)(=O)O)C"
+      },
+      "cid": "5361",
+      "smiles": "CC1=C(C=C(C=C1)C(=O)NC2=C3C(=CC(=CC3=C(C=C2)S(=O)(=O)O)S(=O)(=O)O)S(=O)(=O)O)NC(=O)C4=CC(=CC=C4)NC(=O)NC5=CC=CC(=C5)C(=O)NC6=C(C=CC(=C6)C(=O)NC7=C8C(=CC(=CC8=C(C=C7)S(=O)(=O)O)S(=O)(=O)O)S(=O)(=O)O)C"
+    },
+    {
+      "id": "501",
+      "fields": {
+        "cluster": "501",
+        "n_points": "124",
+        "MolecularWeight": "146.50935483870975",
+        "ExactMass": "146.3658007594274",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "0.0120967741935476",
+        "TPSA": "72.30161290322582",
+        "HBondDonorCount": "1.9999999999999998",
+        "HBondAcceptorCount": "2.1693548387096784",
+        "RotatableBondCount": "1.4758064516129035",
+        "medoid_CID": "3018074",
+        "medoid_SMILES": "C=CC1CC(C(=O)N1)C(=O)N"
+      },
+      "cid": "3018074",
+      "smiles": "C=CC1CC(C(=O)N1)C(=O)N"
+    },
+    {
+      "id": "502",
+      "fields": {
+        "cluster": "502",
+        "n_points": "105",
+        "MolecularWeight": "381.23371428571426",
+        "ExactMass": "380.8879264271429",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "2.24",
+        "TPSA": "94.21142857142857",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "5.6571428571428575",
+        "RotatableBondCount": "7.504761904761905",
+        "medoid_CID": "6141736",
+        "medoid_SMILES": "CC1=CC=C(C=C1)S(=O)(=O)NCC(=O)N/N=C/C2=CC=C(C=C2)N(C)C"
+      },
+      "cid": "6141736",
+      "smiles": "CC1=CC=C(C=C1)S(=O)(=O)NCC(=O)N/N=C/C2=CC=C(C=C2)N(C)C"
+    },
+    {
+      "id": "503",
+      "fields": {
+        "cluster": "503",
+        "n_points": "13",
+        "MolecularWeight": "703.1692307692308",
+        "ExactMass": "702.6885871776924",
+        "Charge": "0.0",
+        "XLogP": "6.169230769230769",
+        "TPSA": "125.6923076923077",
+        "HBondDonorCount": "4.153846153846153",
+        "HBondAcceptorCount": "6.6923076923076925",
+        "RotatableBondCount": "16.769230769230774",
+        "medoid_CID": "3009311",
+        "medoid_SMILES": "C1=CC=C(C=C1)C[C@@H]2[C@@H]([C@H]([C@H](N(C(=O)N2CCCCCNC(=O)C3=CC(=CC=C3)F)CCCCCNC(=O)C4=CC(=CC=C4)F)CC5=CC=CC=C5)O)O"
+      },
+      "cid": "3009311",
+      "smiles": "C1=CC=C(C=C1)C[C@@H]2[C@@H]([C@H]([C@H](N(C(=O)N2CCCCCNC(=O)C3=CC(=CC=C3)F)CCCCCNC(=O)C4=CC(=CC=C4)F)CC5=CC=CC=C5)O)O"
+    },
+    {
+      "id": "504",
+      "fields": {
+        "cluster": "504",
+        "n_points": "175",
+        "MolecularWeight": "383.9858857142857",
+        "ExactMass": "383.5470712270857",
+        "Charge": "1.3877787807814457e-17",
+        "XLogP": "1.7377142857142862",
+        "TPSA": "94.90228571428571",
+        "HBondDonorCount": "0.9999999999999997",
+        "HBondAcceptorCount": "5.937142857142858",
+        "RotatableBondCount": "5.331428571428572",
+        "medoid_CID": "7161316",
+        "medoid_SMILES": "COC1=CC(=C(C=C1)OC)NS(=O)(=O)C2=CC3=C4C(=C2)CCN4C(=O)CC3"
+      },
+      "cid": "7161316",
+      "smiles": "COC1=CC(=C(C=C1)OC)NS(=O)(=O)C2=CC3=C4C(=C2)CCN4C(=O)CC3"
+    },
+    {
+      "id": "505",
+      "fields": {
+        "cluster": "505",
+        "n_points": "99",
+        "MolecularWeight": "171.65969696969694",
+        "ExactMass": "171.49679795656562",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "1.5010101010101011",
+        "TPSA": "37.77272727272727",
+        "HBondDonorCount": "-2.220446049250313e-16",
+        "HBondAcceptorCount": "2.8484848484848486",
+        "RotatableBondCount": "3.9292929292929295",
+        "medoid_CID": "17151",
+        "medoid_SMILES": "CC(=C)C(=O)OCC1CCCO1"
+      },
+      "cid": "17151",
+      "smiles": "CC(=C)C(=O)OCC1CCCO1"
+    },
+    {
+      "id": "506",
+      "fields": {
+        "cluster": "506",
+        "n_points": "113",
+        "MolecularWeight": "293.58017699115044",
+        "ExactMass": "293.3070286228053",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "1.1548672566371683",
+        "TPSA": "70.95486725663717",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "3.9646017699115044",
+        "RotatableBondCount": "4.823008849557522",
+        "medoid_CID": "970621",
+        "medoid_SMILES": "COC1=C(C=C(C=C1)NC(=O)NCC2=CN=CC=C2)OC"
+      },
+      "cid": "970621",
+      "smiles": "COC1=C(C=C(C=C1)NC(=O)NCC2=CN=CC=C2)OC"
+    },
+    {
+      "id": "507",
+      "fields": {
+        "cluster": "507",
+        "n_points": "2",
+        "MolecularWeight": "2255.8999999999996",
+        "ExactMass": "2253.7651743",
+        "Charge": "0.0",
+        "XLogP": "-20.4",
+        "TPSA": "1280.0",
+        "HBondDonorCount": "21.0",
+        "HBondAcceptorCount": "77.0",
+        "RotatableBondCount": "35.0",
+        "medoid_CID": "480001",
+        "medoid_SMILES": "C([C@@H]1[C@@H]2[C@@H]([C@H]([C@H](O1)OC3[C@H](OC([C@@H]([C@H]3OS(=O)(=O)O)O)OC4[C@H](OC([C@@H]([C@H]4OS(=O)(=O)O)O)OC5[C@H](OC([C@@H]([C@H]5OS(=O)(=O)O)O)OC6[C@H](OC([C@@H]([C@H]6OS(=O)(=O)O)O)OC7[C@H](OC([C@@H]([C@H]7OS(=O)(=O)O)O)OC8[C@H](O[C@H](O2)[C@@H]([C@H]8OS(=O)(=O)O)O)COS(=O)(=O)O)COS(=O)(=O)O)COS(=O)(=O)O)COS(=O)(=O)O)COS(=O)(=O)O)COS(=O)(=O)O)O)OS(=O)(=O)O)OS(=O)(=O)O"
+      },
+      "cid": "480001",
+      "smiles": "C([C@@H]1[C@@H]2[C@@H]([C@H]([C@H](O1)OC3[C@H](OC([C@@H]([C@H]3OS(=O)(=O)O)O)OC4[C@H](OC([C@@H]([C@H]4OS(=O)(=O)O)O)OC5[C@H](OC([C@@H]([C@H]5OS(=O)(=O)O)O)OC6[C@H](OC([C@@H]([C@H]6OS(=O)(=O)O)O)OC7[C@H](OC([C@@H]([C@H]7OS(=O)(=O)O)O)OC8[C@H](O[C@H](O2)[C@@H]([C@H]8OS(=O)(=O)O)O)COS(=O)(=O)O)COS(=O)(=O)O)COS(=O)(=O)O)COS(=O)(=O)O)COS(=O)(=O)O)COS(=O)(=O)O)O)OS(=O)(=O)O)OS(=O)(=O)O"
+    },
+    {
+      "id": "508",
+      "fields": {
+        "cluster": "508",
+        "n_points": "1",
+        "MolecularWeight": "2002.2",
+        "ExactMass": "2000.4088747",
+        "Charge": "0.0",
+        "XLogP": "-10.5",
+        "TPSA": "972.0",
+        "HBondDonorCount": "24.0",
+        "HBondAcceptorCount": "56.0",
+        "RotatableBondCount": "40.0",
+        "medoid_CID": "6918585",
+        "medoid_SMILES": "C(CSC[C@@H]1[C@@H]2[C@@H]([C@H]([C@H](O1)O[C@@H]3[C@H](O[C@@H]([C@@H]([C@H]3O)O)O[C@@H]4[C@H](O[C@@H]([C@@H]([C@H]4O)O)O[C@@H]5[C@H](O[C@@H]([C@@H]([C@H]5O)O)O[C@@H]6[C@H](O[C@@H]([C@@H]([C@H]6O)O)O[C@@H]7[C@H](O[C@@H]([C@@H]([C@H]7O)O)O[C@@H]8[C@H](O[C@@H]([C@@H]([C@H]8O)O)O[C@@H]9[C@H](O[C@H](O2)[C@@H]([C@H]9O)O)CSCCC(=O)O)CSCCC(=O)O)CSCCC(=O)O)CSCCC(=O)O)CSCCC(=O)O)CSCCC(=O)O)CSCCC(=O)O)O)O)C(=O)O"
+      },
+      "cid": "6918585",
+      "smiles": "C(CSC[C@@H]1[C@@H]2[C@@H]([C@H]([C@H](O1)O[C@@H]3[C@H](O[C@@H]([C@@H]([C@H]3O)O)O[C@@H]4[C@H](O[C@@H]([C@@H]([C@H]4O)O)O[C@@H]5[C@H](O[C@@H]([C@@H]([C@H]5O)O)O[C@@H]6[C@H](O[C@@H]([C@@H]([C@H]6O)O)O[C@@H]7[C@H](O[C@@H]([C@@H]([C@H]7O)O)O[C@@H]8[C@H](O[C@@H]([C@@H]([C@H]8O)O)O[C@@H]9[C@H](O[C@H](O2)[C@@H]([C@H]9O)O)CSCCC(=O)O)CSCCC(=O)O)CSCCC(=O)O)CSCCC(=O)O)CSCCC(=O)O)CSCCC(=O)O)CSCCC(=O)O)O)O)C(=O)O"
+    },
+    {
+      "id": "509",
+      "fields": {
+        "cluster": "509",
+        "n_points": "179",
+        "MolecularWeight": "379.6017877094972",
+        "ExactMass": "379.06147139726255",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "4.403351955307262",
+        "TPSA": "89.0877094972067",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "3.9441340782122905",
+        "RotatableBondCount": "5.4581005586592175",
+        "medoid_CID": "1037898",
+        "medoid_SMILES": "CC1=CC=C(C=C1)C(=O)N/C(=C/C2=CC=CS2)/C(=O)NC3=CC(=CC=C3)F"
+      },
+      "cid": "1037898",
+      "smiles": "CC1=CC=C(C=C1)C(=O)N/C(=C/C2=CC=CS2)/C(=O)NC3=CC(=CC=C3)F"
+    },
+    {
+      "id": "510",
+      "fields": {
+        "cluster": "510",
+        "n_points": "15",
+        "MolecularWeight": "320.418",
+        "ExactMass": "320.21204215933335",
+        "Charge": "0.0",
+        "XLogP": "-1.3733333333333326",
+        "TPSA": "150.66666666666669",
+        "HBondDonorCount": "5.6000000000000005",
+        "HBondAcceptorCount": "4.933333333333334",
+        "RotatableBondCount": "10.933333333333334",
+        "medoid_CID": "448945",
+        "medoid_SMILES": "COC1=CC(=C(C=C1)OCCN=C(N)N)CNCCCCN=C(N)N"
+      },
+      "cid": "448945",
+      "smiles": "COC1=CC(=C(C=C1)OCCN=C(N)N)CNCCCCN=C(N)N"
+    },
+    {
+      "id": "511",
+      "fields": {
+        "cluster": "511",
+        "n_points": "59",
+        "MolecularWeight": "148.15237288135603",
+        "ExactMass": "148.04724895615254",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "-0.9999999999999996",
+        "TPSA": "92.04237288135593",
+        "HBondDonorCount": "1.9999999999999998",
+        "HBondAcceptorCount": "3.11864406779661",
+        "RotatableBondCount": "0.9830508474576294",
+        "medoid_CID": "2760516",
+        "medoid_SMILES": "C1=CN=C(N=C1)NC(=S)N"
+      },
+      "cid": "2760516",
+      "smiles": "C1=CN=C(N=C1)NC(=S)N"
+    },
+    {
+      "id": "512",
+      "fields": {
+        "cluster": "512",
+        "n_points": "81",
+        "MolecularWeight": "301.0582716049383",
+        "ExactMass": "300.6212910850988",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "1.7641975308641975",
+        "TPSA": "60.12592592592593",
+        "HBondDonorCount": "0.0",
+        "HBondAcceptorCount": "4.777777777777778",
+        "RotatableBondCount": "2.987654320987655",
+        "medoid_CID": "5267590",
+        "medoid_SMILES": "CN(C)S(=O)(=O)C1=CN=C(C=C1)N2CCC3=CC=CC=C32"
+      },
+      "cid": "5267590",
+      "smiles": "CN(C)S(=O)(=O)C1=CN=C(C=C1)N2CCC3=CC=CC=C32"
+    },
+    {
+      "id": "513",
+      "fields": {
+        "cluster": "513",
+        "n_points": "94",
+        "MolecularWeight": "332.85478723404253",
+        "ExactMass": "332.5464727706383",
+        "Charge": "0.0",
+        "XLogP": "3.124468085106383",
+        "TPSA": "75.71489361702127",
+        "HBondDonorCount": "1.0",
+        "HBondAcceptorCount": "4.680851063829787",
+        "RotatableBondCount": "8.638297872340425",
+        "medoid_CID": "775818",
+        "medoid_SMILES": "CCOC1=CC(=C(C=C1)OCC)S(=O)(=O)NCC2=CC=CC=C2"
+      },
+      "cid": "775818",
+      "smiles": "CCOC1=CC(=C(C=C1)OCC)S(=O)(=O)NCC2=CC=CC=C2"
+    },
+    {
+      "id": "514",
+      "fields": {
+        "cluster": "514",
+        "n_points": "60",
+        "MolecularWeight": "532.685",
+        "ExactMass": "531.8862022685",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "6.758333333333333",
+        "TPSA": "137.86666666666667",
+        "HBondDonorCount": "2.1333333333333333",
+        "HBondAcceptorCount": "6.166666666666668",
+        "RotatableBondCount": "5.533333333333333",
+        "medoid_CID": "1764468",
+        "medoid_SMILES": "CC1=C(C=C(C=C1)[N+](=O)[O-])NC(=S)NC(=O)C2=CC(=NC3=CC=CC=C32)C4=CC(=CC=C4)OCC(C)C"
+      },
+      "cid": "1764468",
+      "smiles": "CC1=C(C=C(C=C1)[N+](=O)[O-])NC(=S)NC(=O)C2=CC(=NC3=CC=CC=C32)C4=CC(=CC=C4)OCC(C)C"
+    },
+    {
+      "id": "515",
+      "fields": {
+        "cluster": "515",
+        "n_points": "167",
+        "MolecularWeight": "288.05658682634726",
+        "ExactMass": "287.72127694864673",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "3.297005988023952",
+        "TPSA": "90.9377245508982",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "2.9820359281437128",
+        "RotatableBondCount": "4.059880239520958",
+        "medoid_CID": "5409978",
+        "medoid_SMILES": "CC1=CC(=C(C=C1)SC2=CC=CC=C2)/C(=N\\NC(=O)N)/C"
+      },
+      "cid": "5409978",
+      "smiles": "CC1=CC(=C(C=C1)SC2=CC=CC=C2)/C(=N\\NC(=O)N)/C"
+    },
+    {
+      "id": "516",
+      "fields": {
+        "cluster": "516",
+        "n_points": "147",
+        "MolecularWeight": "245.30802721088435",
+        "ExactMass": "245.015067341034",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "1.3387755102040817",
+        "TPSA": "62.99591836734693",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "2.612244897959184",
+        "RotatableBondCount": "2.27891156462585",
+        "medoid_CID": "891603",
+        "medoid_SMILES": "CN1CCN(CC1)NC(=S)NC2CCCC2"
+      },
+      "cid": "891603",
+      "smiles": "CN1CCN(CC1)NC(=S)NC2CCCC2"
+    },
+    {
+      "id": "517",
+      "fields": {
+        "cluster": "517",
+        "n_points": "63",
+        "MolecularWeight": "453.7687301587302",
+        "ExactMass": "453.1772170825397",
+        "Charge": "0.0",
+        "XLogP": "2.8825396825396825",
+        "TPSA": "150.03174603174602",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "7.3015873015873005",
+        "RotatableBondCount": "3.9365079365079363",
+        "medoid_CID": "3744207",
+        "medoid_SMILES": "CC(=O)N1CCN(CC1)C2=CC=C(C=C2)NC(=S)NC(=O)C3=CC(=C(C=C3)OC)[N+](=O)[O-]"
+      },
+      "cid": "3744207",
+      "smiles": "CC(=O)N1CCN(CC1)C2=CC=C(C=C2)NC(=S)NC(=O)C3=CC(=C(C=C3)OC)[N+](=O)[O-]"
+    },
+    {
+      "id": "518",
+      "fields": {
+        "cluster": "518",
+        "n_points": "143",
+        "MolecularWeight": "280.71999999999997",
+        "ExactMass": "280.41277049682515",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "2.802097902097902",
+        "TPSA": "51.53566433566433",
+        "HBondDonorCount": "1.9999999999999998",
+        "HBondAcceptorCount": "3.517482517482518",
+        "RotatableBondCount": "2.5594405594405596",
+        "medoid_CID": "4052261",
+        "medoid_SMILES": "COC1=CC=C(C=C1)NC(=O)NC2=C(C=CC(=C2)F)F"
+      },
+      "cid": "4052261",
+      "smiles": "COC1=CC=C(C=C1)NC(=O)NC2=C(C=CC(=C2)F)F"
+    },
+    {
+      "id": "519",
+      "fields": {
+        "cluster": "519",
+        "n_points": "63",
+        "MolecularWeight": "425.32222222222225",
+        "ExactMass": "424.83229863603174",
+        "Charge": "0.0",
+        "XLogP": "5.076190476190476",
+        "TPSA": "124.22222222222223",
+        "HBondDonorCount": "3.095238095238095",
+        "HBondAcceptorCount": "5.7936507936507935",
+        "RotatableBondCount": "5.253968253968254",
+        "medoid_CID": "3002892",
+        "medoid_SMILES": "C1=CC=C(C=C1)NC(=S)NC2=CC=C(C=C2)C3=NN=C(S3)NC4=CC=C(C=C4)F"
+      },
+      "cid": "3002892",
+      "smiles": "C1=CC=C(C=C1)NC(=S)NC2=CC=C(C=C2)C3=NN=C(S3)NC4=CC=C(C=C4)F"
+    },
+    {
+      "id": "520",
+      "fields": {
+        "cluster": "520",
+        "n_points": "140",
+        "MolecularWeight": "338.0462857142857",
+        "ExactMass": "337.69512786676427",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "1.9685714285714289",
+        "TPSA": "81.14142857142858",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "4.057142857142857",
+        "RotatableBondCount": "6.757142857142857",
+        "medoid_CID": "1937464",
+        "medoid_SMILES": "CC1=CC=C(C=C1)C(=O)N/C(=C/C2=CC=CO2)/C(=O)NCCOC"
+      },
+      "cid": "1937464",
+      "smiles": "CC1=CC=C(C=C1)C(=O)N/C(=C/C2=CC=CO2)/C(=O)NCCOC"
+    },
+    {
+      "id": "521",
+      "fields": {
+        "cluster": "521",
+        "n_points": "255",
+        "MolecularWeight": "286.4287843137255",
+        "ExactMass": "286.0763255011059",
+        "Charge": "2.0816681711721685e-17",
+        "XLogP": "3.2419607843137257",
+        "TPSA": "49.762745098039225",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "1.9764705882352929",
+        "RotatableBondCount": "4.301960784313725",
+        "medoid_CID": "6465055",
+        "medoid_SMILES": "CC1=CC=CC=C1NC(=O)NC(C)C2=CC=C(C=C2)OC"
+      },
+      "cid": "6465055",
+      "smiles": "CC1=CC=CC=C1NC(=O)NC(C)C2=CC=C(C=C2)OC"
+    },
+    {
+      "id": "522",
+      "fields": {
+        "cluster": "522",
+        "n_points": "9",
+        "MolecularWeight": "589.3777777777777",
+        "ExactMass": "588.9936258466666",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "2.611111111111111",
+        "TPSA": "209.66666666666669",
+        "HBondDonorCount": "6.888888888888891",
+        "HBondAcceptorCount": "14.111111111111107",
+        "RotatableBondCount": "8.777777777777779",
+        "medoid_CID": "5320686",
+        "medoid_SMILES": "C1=CC(=CC=C1/C=C/C(=O)OC[C@@H]2[C@H]([C@@H]([C@H]([C@@H](O2)OC3=C(OC4=CC(=CC(=C4C3=O)O)O)C5=CC=C(C=C5)O)O)O)O)O"
+      },
+      "cid": "5320686",
+      "smiles": "C1=CC(=CC=C1/C=C/C(=O)OC[C@@H]2[C@H]([C@@H]([C@H]([C@@H](O2)OC3=C(OC4=CC(=CC(=C4C3=O)O)O)C5=CC=C(C=C5)O)O)O)O)O"
+    },
+    {
+      "id": "523",
+      "fields": {
+        "cluster": "523",
+        "n_points": "93",
+        "MolecularWeight": "304.32720430107526",
+        "ExactMass": "304.00315515935483",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "1.6161290322580641",
+        "TPSA": "97.31612903225806",
+        "HBondDonorCount": "3.0000000000000004",
+        "HBondAcceptorCount": "3.7526881720430105",
+        "RotatableBondCount": "5.795698924731183",
+        "medoid_CID": "2192174",
+        "medoid_SMILES": "COC1=CC(=C(C=C1NC(=S)NCCCO)OC)Cl"
+      },
+      "cid": "2192174",
+      "smiles": "COC1=CC(=C(C=C1NC(=S)NCCCO)OC)Cl"
+    },
+    {
+      "id": "524",
+      "fields": {
+        "cluster": "524",
+        "n_points": "69",
+        "MolecularWeight": "317.1260869565217",
+        "ExactMass": "316.6443485606377",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "4.850724637681159",
+        "TPSA": "47.263768115942035",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "1.3333333333333335",
+        "RotatableBondCount": "6.463768115942029",
+        "medoid_CID": "773389",
+        "medoid_SMILES": "CC(=C)C1=CC(=CC=C1)C(C)(C)NC(=O)NCCC2=CC=CC=C2"
+      },
+      "cid": "773389",
+      "smiles": "CC(=C)C1=CC(=CC=C1)C(C)(C)NC(=O)NCCC2=CC=CC=C2"
+    },
+    {
+      "id": "525",
+      "fields": {
+        "cluster": "525",
+        "n_points": "92",
+        "MolecularWeight": "280.52315217391305",
+        "ExactMass": "280.2334073613478",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "3.416304347826087",
+        "TPSA": "73.25760869565218",
+        "HBondDonorCount": "2.0217391304347827",
+        "HBondAcceptorCount": "2.4239130434782608",
+        "RotatableBondCount": "6.445652173913043",
+        "medoid_CID": "9817136",
+        "medoid_SMILES": "CCC(C1=CC=CC=C1)N=C(NC#N)NC2=CN=CC=C2"
+      },
+      "cid": "9817136",
+      "smiles": "CCC(C1=CC=CC=C1)N=C(NC#N)NC2=CN=CC=C2"
+    },
+    {
+      "id": "526",
+      "fields": {
+        "cluster": "526",
+        "n_points": "14",
+        "MolecularWeight": "521.7571428571429",
+        "ExactMass": "521.1954075447857",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "10.378571428571428",
+        "TPSA": "77.0",
+        "HBondDonorCount": "2.142857142857143",
+        "HBondAcceptorCount": "3.071428571428571",
+        "RotatableBondCount": "17.928571428571427",
+        "medoid_CID": "3002049",
+        "medoid_SMILES": "CCCCCCCCOC1=CC=C(C=C1)NC(=S)NC2=CC=C(C=C2)OCCCCCCCC"
+      },
+      "cid": "3002049",
+      "smiles": "CCCCCCCCOC1=CC=C(C=C1)NC(=S)NC2=CC=C(C=C2)OCCCCCCCC"
+    },
+    {
+      "id": "527",
+      "fields": {
+        "cluster": "527",
+        "n_points": "19",
+        "MolecularWeight": "423.4684210526316",
+        "ExactMass": "423.33235770789474",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "5.5473684210526315",
+        "TPSA": "26.45263157894737",
+        "HBondDonorCount": "4.440892098500626e-16",
+        "HBondAcceptorCount": "15.368421052631579",
+        "RotatableBondCount": "8.157894736842106",
+        "medoid_CID": "3016468",
+        "medoid_SMILES": "CC(=C)C(=O)OCC(C(C(C(C(C(F)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F"
+      },
+      "cid": "3016468",
+      "smiles": "CC(=C)C(=O)OCC(C(C(C(C(C(F)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F"
+    },
+    {
+      "id": "528",
+      "fields": {
+        "cluster": "528",
+        "n_points": "41",
+        "MolecularWeight": "527.5365853658536",
+        "ExactMass": "526.7772996909756",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "2.7512195121951217",
+        "TPSA": "113.77560975609757",
+        "HBondDonorCount": "1.048780487804878",
+        "HBondAcceptorCount": "8.097560975609756",
+        "RotatableBondCount": "5.439024390243903",
+        "medoid_CID": "6617064",
+        "medoid_SMILES": "CCN(C1=CC=CC(=C1)C)S(=O)(=O)C2=CC3=C(C=C2)NC=C(C3=O)C(=O)N4CCC5(CC4)OCCO5"
+      },
+      "cid": "6617064",
+      "smiles": "CCN(C1=CC=CC(=C1)C)S(=O)(=O)C2=CC3=C(C=C2)NC=C(C3=O)C(=O)N4CCC5(CC4)OCCO5"
+    },
+    {
+      "id": "529",
+      "fields": {
+        "cluster": "529",
+        "n_points": "43",
+        "MolecularWeight": "443.2746511627907",
+        "ExactMass": "442.72264861581397",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "5.6465116279069765",
+        "TPSA": "50.3186046511628",
+        "HBondDonorCount": "0.04651162790697683",
+        "HBondAcceptorCount": "7.883720930232558",
+        "RotatableBondCount": "4.069767441860465",
+        "medoid_CID": "6269632",
+        "medoid_SMILES": "C1CN(CCN1/C=C/C2=NN=NN2C3=CC4=CC=CC=C4C=C3)C5=CC=CC(=C5)C(F)(F)F"
+      },
+      "cid": "6269632",
+      "smiles": "C1CN(CCN1/C=C/C2=NN=NN2C3=CC4=CC=CC=C4C=C3)C5=CC=CC(=C5)C(F)(F)F"
+    },
+    {
+      "id": "530",
+      "fields": {
+        "cluster": "530",
+        "n_points": "7",
+        "MolecularWeight": "948.0857142857143",
+        "ExactMass": "947.2861186999999",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "10.342857142857142",
+        "TPSA": "191.57142857142856",
+        "HBondDonorCount": "2.5714285714285716",
+        "HBondAcceptorCount": "11.0",
+        "RotatableBondCount": "19.571428571428573",
+        "medoid_CID": "5277181",
+        "medoid_SMILES": "CC(C)C1=CC(=C(C(=C1)C(C)C)S(=O)(=O)NC(=O)[C@]2(C[C@H]2C=C)NC(=O)[C@@H]3C[C@H](CN3C(=O)[C@H](C(C)(C)C)NC(=O)OC(C)(C)C)OC4=CC(=NC5=C4C=CC(=C5)OC)C6=CC=CC=C6)C(C)C"
+      },
+      "cid": "5277181",
+      "smiles": "CC(C)C1=CC(=C(C(=C1)C(C)C)S(=O)(=O)NC(=O)[C@]2(C[C@H]2C=C)NC(=O)[C@@H]3C[C@H](CN3C(=O)[C@H](C(C)(C)C)NC(=O)OC(C)(C)C)OC4=CC(=NC5=C4C=CC(=C5)OC)C6=CC=CC=C6)C(C)C"
+    },
+    {
+      "id": "531",
+      "fields": {
+        "cluster": "531",
+        "n_points": "88",
+        "MolecularWeight": "386.5352272727273",
+        "ExactMass": "385.8393741805227",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "5.234090909090909",
+        "TPSA": "71.38863636363637",
+        "HBondDonorCount": "3.0",
+        "HBondAcceptorCount": "1.9090909090909087",
+        "RotatableBondCount": "5.215909090909091",
+        "medoid_CID": "1287299",
+        "medoid_SMILES": "C1=CC=C(C=C1)NC2=CC=C(C=C2)NC(=S)NCC3=CC=C(C=C3)Cl"
+      },
+      "cid": "1287299",
+      "smiles": "C1=CC=C(C=C1)NC2=CC=C(C=C2)NC(=S)NCC3=CC=C(C=C3)Cl"
+    },
+    {
+      "id": "532",
+      "fields": {
+        "cluster": "532",
+        "n_points": "1",
+        "MolecularWeight": "334.24",
+        "ExactMass": "334.1058751",
+        "Charge": "2.0",
+        "XLogP": "-4.500000000000002",
+        "TPSA": "163.0",
+        "HBondDonorCount": "8.0",
+        "HBondAcceptorCount": "7.0",
+        "RotatableBondCount": "10.0",
+        "medoid_CID": "3071420",
+        "medoid_SMILES": "C(NC(=O)NC[P+](CO)(CO)CO)[P+](CO)(CO)CO"
+      },
+      "cid": "3071420",
+      "smiles": "C(NC(=O)NC[P+](CO)(CO)CO)[P+](CO)(CO)CO"
+    },
+    {
+      "id": "533",
+      "fields": {
+        "cluster": "533",
+        "n_points": "103",
+        "MolecularWeight": "371.3956310679612",
+        "ExactMass": "370.7208649642524",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "4.714563106796117",
+        "TPSA": "72.11844660194174",
+        "HBondDonorCount": "4.440892098500626e-16",
+        "HBondAcceptorCount": "3.9902912621359223",
+        "RotatableBondCount": "3.0291262135922334",
+        "medoid_CID": "2376159",
+        "medoid_SMILES": "CC(C)C1=CC=C(C=C1)S(=O)(=O)N=C2C=C(C(=O)C3=CC=CC=C32)Cl"
+      },
+      "cid": "2376159",
+      "smiles": "CC(C)C1=CC=C(C=C1)S(=O)(=O)N=C2C=C(C(=O)C3=CC=CC=C32)Cl"
+    },
+    {
+      "id": "534",
+      "fields": {
+        "cluster": "534",
+        "n_points": "157",
+        "MolecularWeight": "336.8380891719745",
+        "ExactMass": "336.39244885942674",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "2.440764331210191",
+        "TPSA": "109.33312101910828",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "4.923566878980892",
+        "RotatableBondCount": "3.522292993630573",
+        "medoid_CID": "5224985",
+        "medoid_SMILES": "CC(C1=CC=CC=C1)NS(=O)(=O)C2=CC3=C(C=C2)NC(=O)S3"
+      },
+      "cid": "5224985",
+      "smiles": "CC(C1=CC=CC=C1)NS(=O)(=O)C2=CC3=C(C=C2)NC(=O)S3"
+    },
+    {
+      "id": "535",
+      "fields": {
+        "cluster": "535",
+        "n_points": "51",
+        "MolecularWeight": "460.98823529411766",
+        "ExactMass": "460.3566347686275",
+        "Charge": "0.0",
+        "XLogP": "4.341176470588235",
+        "TPSA": "93.73333333333333",
+        "HBondDonorCount": "3.0",
+        "HBondAcceptorCount": "4.470588235294118",
+        "RotatableBondCount": "9.901960784313726",
+        "medoid_CID": "9868459",
+        "medoid_SMILES": "CC[C@@H]([C@H]1C[C@H](CCN1CCCNC(=O)NC2=CC=CC(=C2)C(=O)C)CC3=CC=CC=C3)O"
+      },
+      "cid": "9868459",
+      "smiles": "CC[C@@H]([C@H]1C[C@H](CCN1CCCNC(=O)NC2=CC=CC(=C2)C(=O)C)CC3=CC=CC=C3)O"
+    },
+    {
+      "id": "536",
+      "fields": {
+        "cluster": "536",
+        "n_points": "33",
+        "MolecularWeight": "555.1209090909091",
+        "ExactMass": "554.8746861393938",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "5.142424242424243",
+        "TPSA": "71.78787878787878",
+        "HBondDonorCount": "0.8181818181818186",
+        "HBondAcceptorCount": "19.515151515151516",
+        "RotatableBondCount": "10.969696969696969",
+        "medoid_CID": "110002",
+        "medoid_SMILES": "CN(CCCCO)S(=O)(=O)C(C(C(C(C(C(C(F)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F"
+      },
+      "cid": "110002",
+      "smiles": "CN(CCCCO)S(=O)(=O)C(C(C(C(C(C(C(F)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F"
+    },
+    {
+      "id": "537",
+      "fields": {
+        "cluster": "537",
+        "n_points": "97",
+        "MolecularWeight": "231.8832989690722",
+        "ExactMass": "231.6694556021959",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "0.8030927835051549",
+        "TPSA": "74.54536082474226",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "3.1134020618556697",
+        "RotatableBondCount": "4.690721649484536",
+        "medoid_CID": "3052713",
+        "medoid_SMILES": "COC1=CC=CC(=C1OC)CCNC(=O)N"
+      },
+      "cid": "3052713",
+      "smiles": "COC1=CC=CC(=C1OC)CCNC(=O)N"
+    },
+    {
+      "id": "538",
+      "fields": {
+        "cluster": "538",
+        "n_points": "37",
+        "MolecularWeight": "153.64243243243243",
+        "ExactMass": "153.5449864159459",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "-1.7324324324324336",
+        "TPSA": "111.33513513513513",
+        "HBondDonorCount": "4.054054054054054",
+        "HBondAcceptorCount": "2.9459459459459456",
+        "RotatableBondCount": "1.6756756756756745",
+        "medoid_CID": "204",
+        "medoid_SMILES": "C1(C(=O)NC(=O)N1)NC(=O)N"
+      },
+      "cid": "204",
+      "smiles": "C1(C(=O)NC(=O)N1)NC(=O)N"
+    },
+    {
+      "id": "539",
+      "fields": {
+        "cluster": "539",
+        "n_points": "52",
+        "MolecularWeight": "247.90365384615382",
+        "ExactMass": "247.67127500825",
+        "Charge": "1.0000000000000002",
+        "XLogP": "1.4903846153846152",
+        "TPSA": "59.225",
+        "HBondDonorCount": "1.2307692307692306",
+        "HBondAcceptorCount": "2.519230769230769",
+        "RotatableBondCount": "4.461538461538462",
+        "medoid_CID": "9556860",
+        "medoid_SMILES": "CC[N+]1=CC=C(C=C1)C(=O)N/N=C/C2=CC=CO2"
+      },
+      "cid": "9556860",
+      "smiles": "CC[N+]1=CC=C(C=C1)C(=O)N/N=C/C2=CC=CO2"
+    },
+    {
+      "id": "540",
+      "fields": {
+        "cluster": "540",
+        "n_points": "9",
+        "MolecularWeight": "678.7222222222222",
+        "ExactMass": "678.1966196066667",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "8.155555555555555",
+        "TPSA": "107.48888888888888",
+        "HBondDonorCount": "4.333333333333333",
+        "HBondAcceptorCount": "4.444444444444445",
+        "RotatableBondCount": "13.666666666666666",
+        "medoid_CID": "463518",
+        "medoid_SMILES": "C[C@@]12CC[C@]3(CC[C@H]([C@@H]3[C@H]1CC[C@H]4[C@]2(CC[C@@H]5[C@@]4(CC[C@@H](C5(C)C)O)C)C)C(=C)CN)C(=O)NCCCCCCCCCCC(=O)O"
+      },
+      "cid": "463518",
+      "smiles": "C[C@@]12CC[C@]3(CC[C@H]([C@@H]3[C@H]1CC[C@H]4[C@]2(CC[C@@H]5[C@@]4(CC[C@@H](C5(C)C)O)C)C)C(=C)CN)C(=O)NCCCCCCCCCCC(=O)O"
+    },
+    {
+      "id": "541",
+      "fields": {
+        "cluster": "541",
+        "n_points": "1",
+        "MolecularWeight": "354.47",
+        "ExactMass": "354.26174829",
+        "Charge": "3.0",
+        "XLogP": "-1.1",
+        "TPSA": "167.0",
+        "HBondDonorCount": "7.0",
+        "HBondAcceptorCount": "2.0",
+        "RotatableBondCount": "12.0",
+        "medoid_CID": "448944",
+        "medoid_SMILES": "COC1=CC(=C(C=C1)OCC[NH+]=C(N)N)C[NH2+]CCCC[NH+]=C(N)N"
+      },
+      "cid": "448944",
+      "smiles": "COC1=CC(=C(C=C1)OCC[NH+]=C(N)N)C[NH2+]CCCC[NH+]=C(N)N"
+    },
+    {
+      "id": "542",
+      "fields": {
+        "cluster": "542",
+        "n_points": "83",
+        "MolecularWeight": "486.71204819277114",
+        "ExactMass": "486.1546884501205",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "4.185542168674699",
+        "TPSA": "120.80963855421686",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "6.518072289156626",
+        "RotatableBondCount": "8.93975903614458",
+        "medoid_CID": "2208610",
+        "medoid_SMILES": "CCOC1=CC=CC(=C1)NC(=O)/C(=C\\C2=CC(=C(C=C2Br)OCC(=O)O)OC)/C#N"
+      },
+      "cid": "2208610",
+      "smiles": "CCOC1=CC=CC(=C1)NC(=O)/C(=C\\C2=CC(=C(C=C2Br)OCC(=O)O)OC)/C#N"
+    },
+    {
+      "id": "543",
+      "fields": {
+        "cluster": "543",
+        "n_points": "19",
+        "MolecularWeight": "460.9157894736842",
+        "ExactMass": "460.41596928210527",
+        "Charge": "0.0",
+        "XLogP": "1.2000000000000002",
+        "TPSA": "187.31578947368422",
+        "HBondDonorCount": "4.0",
+        "HBondAcceptorCount": "6.842105263157894",
+        "RotatableBondCount": "6.842105263157895",
+        "medoid_CID": "9910543",
+        "medoid_SMILES": "C1OC2=C(O1)C=C(C=C2)C(CC(=O)O)NC(=O)C3=CC=C(S3)/C=C/C(=O)N=C(N)N"
+      },
+      "cid": "9910543",
+      "smiles": "C1OC2=C(O1)C=C(C=C2)C(CC(=O)O)NC(=O)C3=CC=C(S3)/C=C/C(=O)N=C(N)N"
+    },
+    {
+      "id": "544",
+      "fields": {
+        "cluster": "544",
+        "n_points": "85",
+        "MolecularWeight": "408.06470588235294",
+        "ExactMass": "407.48459289964705",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "4.477647058823529",
+        "TPSA": "123.91764705882352",
+        "HBondDonorCount": "3.0",
+        "HBondAcceptorCount": "5.247058823529412",
+        "RotatableBondCount": "3.152941176470589",
+        "medoid_CID": "6539996",
+        "medoid_SMILES": "CC1=C(C2=C(N=CN=C2S1)N)C3=CC=C(C=C3)NC(=O)NC4=CC=CC=C4Cl"
+      },
+      "cid": "6539996",
+      "smiles": "CC1=C(C2=C(N=CN=C2S1)N)C3=CC=C(C=C3)NC(=O)NC4=CC=CC=C4Cl"
+    },
+    {
+      "id": "545",
+      "fields": {
+        "cluster": "545",
+        "n_points": "113",
+        "MolecularWeight": "338.13309734513274",
+        "ExactMass": "337.56722848811506",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "3.8601769911504427",
+        "TPSA": "41.60707964601771",
+        "HBondDonorCount": "0.0",
+        "HBondAcceptorCount": "2.761061946902655",
+        "RotatableBondCount": "2.8938053097345136",
+        "medoid_CID": "5726662",
+        "medoid_SMILES": "CC1=CC=C(C=C1)N2C(=NC3=CC=CC=C3C2=O)/C=C/C4=CN=CC=C4"
+      },
+      "cid": "5726662",
+      "smiles": "CC1=CC=C(C=C1)N2C(=NC3=CC=CC=C3C2=O)/C=C/C4=CN=CC=C4"
+    },
+    {
+      "id": "546",
+      "fields": {
+        "cluster": "546",
+        "n_points": "37",
+        "MolecularWeight": "575.2432432432432",
+        "ExactMass": "574.5712607916216",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "6.643243243243243",
+        "TPSA": "116.21621621621621",
+        "HBondDonorCount": "4.027027027027027",
+        "HBondAcceptorCount": "4.324324324324325",
+        "RotatableBondCount": "8.18918918918919",
+        "medoid_CID": "3486988",
+        "medoid_SMILES": "CC1=C(C=C(C=C1)NC(=O)NC2=CC=C(C=C2)C(=O)C3=CC=CC=C3)NC(=O)NC4=CC=C(C=C4)C(=O)C5=CC=CC=C5"
+      },
+      "cid": "3486988",
+      "smiles": "CC1=C(C=C(C=C1)NC(=O)NC2=CC=C(C=C2)C(=O)C3=CC=CC=C3)NC(=O)NC4=CC=C(C=C4)C(=O)C5=CC=CC=C5"
+    },
+    {
+      "id": "547",
+      "fields": {
+        "cluster": "547",
+        "n_points": "186",
+        "MolecularWeight": "299.54806451612905",
+        "ExactMass": "299.09416076727956",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "2.8768817204301076",
+        "TPSA": "77.61397849462365",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "4.10752688172043",
+        "RotatableBondCount": "2.96236559139785",
+        "medoid_CID": "456656",
+        "medoid_SMILES": "C1=CC=C2C=C(C=CC2=C1)NS(=O)(=O)C3=CC=C(C=C3)N"
+      },
+      "cid": "456656",
+      "smiles": "C1=CC=C2C=C(C=CC2=C1)NS(=O)(=O)C3=CC=C(C=C3)N"
+    },
+    {
+      "id": "548",
+      "fields": {
+        "cluster": "548",
+        "n_points": "205",
+        "MolecularWeight": "298.7720487804878",
+        "ExactMass": "298.37766369123904",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "2.5239024390243903",
+        "TPSA": "77.42243902439024",
+        "HBondDonorCount": "1.9999999999999998",
+        "HBondAcceptorCount": "2.84390243902439",
+        "RotatableBondCount": "4.4487804878048784",
+        "medoid_CID": "1851524",
+        "medoid_SMILES": "COC1=C(C=C(C=C1)Cl)NC(=S)NCC2=CC=CO2"
+      },
+      "cid": "1851524",
+      "smiles": "COC1=C(C=C(C=C1)Cl)NC(=S)NCC2=CC=CO2"
+    },
+    {
+      "id": "549",
+      "fields": {
+        "cluster": "549",
+        "n_points": "202",
+        "MolecularWeight": "423.3831683168317",
+        "ExactMass": "422.5675981208911",
+        "Charge": "1.734723475976807e-17",
+        "XLogP": "4.748514851485148",
+        "TPSA": "118.83663366336637",
+        "HBondDonorCount": "2.0000000000000004",
+        "HBondAcceptorCount": "5.425742574257425",
+        "RotatableBondCount": "5.257425742574258",
+        "medoid_CID": "1335595",
+        "medoid_SMILES": "CC1=CC=C(C=C1)SCC2=NN=C(S2)NC(=O)NC3=C(C=C(C=C3)Cl)Cl"
+      },
+      "cid": "1335595",
+      "smiles": "CC1=CC=C(C=C1)SCC2=NN=C(S2)NC(=O)NC3=C(C=C(C=C3)Cl)Cl"
+    },
+    {
+      "id": "550",
+      "fields": {
+        "cluster": "550",
+        "n_points": "197",
+        "MolecularWeight": "321.2343654822335",
+        "ExactMass": "320.75738306030456",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "2.8274111675126905",
+        "TPSA": "76.92131979695432",
+        "HBondDonorCount": "1.0",
+        "HBondAcceptorCount": "5.187817258883249",
+        "RotatableBondCount": "3.3959390862944168",
+        "medoid_CID": "700863",
+        "medoid_SMILES": "CC1=CC(=C(C=C1)NS(=O)(=O)C2=CC3=C(C=C2)OCCO3)C"
+      },
+      "cid": "700863",
+      "smiles": "CC1=CC(=C(C=C1)NS(=O)(=O)C2=CC3=C(C=C2)OCCO3)C"
+    },
+    {
+      "id": "551",
+      "fields": {
+        "cluster": "551",
+        "n_points": "11",
+        "MolecularWeight": "576.7636363636364",
+        "ExactMass": "575.9708126583637",
+        "Charge": "0.0",
+        "XLogP": "7.5",
+        "TPSA": "50.00909090909091",
+        "HBondDonorCount": "1.4545454545454546",
+        "HBondAcceptorCount": "2.0",
+        "RotatableBondCount": "3.2727272727272725",
+        "medoid_CID": "6238604",
+        "medoid_SMILES": "CC1=C(C2=CC=CC=C2N1)/C=C/C3=NC4=C(C=C(C=C4)I)C(=O)N3C5=C(C=C(C=C5)Cl)Cl"
+      },
+      "cid": "6238604",
+      "smiles": "CC1=C(C2=CC=CC=C2N1)/C=C/C3=NC4=C(C=C(C=C4)I)C(=O)N3C5=C(C=C(C=C5)Cl)Cl"
+    },
+    {
+      "id": "552",
+      "fields": {
+        "cluster": "552",
+        "n_points": "119",
+        "MolecularWeight": "359.0455462184874",
+        "ExactMass": "358.5155161907731",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "5.0436974789915965",
+        "TPSA": "54.09831932773109",
+        "HBondDonorCount": "0.9999999999999998",
+        "HBondAcceptorCount": "3.3361344537815127",
+        "RotatableBondCount": "5.504201680672269",
+        "medoid_CID": "2916063",
+        "medoid_SMILES": "CC(CCC1=CC=CC=C1)NS(=O)(=O)C2=C(C=CC(=C2)Cl)Cl"
+      },
+      "cid": "2916063",
+      "smiles": "CC(CCC1=CC=CC=C1)NS(=O)(=O)C2=C(C=CC(=C2)Cl)Cl"
+    },
+    {
+      "id": "553",
+      "fields": {
+        "cluster": "553",
+        "n_points": "57",
+        "MolecularWeight": "105.9388596491228",
+        "ExactMass": "105.87847916010526",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "-1.4140350877192982",
+        "TPSA": "88.82631578947368",
+        "HBondDonorCount": "3.1052631578947363",
+        "HBondAcceptorCount": "2.2456140350877196",
+        "RotatableBondCount": "0.9649122807017543",
+        "medoid_CID": "3033999",
+        "medoid_SMILES": "C(NC(=S)N)O"
+      },
+      "cid": "3033999",
+      "smiles": "C(NC(=S)N)O"
+    },
+    {
+      "id": "554",
+      "fields": {
+        "cluster": "554",
+        "n_points": "138",
+        "MolecularWeight": "313.1613768115942",
+        "ExactMass": "312.73047235536234",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "3.917391304347826",
+        "TPSA": "47.08115942028985",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "4.297101449275362",
+        "RotatableBondCount": "2.2608695652173907",
+        "medoid_CID": "266473",
+        "medoid_SMILES": "C1=CC(=CC(=C1)Cl)NC(=O)NC2=CC=C(C=C2)C(F)(F)F"
+      },
+      "cid": "266473",
+      "smiles": "C1=CC(=CC(=C1)Cl)NC(=O)NC2=CC=C(C=C2)C(F)(F)F"
+    },
+    {
+      "id": "555",
+      "fields": {
+        "cluster": "555",
+        "n_points": "5",
+        "MolecularWeight": "483.82000000000005",
+        "ExactMass": "483.412153782",
+        "Charge": "0.9999999999999999",
+        "XLogP": "7.24",
+        "TPSA": "85.53999999999999",
+        "HBondDonorCount": "-2.220446049250313e-16",
+        "HBondAcceptorCount": "4.4",
+        "RotatableBondCount": "8.4",
+        "medoid_CID": "1595686",
+        "medoid_SMILES": "CC1=CC(=CC(=C1SCCC2=CC=CC=[N+]2CC(=O)C3=CC=C(C=C3)[N+](=O)[O-])C)C(C)(C)C"
+      },
+      "cid": "1595686",
+      "smiles": "CC1=CC(=CC(=C1SCCC2=CC=CC=[N+]2CC(=O)C3=CC=C(C=C3)[N+](=O)[O-])C)C(C)(C)C"
+    },
+    {
+      "id": "556",
+      "fields": {
+        "cluster": "556",
+        "n_points": "98",
+        "MolecularWeight": "235.25989795918366",
+        "ExactMass": "235.01291756224492",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "0.39285714285714324",
+        "TPSA": "86.91428571428571",
+        "HBondDonorCount": "0.9999999999999998",
+        "HBondAcceptorCount": "5.122448979591836",
+        "RotatableBondCount": "4.285714285714286",
+        "medoid_CID": "5267750",
+        "medoid_SMILES": "CCN(CC)S(=O)(=O)C1=CN=C(C=C1)N"
+      },
+      "cid": "5267750",
+      "smiles": "CCN(CC)S(=O)(=O)C1=CN=C(C=C1)N"
+    },
+    {
+      "id": "557",
+      "fields": {
+        "cluster": "557",
+        "n_points": "126",
+        "MolecularWeight": "434.0270634920635",
+        "ExactMass": "433.4440667744445",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "3.007936507936508",
+        "TPSA": "83.39761904761905",
+        "HBondDonorCount": "1.0",
+        "HBondAcceptorCount": "5.055555555555555",
+        "RotatableBondCount": "6.277777777777778",
+        "medoid_CID": "1459398",
+        "medoid_SMILES": "CC1=CC2=C(C=C1)N3C(=NN=N3)C(=C2)CN(CC4=CN=CC=C4)C(=O)NCC5=CC=CC=C5"
+      },
+      "cid": "1459398",
+      "smiles": "CC1=CC2=C(C=C1)N3C(=NN=N3)C(=C2)CN(CC4=CN=CC=C4)C(=O)NCC5=CC=CC=C5"
+    },
+    {
+      "id": "558",
+      "fields": {
+        "cluster": "558",
+        "n_points": "45",
+        "MolecularWeight": "569.808888888889",
+        "ExactMass": "568.738855206889",
+        "Charge": "0.0",
+        "XLogP": "5.557777777777778",
+        "TPSA": "105.06888888888889",
+        "HBondDonorCount": "3.0666666666666664",
+        "HBondAcceptorCount": "7.355555555555556",
+        "RotatableBondCount": "7.933333333333334",
+        "medoid_CID": "5328158",
+        "medoid_SMILES": "CN1CCN(CC1)CCCNC2=NC3=NC(=C(C=C3C=N2)C4=C(C=CC=C4Cl)Cl)NC(=O)NC5CCCCC5"
+      },
+      "cid": "5328158",
+      "smiles": "CN1CCN(CC1)CCCNC2=NC3=NC(=C(C=C3C=N2)C4=C(C=CC=C4Cl)Cl)NC(=O)NC5CCCCC5"
+    },
+    {
+      "id": "559",
+      "fields": {
+        "cluster": "559",
+        "n_points": "24",
+        "MolecularWeight": "596.6999999999999",
+        "ExactMass": "596.2033542224999",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "4.275",
+        "TPSA": "159.33333333333331",
+        "HBondDonorCount": "4.583333333333334",
+        "HBondAcceptorCount": "7.625",
+        "RotatableBondCount": "7.458333333333334",
+        "medoid_CID": "5480978",
+        "medoid_SMILES": "CCC1=C(C2=CC3=C(C(=C(N3)C=C4C(=C(C(=N4)C(=C5C(=C(C(=N5)C=C1N2)C)C(=O)O)CC(=O)O)CCC(=O)O)C)C)C=C)C"
+      },
+      "cid": "5480978",
+      "smiles": "CCC1=C(C2=CC3=C(C(=C(N3)C=C4C(=C(C(=N4)C(=C5C(=C(C(=N5)C=C1N2)C)C(=O)O)CC(=O)O)CCC(=O)O)C)C)C=C)C"
+    },
+    {
+      "id": "560",
+      "fields": {
+        "cluster": "560",
+        "n_points": "84",
+        "MolecularWeight": "242.25190476190477",
+        "ExactMass": "242.03469279460717",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "-0.046428571428571264",
+        "TPSA": "87.10952380952381",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "3.297619047619048",
+        "RotatableBondCount": "2.5000000000000004",
+        "medoid_CID": "2831179",
+        "medoid_SMILES": "CC(C)NC(=O)NC1(CCS(=O)(=O)C1)C"
+      },
+      "cid": "2831179",
+      "smiles": "CC(C)NC(=O)NC1(CCS(=O)(=O)C1)C"
+    },
+    {
+      "id": "561",
+      "fields": {
+        "cluster": "561",
+        "n_points": "109",
+        "MolecularWeight": "362.3348623853211",
+        "ExactMass": "361.9219739838532",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "4.2568807339449535",
+        "TPSA": "92.89724770642202",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "4.055045871559633",
+        "RotatableBondCount": "7.5045871559633035",
+        "medoid_CID": "51245",
+        "medoid_SMILES": "CCCC1=NC2=CC=CC=C2C(=C1)NC(=NC(C)(C)C)NC3=NC=CS3"
+      },
+      "cid": "51245",
+      "smiles": "CCCC1=NC2=CC=CC=C2C(=C1)NC(=NC(C)(C)C)NC3=NC=CS3"
+    },
+    {
+      "id": "562",
+      "fields": {
+        "cluster": "562",
+        "n_points": "2",
+        "MolecularWeight": "1010.5",
+        "ExactMass": "1009.694810385",
+        "Charge": "0.0",
+        "XLogP": "23.5",
+        "TPSA": "60.7",
+        "HBondDonorCount": "0.0",
+        "HBondAcceptorCount": "5.0",
+        "RotatableBondCount": "39.0",
+        "medoid_CID": "639993",
+        "medoid_SMILES": "CCCCCCCCOC1=CC(=C(C=C1/C=C/C2=CC=CC=C2)OCCCCCCC)/C=C(\\C#N)/C3=CC=C(C=C3)/C(=C/C4=C(C=C(C(=C4)OCCCCCCCC)/C=C/C5=CC=CC=C5)OCCCCCCCC)/C#N"
+      },
+      "cid": "639993",
+      "smiles": "CCCCCCCCOC1=CC(=C(C=C1/C=C/C2=CC=CC=C2)OCCCCCCC)/C=C(\\C#N)/C3=CC=C(C=C3)/C(=C/C4=C(C=C(C(=C4)OCCCCCCCC)/C=C/C5=CC=CC=C5)OCCCCCCCC)/C#N"
+    },
+    {
+      "id": "563",
+      "fields": {
+        "cluster": "563",
+        "n_points": "21",
+        "MolecularWeight": "421.9047619047619",
+        "ExactMass": "421.55911218538097",
+        "Charge": "0.0",
+        "XLogP": "9.523809523809522",
+        "TPSA": "8.533333333333346",
+        "HBondDonorCount": "0.09523809523809534",
+        "HBondAcceptorCount": "0.6190476190476191",
+        "RotatableBondCount": "4.666666666666667",
+        "medoid_CID": "6442034",
+        "medoid_SMILES": "CC1=CC(=C(C=C1)C)/C=C/C2=CC=C(C=C2)C3=CC=C(C=C3)/C=C/C4=C(C=CC(=C4)C)C"
+      },
+      "cid": "6442034",
+      "smiles": "CC1=CC(=C(C=C1)C)/C=C/C2=CC=C(C=C2)C3=CC=C(C=C3)/C=C/C4=C(C=CC(=C4)C)C"
+    },
+    {
+      "id": "564",
+      "fields": {
+        "cluster": "564",
+        "n_points": "123",
+        "MolecularWeight": "427.03634146341466",
+        "ExactMass": "426.4707387778862",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "2.678861788617886",
+        "TPSA": "121.6178861788618",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "5.886178861788618",
+        "RotatableBondCount": "4.40650406504065",
+        "medoid_CID": "1791505",
+        "medoid_SMILES": "CC1=CC(=CC=C1)C(=O)NC(=S)NC2=CC=C(C=C2)S(=O)(=O)N3CCN(CC3)C"
+      },
+      "cid": "1791505",
+      "smiles": "CC1=CC(=CC=C1)C(=O)NC(=S)NC2=CC=C(C=C2)S(=O)(=O)N3CCN(CC3)C"
+    },
+    {
+      "id": "565",
+      "fields": {
+        "cluster": "565",
+        "n_points": "255",
+        "MolecularWeight": "391.6150980392157",
+        "ExactMass": "391.01191046211767",
+        "Charge": "1.3877787807814457e-17",
+        "XLogP": "3.191372549019608",
+        "TPSA": "72.81333333333333",
+        "HBondDonorCount": "1.0",
+        "HBondAcceptorCount": "4.031372549019609",
+        "RotatableBondCount": "4.0509803921568635",
+        "medoid_CID": "1770702",
+        "medoid_SMILES": "C1CCN(CC1)C(=O)/C(=C/C2=CC=CO2)/NC(=O)C3=CC=C(O3)Br"
+      },
+      "cid": "1770702",
+      "smiles": "C1CCN(CC1)C(=O)/C(=C/C2=CC=CO2)/NC(=O)C3=CC=C(O3)Br"
+    },
+    {
+      "id": "566",
+      "fields": {
+        "cluster": "566",
+        "n_points": "58",
+        "MolecularWeight": "345.3503448275862",
+        "ExactMass": "345.1078336018966",
+        "Charge": "1.3877787807814457e-17",
+        "XLogP": "3.922413793103448",
+        "TPSA": "84.03620689655172",
+        "HBondDonorCount": "1.0000000000000004",
+        "HBondAcceptorCount": "6.655172413793103",
+        "RotatableBondCount": "8.17241379310345",
+        "medoid_CID": "6200439",
+        "medoid_SMILES": "COC1=CC(=CC(=C1OC)OC)/C=C/C2=NC(=C(O2)NCC=C)C#N"
+      },
+      "cid": "6200439",
+      "smiles": "COC1=CC(=CC(=C1OC)OC)/C=C/C2=NC(=C(O2)NCC=C)C#N"
+    },
+    {
+      "id": "567",
+      "fields": {
+        "cluster": "567",
+        "n_points": "145",
+        "MolecularWeight": "249.07758620689657",
+        "ExactMass": "248.5443039970345",
+        "Charge": "1.3877787807814457e-17",
+        "XLogP": "2.5951724137931036",
+        "TPSA": "42.34344827586209",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "1.0689655172413768",
+        "RotatableBondCount": "3.10344827586207",
+        "medoid_CID": "4114766",
+        "medoid_SMILES": "C=CCNC(=O)NC1=C(C(=CC=C1)Cl)Cl"
+      },
+      "cid": "4114766",
+      "smiles": "C=CCNC(=O)NC1=C(C(=CC=C1)Cl)Cl"
+    },
+    {
+      "id": "568",
+      "fields": {
+        "cluster": "568",
+        "n_points": "156",
+        "MolecularWeight": "250.96403846153845",
+        "ExactMass": "250.61016908364743",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "2.2384615384615385",
+        "TPSA": "49.918589743589756",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "1.9679487179487185",
+        "RotatableBondCount": "4.378205128205128",
+        "medoid_CID": "3486451",
+        "medoid_SMILES": "CCC1=CC=C(C=C1)NC(=O)NCC2CCCO2"
+      },
+      "cid": "3486451",
+      "smiles": "CCC1=CC=C(C=C1)NC(=O)NCC2CCCO2"
+    },
+    {
+      "id": "569",
+      "fields": {
+        "cluster": "569",
+        "n_points": "11",
+        "MolecularWeight": "503.28181818181815",
+        "ExactMass": "502.7149585990909",
+        "Charge": "0.0",
+        "XLogP": "11.554545454545453",
+        "TPSA": "23.836363636363636",
+        "HBondDonorCount": "0.09090909090909105",
+        "HBondAcceptorCount": "2.3636363636363638",
+        "RotatableBondCount": "16.81818181818182",
+        "medoid_CID": "106792",
+        "medoid_SMILES": "CCCCCC(=CC1=CC=CC=C1)C(OC(C)(CCC=C(C)C)C=C)OC(C)(CCC=C(C)C)C=C"
+      },
+      "cid": "106792",
+      "smiles": "CCCCCC(=CC1=CC=CC=C1)C(OC(C)(CCC=C(C)C)C=C)OC(C)(CCC=C(C)C)C=C"
+    },
+    {
+      "id": "570",
+      "fields": {
+        "cluster": "570",
+        "n_points": "51",
+        "MolecularWeight": "478.3058823529412",
+        "ExactMass": "477.7071433815686",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "6.531372549019608",
+        "TPSA": "132.9607843137255",
+        "HBondDonorCount": "1.0196078431372548",
+        "HBondAcceptorCount": "7.411764705882352",
+        "RotatableBondCount": "7.843137254901961",
+        "medoid_CID": "2043559",
+        "medoid_SMILES": "CCOC(=O)C1=C(SC(=C1C)C)N/C=C(/C#N)\\C2=NC(=CS2)C3=C(C=C(C=C3)Cl)Cl"
+      },
+      "cid": "2043559",
+      "smiles": "CCOC(=O)C1=C(SC(=C1C)C)N/C=C(/C#N)\\C2=NC(=CS2)C3=C(C=C(C=C3)Cl)Cl"
+    },
+    {
+      "id": "571",
+      "fields": {
+        "cluster": "571",
+        "n_points": "15",
+        "MolecularWeight": "598.24",
+        "ExactMass": "597.79389804",
+        "Charge": "0.0",
+        "XLogP": "3.913333333333333",
+        "TPSA": "148.53333333333333",
+        "HBondDonorCount": "4.0",
+        "HBondAcceptorCount": "7.333333333333334",
+        "RotatableBondCount": "18.46666666666667",
+        "medoid_CID": "5327237",
+        "medoid_SMILES": "COC(=O)NCCCCCN1[C@@H]([C@@H]([C@H]([C@H](N(C1=O)CCCCCNC(=O)OC)CC2=CC=CC=C2)O)O)CC3=CC=CC=C3"
+      },
+      "cid": "5327237",
+      "smiles": "COC(=O)NCCCCCN1[C@@H]([C@@H]([C@H]([C@H](N(C1=O)CCCCCNC(=O)OC)CC2=CC=CC=C2)O)O)CC3=CC=CC=C3"
+    },
+    {
+      "id": "572",
+      "fields": {
+        "cluster": "572",
+        "n_points": "48",
+        "MolecularWeight": "442.2089583333333",
+        "ExactMass": "441.6083337197917",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "4.002083333333333",
+        "TPSA": "162.60416666666666",
+        "HBondDonorCount": "3.0208333333333335",
+        "HBondAcceptorCount": "7.708333333333332",
+        "RotatableBondCount": "4.625",
+        "medoid_CID": "4917738",
+        "medoid_SMILES": "COC1=CC(=CC(=C1OC)OC)C(=O)NC(=S)NC2=C(C(=CC(=C2)[N+](=O)[O-])Cl)O"
+      },
+      "cid": "4917738",
+      "smiles": "COC1=CC(=CC(=C1OC)OC)C(=O)NC(=S)NC2=C(C(=CC(=C2)[N+](=O)[O-])Cl)O"
+    },
+    {
+      "id": "573",
+      "fields": {
+        "cluster": "573",
+        "n_points": "98",
+        "MolecularWeight": "410.13367346938776",
+        "ExactMass": "409.56925476183676",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "3.858163265306122",
+        "TPSA": "100.51020408163265",
+        "HBondDonorCount": "3.0",
+        "HBondAcceptorCount": "4.275510204081633",
+        "RotatableBondCount": "7.051020408163265",
+        "medoid_CID": "7647341",
+        "medoid_SMILES": "CC1=CC2=C(C=C1)NC=C2CCNC(=S)NC3=CC(=C(C(=C3)OC)OC)OC"
+      },
+      "cid": "7647341",
+      "smiles": "CC1=CC2=C(C=C1)NC=C2CCNC(=S)NC3=CC(=C(C(=C3)OC)OC)OC"
+    },
+    {
+      "id": "574",
+      "fields": {
+        "cluster": "574",
+        "n_points": "148",
+        "MolecularWeight": "362.74405405405406",
+        "ExactMass": "362.17181136331084",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "3.495945945945946",
+        "TPSA": "130.35135135135135",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "5.405405405405406",
+        "RotatableBondCount": "2.6756756756756763",
+        "medoid_CID": "561401",
+        "medoid_SMILES": "CC1=CC=C(C=C1)S(=O)(=O)NC(=O)NC2=C(C=C(C=C2)[N+](=O)[O-])Cl"
+      },
+      "cid": "561401",
+      "smiles": "CC1=CC=C(C=C1)S(=O)(=O)NC(=O)NC2=C(C=C(C=C2)[N+](=O)[O-])Cl"
+    },
+    {
+      "id": "575",
+      "fields": {
+        "cluster": "575",
+        "n_points": "103",
+        "MolecularWeight": "520.1009708737863",
+        "ExactMass": "519.0760831936893",
+        "Charge": "1.3877787807814457e-17",
+        "XLogP": "5.662135922330097",
+        "TPSA": "81.76504854368932",
+        "HBondDonorCount": "1.0",
+        "HBondAcceptorCount": "4.194174757281553",
+        "RotatableBondCount": "6.514563106796117",
+        "medoid_CID": "5792228",
+        "medoid_SMILES": "CC1=C(C=CC(=C1)/C(=C\\2/C(N(C(=O)C2=O)CC3=C[NH+]=CC=C3)C4=CC(=CC=C4)Br)/[O-])OC(C)C"
+      },
+      "cid": "5792228",
+      "smiles": "CC1=C(C=CC(=C1)/C(=C\\2/C(N(C(=O)C2=O)CC3=C[NH+]=CC=C3)C4=CC(=CC=C4)Br)/[O-])OC(C)C"
+    },
+    {
+      "id": "576",
+      "fields": {
+        "cluster": "576",
+        "n_points": "107",
+        "MolecularWeight": "511.88317757009344",
+        "ExactMass": "510.4379757441121",
+        "Charge": "1.3877787807814457e-17",
+        "XLogP": "7.284112149532711",
+        "TPSA": "94.26728971962618",
+        "HBondDonorCount": "2.009345794392523",
+        "HBondAcceptorCount": "3.392523364485982",
+        "RotatableBondCount": "4.05607476635514",
+        "medoid_CID": "4244020",
+        "medoid_SMILES": "CC1=CC(=CC=C1)NC(=S)N=NC2=C(N(C3=C2C=C(C=C3)Br)CC4=CC=CC=C4Cl)O"
+      },
+      "cid": "4244020",
+      "smiles": "CC1=CC(=CC=C1)NC(=S)N=NC2=C(N(C3=C2C=C(C=C3)Br)CC4=CC=CC=C4Cl)O"
+    },
+    {
+      "id": "577",
+      "fields": {
+        "cluster": "577",
+        "n_points": "39",
+        "MolecularWeight": "475.3179487179487",
+        "ExactMass": "474.90925875923074",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "4.5948717948717945",
+        "TPSA": "142.97435897435895",
+        "HBondDonorCount": "2.282051282051282",
+        "HBondAcceptorCount": "9.179487179487179",
+        "RotatableBondCount": "9.666666666666668",
+        "medoid_CID": "1405633",
+        "medoid_SMILES": "COC1=C(C=C(C=C1)CCNC2=NC3=CC=CC=C3N=C2NS(=O)(=O)C4=CC=CS4)OC"
+      },
+      "cid": "1405633",
+      "smiles": "COC1=C(C=C(C=C1)CCNC2=NC3=CC=CC=C3N=C2NS(=O)(=O)C4=CC=CS4)OC"
+    },
+    {
+      "id": "578",
+      "fields": {
+        "cluster": "578",
+        "n_points": "132",
+        "MolecularWeight": "206.99416666666664",
+        "ExactMass": "206.62351770734847",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "2.090909090909091",
+        "TPSA": "49.09621212121214",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "1.1363636363636358",
+        "RotatableBondCount": "1.6136363636363629",
+        "medoid_CID": "729273",
+        "medoid_SMILES": "C1C2CC3CC1CC(C2)(C3)CNC(=O)N"
+      },
+      "cid": "729273",
+      "smiles": "C1C2CC3CC1CC(C2)(C3)CNC(=O)N"
+    },
+    {
+      "id": "579",
+      "fields": {
+        "cluster": "579",
+        "n_points": "56",
+        "MolecularWeight": "375.8878571428572",
+        "ExactMass": "375.4682378369643",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "5.005357142857143",
+        "TPSA": "84.05357142857143",
+        "HBondDonorCount": "2.071428571428571",
+        "HBondAcceptorCount": "3.553571428571429",
+        "RotatableBondCount": "9.785714285714285",
+        "medoid_CID": "5806239",
+        "medoid_SMILES": "CCCCN(CC)C1=CC=C(C=C1)/C=N\\NC(=S)NC2=CC(=CC=C2)OC"
+      },
+      "cid": "5806239",
+      "smiles": "CCCCN(CC)C1=CC=C(C=C1)/C=N\\NC(=S)NC2=CC(=CC=C2)OC"
+    },
+    {
+      "id": "580",
+      "fields": {
+        "cluster": "580",
+        "n_points": "122",
+        "MolecularWeight": "308.1522950819672",
+        "ExactMass": "307.7752266011967",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "3.3131147540983608",
+        "TPSA": "62.77459016393443",
+        "HBondDonorCount": "-2.220446049250313e-16",
+        "HBondAcceptorCount": "4.262295081967213",
+        "RotatableBondCount": "4.368852459016393",
+        "medoid_CID": "6256686",
+        "medoid_SMILES": "CC(=O)OC1=CC=CC=C1/C=C/C2=NC(=O)C3=CC=CC=C3O2"
+      },
+      "cid": "6256686",
+      "smiles": "CC(=O)OC1=CC=CC=C1/C=C/C2=NC(=O)C3=CC=CC=C3O2"
+    },
+    {
+      "id": "581",
+      "fields": {
+        "cluster": "581",
+        "n_points": "3",
+        "MolecularWeight": "797.3000000000001",
+        "ExactMass": "796.8366952566666",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "-5.133333333333333",
+        "TPSA": "384.3333333333333",
+        "HBondDonorCount": "9.333333333333334",
+        "HBondAcceptorCount": "20.333333333333332",
+        "RotatableBondCount": "22.666666666666664",
+        "medoid_CID": "9543026",
+        "medoid_SMILES": "CC(C)(COP(=O)(O)OP(=O)(O)OC[C@@H]1[C@H]([C@H]([C@@H](O1)N2C=NC3=C(N=CN=C32)N)O)OP(=O)(O)O)[C@H](C(=O)NCCC(=O)NCCSC(=O)C=C)O"
+      },
+      "cid": "9543026",
+      "smiles": "CC(C)(COP(=O)(O)OP(=O)(O)OC[C@@H]1[C@H]([C@H]([C@@H](O1)N2C=NC3=C(N=CN=C32)N)O)OP(=O)(O)O)[C@H](C(=O)NCCC(=O)NCCSC(=O)C=C)O"
+    },
+    {
+      "id": "582",
+      "fields": {
+        "cluster": "582",
+        "n_points": "128",
+        "MolecularWeight": "260.45484375",
+        "ExactMass": "260.1125175544531",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "1.6789062500000003",
+        "TPSA": "114.5703125",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "3.921875",
+        "RotatableBondCount": "2.2578124999999996",
+        "medoid_CID": "5714157",
+        "medoid_SMILES": "C/C(=N/NC(=S)NC)/C1=CC(=CC=C1)[N+](=O)[O-]"
+      },
+      "cid": "5714157",
+      "smiles": "C/C(=N/NC(=S)NC)/C1=CC(=CC=C1)[N+](=O)[O-]"
+    },
+    {
+      "id": "583",
+      "fields": {
+        "cluster": "583",
+        "n_points": "42",
+        "MolecularWeight": "530.8904761904762",
+        "ExactMass": "530.3089772821429",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "3.802380952380952",
+        "TPSA": "106.90714285714286",
+        "HBondDonorCount": "-2.220446049250313e-16",
+        "HBondAcceptorCount": "8.047619047619047",
+        "RotatableBondCount": "7.8809523809523805",
+        "medoid_CID": "6277143",
+        "medoid_SMILES": "CC1=CC=C(C=C1)S(=O)(=O)/N=C(/CN2CCOCC2)\\N3CCN(C3C(C)C)S(=O)(=O)C4=CC=C(C=C4)C"
+      },
+      "cid": "6277143",
+      "smiles": "CC1=CC=C(C=C1)S(=O)(=O)/N=C(/CN2CCOCC2)\\N3CCN(C3C(C)C)S(=O)(=O)C4=CC=C(C=C4)C"
+    },
+    {
+      "id": "584",
+      "fields": {
+        "cluster": "584",
+        "n_points": "136",
+        "MolecularWeight": "370.3441176470588",
+        "ExactMass": "369.67199170838234",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "4.612500000000001",
+        "TPSA": "68.54411764705883",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "5.536764705882353",
+        "RotatableBondCount": "2.536764705882353",
+        "medoid_CID": "4614058",
+        "medoid_SMILES": "COC1=C(C=C(C=C1)C(F)(F)F)NC(=S)NC2=CC(=C(C=C2)F)Cl"
+      },
+      "cid": "4614058",
+      "smiles": "COC1=C(C=C(C=C1)C(F)(F)F)NC(=S)NC2=CC(=C(C=C2)F)Cl"
+    },
+    {
+      "id": "585",
+      "fields": {
+        "cluster": "585",
+        "n_points": "59",
+        "MolecularWeight": "249.03813559322035",
+        "ExactMass": "248.81703554433898",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "0.9254237288135596",
+        "TPSA": "99.7864406779661",
+        "HBondDonorCount": "4.016949152542374",
+        "HBondAcceptorCount": "2.847457627118644",
+        "RotatableBondCount": "2.898305084745763",
+        "medoid_CID": "3509408",
+        "medoid_SMILES": "C=CCNC(=S)NNC(=O)C1=CC(=CC=C1)O"
+      },
+      "cid": "3509408",
+      "smiles": "C=CCNC(=S)NNC(=O)C1=CC(=CC=C1)O"
+    },
+    {
+      "id": "586",
+      "fields": {
+        "cluster": "586",
+        "n_points": "19",
+        "MolecularWeight": "459.5842105263158",
+        "ExactMass": "459.3831363557895",
+        "Charge": "0.0",
+        "XLogP": "4.536842105263158",
+        "TPSA": "56.77368421052632",
+        "HBondDonorCount": "0.9999999999999998",
+        "HBondAcceptorCount": "16.421052631578945",
+        "RotatableBondCount": "8.578947368421051",
+        "medoid_CID": "105437",
+        "medoid_SMILES": "C=CCNS(=O)(=O)C(C(C(C(C(C(F)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F"
+      },
+      "cid": "105437",
+      "smiles": "C=CCNS(=O)(=O)C(C(C(C(C(C(F)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F"
+    },
+    {
+      "id": "587",
+      "fields": {
+        "cluster": "587",
+        "n_points": "94",
+        "MolecularWeight": "237.6981914893617",
+        "ExactMass": "237.4498555099894",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "2.7297872340425533",
+        "TPSA": "54.27340425531915",
+        "HBondDonorCount": "0.9999999999999997",
+        "HBondAcceptorCount": "2.925531914893617",
+        "RotatableBondCount": "6.085106382978723",
+        "medoid_CID": "2442127",
+        "medoid_SMILES": "CCCCNS(=O)(=O)/C=C/C1=CC=CC=C1"
+      },
+      "cid": "2442127",
+      "smiles": "CCCCNS(=O)(=O)/C=C/C1=CC=CC=C1"
+    },
+    {
+      "id": "588",
+      "fields": {
+        "cluster": "588",
+        "n_points": "16",
+        "MolecularWeight": "612.018125",
+        "ExactMass": "611.83696186875",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "8.143749999999999",
+        "TPSA": "30.593749999999986",
+        "HBondDonorCount": "0.18750000000000022",
+        "HBondAcceptorCount": "22.3125",
+        "RotatableBondCount": "12.75",
+        "medoid_CID": "2776421",
+        "medoid_SMILES": "CC(=C)C(=O)OCC(C(C(C(C(C(C(C(C(C(F)F)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F"
+      },
+      "cid": "2776421",
+      "smiles": "CC(=C)C(=O)OCC(C(C(C(C(C(C(C(C(C(F)F)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F)(F)F"
+    },
+    {
+      "id": "589",
+      "fields": {
+        "cluster": "589",
+        "n_points": "63",
+        "MolecularWeight": "387.89761904761906",
+        "ExactMass": "387.49613405412697",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "3.0285714285714285",
+        "TPSA": "117.77142857142857",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "7.920634920634921",
+        "RotatableBondCount": "3.7301587301587302",
+        "medoid_CID": "5739676",
+        "medoid_SMILES": "C1=CC(=CC(=C1)C(F)(F)F)C2=CC=C(O2)/C=C\\C3=C(C(=O)NC(=O)N3)[N+](=O)[O-]"
+      },
+      "cid": "5739676",
+      "smiles": "C1=CC(=CC(=C1)C(F)(F)F)C2=CC=C(O2)/C=C\\C3=C(C(=O)NC(=O)N3)[N+](=O)[O-]"
+    },
+    {
+      "id": "590",
+      "fields": {
+        "cluster": "590",
+        "n_points": "115",
+        "MolecularWeight": "407.0408695652174",
+        "ExactMass": "406.25043943953045",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "5.270434782608696",
+        "TPSA": "50.126956521739125",
+        "HBondDonorCount": "1.0000000000000004",
+        "HBondAcceptorCount": "1.7739130434782613",
+        "RotatableBondCount": "4.895652173913043",
+        "medoid_CID": "3090258",
+        "medoid_SMILES": "C1=CC=C(C=C1)C(=O)NC(=C(Cl)Cl)P(=O)(C2=CC=CC=C2)C3=CC=CC=C3"
+      },
+      "cid": "3090258",
+      "smiles": "C1=CC=C(C=C1)C(=O)NC(=C(Cl)Cl)P(=O)(C2=CC=CC=C2)C3=CC=CC=C3"
+    },
+    {
+      "id": "591",
+      "fields": {
+        "cluster": "591",
+        "n_points": "60",
+        "MolecularWeight": "150.30400000000006",
+        "ExactMass": "150.17167096499998",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "-0.16500000000000092",
+        "TPSA": "79.25166666666667",
+        "HBondDonorCount": "2.999999999999999",
+        "HBondAcceptorCount": "2.0500000000000003",
+        "RotatableBondCount": "1.4333333333333331",
+        "medoid_CID": "5193826",
+        "medoid_SMILES": "C1=CC=C(C(=C1)N)NC(=O)N"
+      },
+      "cid": "5193826",
+      "smiles": "C1=CC=C(C(=C1)N)NC(=O)N"
+    },
+    {
+      "id": "592",
+      "fields": {
+        "cluster": "592",
+        "n_points": "43",
+        "MolecularWeight": "164.71232558139536",
+        "ExactMass": "164.5668016351395",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "1.4441860465116279",
+        "TPSA": "43.860465116279066",
+        "HBondDonorCount": "0.9999999999999998",
+        "HBondAcceptorCount": "2.395348837209303",
+        "RotatableBondCount": "4.976744186046512",
+        "medoid_CID": "4346656",
+        "medoid_SMILES": "CCC(COC(=O)C(=C)C)O"
+      },
+      "cid": "4346656",
+      "smiles": "CCC(COC(=O)C(=C)C)O"
+    },
+    {
+      "id": "593",
+      "fields": {
+        "cluster": "593",
+        "n_points": "79",
+        "MolecularWeight": "457.2088607594937",
+        "ExactMass": "456.7670105093671",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "4.770886075949367",
+        "TPSA": "103.63544303797468",
+        "HBondDonorCount": "0.9999999999999997",
+        "HBondAcceptorCount": "6.6835443037974684",
+        "RotatableBondCount": "11.075949367088608",
+        "medoid_CID": "1122984",
+        "medoid_SMILES": "CCOC(=O)/C(=C/C1=CC(=C(C=C1)OCC(=O)NC2=CC=C(C=C2)OC3=CC=CC=C3)OC)/C#N"
+      },
+      "cid": "1122984",
+      "smiles": "CCOC(=O)/C(=C/C1=CC(=C(C=C1)OCC(=O)NC2=CC=C(C=C2)OC3=CC=CC=C3)OC)/C#N"
+    },
+    {
+      "id": "594",
+      "fields": {
+        "cluster": "594",
+        "n_points": "100",
+        "MolecularWeight": "345.32759999999996",
+        "ExactMass": "344.70369396917",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "5.502",
+        "TPSA": "24.026000000000018",
+        "HBondDonorCount": "0.0",
+        "HBondAcceptorCount": "1.8700000000000006",
+        "RotatableBondCount": "5.0",
+        "medoid_CID": "6266447",
+        "medoid_SMILES": "COC1=CC=C(C=C1)/C=C/C2=NC3=CC=CC=C3N2CC4=CC=CC=C4"
+      },
+      "cid": "6266447",
+      "smiles": "COC1=CC=C(C=C1)/C=C/C2=NC3=CC=CC=C3N2CC4=CC=CC=C4"
+    },
+    {
+      "id": "595",
+      "fields": {
+        "cluster": "595",
+        "n_points": "29",
+        "MolecularWeight": "227.73241379310343",
+        "ExactMass": "227.53711630041377",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "0.9931034482758623",
+        "TPSA": "77.18275862068965",
+        "HBondDonorCount": "3.0",
+        "HBondAcceptorCount": "2.1724137931034484",
+        "RotatableBondCount": "6.758620689655173",
+        "medoid_CID": "3035524",
+        "medoid_SMILES": "C1=CC=C(C=C1)NC(=S)NCCCCCN"
+      },
+      "cid": "3035524",
+      "smiles": "C1=CC=C(C=C1)NC(=S)NCCCCCN"
+    },
+    {
+      "id": "596",
+      "fields": {
+        "cluster": "596",
+        "n_points": "74",
+        "MolecularWeight": "429.77702702702703",
+        "ExactMass": "429.1939033662162",
+        "Charge": "-3.469446951953614e-18",
+        "XLogP": "2.3621621621621625",
+        "TPSA": "83.5445945945946",
+        "HBondDonorCount": "-2.220446049250313e-16",
+        "HBondAcceptorCount": "6.148648648648649",
+        "RotatableBondCount": "6.810810810810811",
+        "medoid_CID": "1251679",
+        "medoid_SMILES": "COC1=C(C=C(C=C1)S(=O)(=O)N(CC2=CC=CC=C2)CC(=O)N3CCOCC3)Cl"
+      },
+      "cid": "1251679",
+      "smiles": "COC1=C(C=C(C=C1)S(=O)(=O)N(CC2=CC=CC=C2)CC(=O)N3CCOCC3)Cl"
+    },
+    {
+      "id": "597",
+      "fields": {
+        "cluster": "597",
+        "n_points": "2",
+        "MolecularWeight": "1234.6",
+        "ExactMass": "1233.77100756",
+        "Charge": "0.0",
+        "XLogP": "0.6000000000000001",
+        "TPSA": "453.0",
+        "HBondDonorCount": "19.0",
+        "HBondAcceptorCount": "22.0",
+        "RotatableBondCount": "9.0",
+        "medoid_CID": "5747935",
+        "medoid_SMILES": "C[C@H]1CCC=C(C(=O)O[C@@H](CC=C[C@H](C[C@@H](C[C@H]([C@@H]([C@@H]([C@H]([C@H](C[C@H](C[C@@H](C[C@H]([C@@H](C=C([C@@H]([C@H](C=C[C@@H]([C@H](C=CCC[C@@H]([C@@H]([C@@H]1O)C)O)C)O)C)O)C)O[C@@H]2[C@H]([C@H]([C@@H]([C@H](O2)CO)O)O)O)O)C)O)O)C)O)O)O)O)O)[C@H](C)[C@@H](CCCN=C(N)N)O)C"
+      },
+      "cid": "5747935",
+      "smiles": "C[C@H]1CCC=C(C(=O)O[C@@H](CC=C[C@H](C[C@@H](C[C@H]([C@@H]([C@@H]([C@H]([C@H](C[C@H](C[C@@H](C[C@H]([C@@H](C=C([C@@H]([C@H](C=C[C@@H]([C@H](C=CCC[C@@H]([C@@H]([C@@H]1O)C)O)C)O)C)O)C)O[C@@H]2[C@H]([C@H]([C@@H]([C@H](O2)CO)O)O)O)O)C)O)O)C)O)O)O)O)O)[C@H](C)[C@@H](CCCN=C(N)N)O)C"
+    },
+    {
+      "id": "598",
+      "fields": {
+        "cluster": "598",
+        "n_points": "1",
+        "MolecularWeight": "1621.4",
+        "ExactMass": "1620.5282342",
+        "Charge": "0.0",
+        "XLogP": "-21.5",
+        "TPSA": "792.0",
+        "HBondDonorCount": "30.0",
+        "HBondAcceptorCount": "50.0",
+        "RotatableBondCount": "10.0",
+        "medoid_CID": "177974",
+        "medoid_SMILES": "C([C@@H]1[C@@H]2[C@@H]([C@H]([C@H](O1)O[C@@H]3[C@H](O[C@@H]([C@@H]([C@H]3O)O)O[C@@H]4[C@H](O[C@@H]([C@@H]([C@H]4O)O)O[C@@H]5[C@H](O[C@@H]([C@@H]([C@H]5O)O)O[C@@H]6[C@H](O[C@@H]([C@@H]([C@H]6O)O)O[C@@H]7[C@H](O[C@@H]([C@@H]([C@H]7O)O)O[C@@H]8[C@H](O[C@@H]([C@@H]([C@H]8O)O)O[C@@H]9[C@H](O[C@@H]([C@@H]([C@H]9O)O)O[C@@H]1[C@H](O[C@@H]([C@@H]([C@H]1O)O)O[C@@H]1[C@H](O[C@H](O2)[C@@H]([C@H]1O)O)CO)CO)CO)CO)CO)CO)CO)CO)CO)O)O)O"
+      },
+      "cid": "177974",
+      "smiles": "C([C@@H]1[C@@H]2[C@@H]([C@H]([C@H](O1)O[C@@H]3[C@H](O[C@@H]([C@@H]([C@H]3O)O)O[C@@H]4[C@H](O[C@@H]([C@@H]([C@H]4O)O)O[C@@H]5[C@H](O[C@@H]([C@@H]([C@H]5O)O)O[C@@H]6[C@H](O[C@@H]([C@@H]([C@H]6O)O)O[C@@H]7[C@H](O[C@@H]([C@@H]([C@H]7O)O)O[C@@H]8[C@H](O[C@@H]([C@@H]([C@H]8O)O)O[C@@H]9[C@H](O[C@@H]([C@@H]([C@H]9O)O)O[C@@H]1[C@H](O[C@@H]([C@@H]([C@H]1O)O)O[C@@H]1[C@H](O[C@H](O2)[C@@H]([C@H]1O)O)CO)CO)CO)CO)CO)CO)CO)CO)CO)O)O)O"
+    },
+    {
+      "id": "599",
+      "fields": {
+        "cluster": "599",
+        "n_points": "69",
+        "MolecularWeight": "259.25260869565216",
+        "ExactMass": "259.0141053395652",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "0.2652173913043474",
+        "TPSA": "126.02898550724638",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "6.246376811594203",
+        "RotatableBondCount": "3.9855072463768115",
+        "medoid_CID": "5341821",
+        "medoid_SMILES": "C1=COC(=C1)/C=C(\\C#N)/C2=NN(C(=C2C#N)N)CCO"
+      },
+      "cid": "5341821",
+      "smiles": "C1=COC(=C1)/C=C(\\C#N)/C2=NN(C(=C2C#N)N)CCO"
+    },
+    {
+      "id": "600",
+      "fields": {
+        "cluster": "600",
+        "n_points": "199",
+        "MolecularWeight": "301.09934673366837",
+        "ExactMass": "300.66705643839197",
+        "Charge": "1.3877787807814457e-17",
+        "XLogP": "2.7130653266331657",
+        "TPSA": "101.1854271356784",
+        "HBondDonorCount": "1.0",
+        "HBondAcceptorCount": "5.155778894472363",
+        "RotatableBondCount": "3.125628140703518",
+        "medoid_CID": "3641991",
+        "medoid_SMILES": "CC1CCC(CC1)NS(=O)(=O)C2=CC=C(C=C2)[N+](=O)[O-]"
+      },
+      "cid": "3641991",
+      "smiles": "CC1CCC(CC1)NS(=O)(=O)C2=CC=C(C=C2)[N+](=O)[O-]"
+    },
+    {
+      "id": "601",
+      "fields": {
+        "cluster": "601",
+        "n_points": "106",
+        "MolecularWeight": "336.0188679245283",
+        "ExactMass": "335.3426508401321",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "5.25",
+        "TPSA": "47.37924528301888",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "1.1320754716981134",
+        "RotatableBondCount": "4.283018867924528",
+        "medoid_CID": "5009901",
+        "medoid_SMILES": "CC(C)C1=C(C(=CC=C1)C(C)C)NC(=O)NC2CC3=CC=CC=C3C2"
+      },
+      "cid": "5009901",
+      "smiles": "CC(C)C1=C(C(=CC=C1)C(C)C)NC(=O)NC2CC3=CC=CC=C3C2"
+    },
+    {
+      "id": "602",
+      "fields": {
+        "cluster": "602",
+        "n_points": "159",
+        "MolecularWeight": "331.0369182389937",
+        "ExactMass": "330.54905804421384",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "3.0999999999999996",
+        "TPSA": "110.1685534591195",
+        "HBondDonorCount": "1.0",
+        "HBondAcceptorCount": "6.062893081761006",
+        "RotatableBondCount": "3.4276729559748427",
+        "medoid_CID": "822462",
+        "medoid_SMILES": "C1=CC=C2C(=C1)N=C(S2)NS(=O)(=O)C3=CN=C(C=C3)Cl"
+      },
+      "cid": "822462",
+      "smiles": "C1=CC=C2C(=C1)N=C(S2)NS(=O)(=O)C3=CN=C(C=C3)Cl"
+    },
+    {
+      "id": "603",
+      "fields": {
+        "cluster": "603",
+        "n_points": "94",
+        "MolecularWeight": "416.5390425531915",
+        "ExactMass": "415.8152347494362",
+        "Charge": "1.3877787807814457e-17",
+        "XLogP": "5.064893617021276",
+        "TPSA": "37.75425531914893",
+        "HBondDonorCount": "-8.881784197001252e-16",
+        "HBondAcceptorCount": "2.4148936170212765",
+        "RotatableBondCount": "3.425531914893617",
+        "medoid_CID": "5923648",
+        "medoid_SMILES": "CN1C=C(C2=CC=CC=C21)/C=C/C3=NC4=CC=CC=C4C(=O)N3C5=CC=C(C=C5)Cl"
+      },
+      "cid": "5923648",
+      "smiles": "CN1C=C(C2=CC=CC=C21)/C=C/C3=NC4=CC=CC=C4C(=O)N3C5=CC=C(C=C5)Cl"
+    },
+    {
+      "id": "604",
+      "fields": {
+        "cluster": "604",
+        "n_points": "216",
+        "MolecularWeight": "312.1421759259259",
+        "ExactMass": "311.4838558257871",
+        "Charge": "1.3877787807814457e-17",
+        "XLogP": "4.594907407407407",
+        "TPSA": "71.38009259259259",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "2.208333333333331",
+        "RotatableBondCount": "2.222222222222224",
+        "medoid_CID": "935031",
+        "medoid_SMILES": "C1CCC(C1)C(=O)NC(=S)NC2=C(C=C(C=C2)Cl)Cl"
+      },
+      "cid": "935031",
+      "smiles": "C1CCC(C1)C(=O)NC(=S)NC2=C(C=C(C=C2)Cl)Cl"
+    },
+    {
+      "id": "605",
+      "fields": {
+        "cluster": "605",
+        "n_points": "27",
+        "MolecularWeight": "393.6222222222222",
+        "ExactMass": "393.0357235792963",
+        "Charge": "1.0",
+        "XLogP": "5.007407407407407",
+        "TPSA": "43.06666666666666",
+        "HBondDonorCount": "1.0",
+        "HBondAcceptorCount": "2.074074074074074",
+        "RotatableBondCount": "5.2592592592592595",
+        "medoid_CID": "3104431",
+        "medoid_SMILES": "C1C2=CC=CC=C2C3=C1C=C(C=C3)C(=O)C[N+]4=CC=CC(=C4)NC(=O)C5=CC=CC=C5"
+      },
+      "cid": "3104431",
+      "smiles": "C1C2=CC=CC=C2C3=C1C=C(C=C3)C(=O)C[N+]4=CC=CC(=C4)NC(=O)C5=CC=CC=C5"
+    },
+    {
+      "id": "606",
+      "fields": {
+        "cluster": "606",
+        "n_points": "67",
+        "MolecularWeight": "165.92552238805968",
+        "ExactMass": "165.72854227638803",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "2.3611940298507466",
+        "TPSA": "49.02835820895523",
+        "HBondDonorCount": "4.440892098500626e-16",
+        "HBondAcceptorCount": "2.3731343283582094",
+        "RotatableBondCount": "1.119402985074628",
+        "medoid_CID": "3034782",
+        "medoid_SMILES": "CC1=CC(=[N+](C=C1)CC(=O)[O-])C"
+      },
+      "cid": "3034782",
+      "smiles": "CC1=CC(=[N+](C=C1)CC(=O)[O-])C"
+    },
+    {
+      "id": "607",
+      "fields": {
+        "cluster": "607",
+        "n_points": "48",
+        "MolecularWeight": "499.93125",
+        "ExactMass": "499.144131254375",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "5.885416666666666",
+        "TPSA": "126.58333333333331",
+        "HBondDonorCount": "0.04166666666666652",
+        "HBondAcceptorCount": "6.666666666666667",
+        "RotatableBondCount": "4.270833333333333",
+        "medoid_CID": "6090322",
+        "medoid_SMILES": "CCN\\1C(=O)/C(=C\\C=C/2\\C(C3=CC=CC=C3N2C)(C)C)/S/C1=N/S(=O)(=O)C4=CC=C(S4)Cl"
+      },
+      "cid": "6090322",
+      "smiles": "CCN\\1C(=O)/C(=C\\C=C/2\\C(C3=CC=CC=C3N2C)(C)C)/S/C1=N/S(=O)(=O)C4=CC=C(S4)Cl"
+    },
+    {
+      "id": "608",
+      "fields": {
+        "cluster": "608",
+        "n_points": "41",
+        "MolecularWeight": "483.52682926829266",
+        "ExactMass": "482.9999426314634",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "3.7536585365853656",
+        "TPSA": "132.2439024390244",
+        "HBondDonorCount": "-2.220446049250313e-16",
+        "HBondAcceptorCount": "8.195121951219512",
+        "RotatableBondCount": "6.878048780487805",
+        "medoid_CID": "1430973",
+        "medoid_SMILES": "CCN(CC)S(=O)(=O)C1=CC=C(C=C1)S(=O)(=O)N2CCC(CC2)C3=NC4=CC=CC=C4S3"
+      },
+      "cid": "1430973",
+      "smiles": "CCN(CC)S(=O)(=O)C1=CC=C(C=C1)S(=O)(=O)N2CCC(CC2)C3=NC4=CC=CC=C4S3"
+    },
+    {
+      "id": "609",
+      "fields": {
+        "cluster": "609",
+        "n_points": "205",
+        "MolecularWeight": "388.686487804878",
+        "ExactMass": "388.0855919207317",
+        "Charge": "1.3877787807814457e-17",
+        "XLogP": "2.4570731707317073",
+        "TPSA": "99.08390243902438",
+        "HBondDonorCount": "0.9999999999999996",
+        "HBondAcceptorCount": "5.775609756097562",
+        "RotatableBondCount": "3.6097560975609753",
+        "medoid_CID": "7482696",
+        "medoid_SMILES": "C1CN(S(=O)(=O)C1)C2=CC=C(C=C2)NS(=O)(=O)C3=CC=C(C=C3)Cl"
+      },
+      "cid": "7482696",
+      "smiles": "C1CN(S(=O)(=O)C1)C2=CC=C(C=C2)NS(=O)(=O)C3=CC=C(C=C3)Cl"
+    },
+    {
+      "id": "610",
+      "fields": {
+        "cluster": "610",
+        "n_points": "9",
+        "MolecularWeight": "769.5111111111112",
+        "ExactMass": "768.95800648",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "7.122222222222222",
+        "TPSA": "175.55555555555557",
+        "HBondDonorCount": "5.888888888888889",
+        "HBondAcceptorCount": "8.666666666666666",
+        "RotatableBondCount": "18.555555555555557",
+        "medoid_CID": "10101783",
+        "medoid_SMILES": "CCCCC1=NC2=C(N1CCCCNC(=O)NC3=CC(=CC=C3)NC(=O)NCCCCN4C(=NC5=C4C6=CC=CC=C6N=C5N)CCCC)C7=CC=CC=C7N=C2N"
+      },
+      "cid": "10101783",
+      "smiles": "CCCCC1=NC2=C(N1CCCCNC(=O)NC3=CC(=CC=C3)NC(=O)NCCCCN4C(=NC5=C4C6=CC=CC=C6N=C5N)CCCC)C7=CC=CC=C7N=C2N"
+    },
+    {
+      "id": "611",
+      "fields": {
+        "cluster": "611",
+        "n_points": "162",
+        "MolecularWeight": "297.27024691358025",
+        "ExactMass": "296.7553036064877",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "3.7339506172839507",
+        "TPSA": "54.81111111111111",
+        "HBondDonorCount": "1.0",
+        "HBondAcceptorCount": "3.0432098765432096",
+        "RotatableBondCount": "2.660493827160494",
+        "medoid_CID": "295192",
+        "medoid_SMILES": "CC1=CC(=C(C=C1)C)NS(=O)(=O)C2=CC=C(C=C2)Cl"
+      },
+      "cid": "295192",
+      "smiles": "CC1=CC(=C(C=C1)C)NS(=O)(=O)C2=CC=C(C=C2)Cl"
+    },
+    {
+      "id": "612",
+      "fields": {
+        "cluster": "612",
+        "n_points": "20",
+        "MolecularWeight": "548.59",
+        "ExactMass": "547.9890588255",
+        "Charge": "0.0",
+        "XLogP": "1.31",
+        "TPSA": "245.60000000000002",
+        "HBondDonorCount": "3.5",
+        "HBondAcceptorCount": "11.85",
+        "RotatableBondCount": "7.35",
+        "medoid_CID": "9589109",
+        "medoid_SMILES": "CN[N+]1=CC=C(C=C1)SCC2=C(N3[C@H]([C@H](C3=O)NC(=O)/C(=N/OC)/C4=CSC(=N4)N)SC2)C(=O)[O-]"
+      },
+      "cid": "9589109",
+      "smiles": "CN[N+]1=CC=C(C=C1)SCC2=C(N3[C@H]([C@H](C3=O)NC(=O)/C(=N/OC)/C4=CSC(=N4)N)SC2)C(=O)[O-]"
+    },
+    {
+      "id": "613",
+      "fields": {
+        "cluster": "613",
+        "n_points": "109",
+        "MolecularWeight": "443.96238532110095",
+        "ExactMass": "443.49813550065136",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "5.236697247706422",
+        "TPSA": "69.90275229357798",
+        "HBondDonorCount": "2.036697247706422",
+        "HBondAcceptorCount": "2.7798165137614683",
+        "RotatableBondCount": "8.761467889908257",
+        "medoid_CID": "5327232",
+        "medoid_SMILES": "CCCCN1[C@@H]([C@@H]([C@H]([C@H](N(C1=O)CC=C(C)C)CC2=CC=CC=C2)O)O)CC3=CC=CC=C3"
+      },
+      "cid": "5327232",
+      "smiles": "CCCCN1[C@@H]([C@@H]([C@H]([C@H](N(C1=O)CC=C(C)C)CC2=CC=CC=C2)O)O)CC3=CC=CC=C3"
+    },
+    {
+      "id": "614",
+      "fields": {
+        "cluster": "614",
+        "n_points": "93",
+        "MolecularWeight": "386.64301075268816",
+        "ExactMass": "386.1304167546989",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "5.861290322580645",
+        "TPSA": "54.26451612903225",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "1.516129032258065",
+        "RotatableBondCount": "6.086021505376344",
+        "medoid_CID": "1336020",
+        "medoid_SMILES": "C1=CC=C(C=C1)C(CCNC(=S)NC2=CC(=CC=C2)Cl)C3=CC=CC=C3"
+      },
+      "cid": "1336020",
+      "smiles": "C1=CC=C(C=C1)C(CCNC(=S)NC2=CC(=CC=C2)Cl)C3=CC=CC=C3"
+    },
+    {
+      "id": "615",
+      "fields": {
+        "cluster": "615",
+        "n_points": "92",
+        "MolecularWeight": "129.1373913043478",
+        "ExactMass": "128.98402378425007",
+        "Charge": "2.0816681711721685e-17",
+        "XLogP": "1.6913043478260863",
+        "TPSA": "23.783695652173932",
+        "HBondDonorCount": "-1.3322676295501878e-15",
+        "HBondAcceptorCount": "1.782608695652172",
+        "RotatableBondCount": "3.4891304347826093",
+        "medoid_CID": "15458",
+        "medoid_SMILES": "CC(C)(C)OC(=O)C=C"
+      },
+      "cid": "15458",
+      "smiles": "CC(C)(C)OC(=O)C=C"
+    },
+    {
+      "id": "616",
+      "fields": {
+        "cluster": "616",
+        "n_points": "33",
+        "MolecularWeight": "579.3939393939395",
+        "ExactMass": "578.8526525506061",
+        "Charge": "0.0",
+        "XLogP": "3.406060606060606",
+        "TPSA": "132.9030303030303",
+        "HBondDonorCount": "0.606060606060606",
+        "HBondAcceptorCount": "9.93939393939394",
+        "RotatableBondCount": "10.303030303030305",
+        "medoid_CID": "6240989",
+        "medoid_SMILES": "CCCOC1=CC=C(C=C1)C2/C(=C(/C3=CC=C(C=C3)S(=O)(=O)N(C)C)\\O)/C(=O)C(=O)N2CCCN4CCOCC4"
+      },
+      "cid": "6240989",
+      "smiles": "CCCOC1=CC=C(C=C1)C2/C(=C(/C3=CC=C(C=C3)S(=O)(=O)N(C)C)\\O)/C(=O)C(=O)N2CCCN4CCOCC4"
+    },
+    {
+      "id": "617",
+      "fields": {
+        "cluster": "617",
+        "n_points": "46",
+        "MolecularWeight": "561.6434782608696",
+        "ExactMass": "560.9725998463043",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "5.608695652173913",
+        "TPSA": "93.9804347826087",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "5.630434782608695",
+        "RotatableBondCount": "10.26086956521739",
+        "medoid_CID": "9829055",
+        "medoid_SMILES": "CC(C)C(CN1CCC(CC1)C(=O)C2=CC(=C(C=C2)Cl)Cl)NC(=O)NC3=CC(=C(C(=C3)OC)OC)OC"
+      },
+      "cid": "9829055",
+      "smiles": "CC(C)C(CN1CCC(CC1)C(=O)C2=CC(=C(C=C2)Cl)Cl)NC(=O)NC3=CC(=C(C(=C3)OC)OC)OC"
+    },
+    {
+      "id": "618",
+      "fields": {
+        "cluster": "618",
+        "n_points": "14",
+        "MolecularWeight": "746.1857142857142",
+        "ExactMass": "745.63708403",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "4.25",
+        "TPSA": "189.5",
+        "HBondDonorCount": "3.9285714285714284",
+        "HBondAcceptorCount": "10.928571428571427",
+        "RotatableBondCount": "19.71428571428571",
+        "medoid_CID": "480700",
+        "medoid_SMILES": "CCCN=C(NCCCC(C)(C)CN(C[C@H]([C@H](CC1=CC=CC=C1)NC(=O)O[C@H]2CO[C@@H]3[C@H]2CCO3)O)S(=O)(=O)C4=CC5=C(C=C4)OCO5)NC#N"
+      },
+      "cid": "480700",
+      "smiles": "CCCN=C(NCCCC(C)(C)CN(C[C@H]([C@H](CC1=CC=CC=C1)NC(=O)O[C@H]2CO[C@@H]3[C@H]2CCO3)O)S(=O)(=O)C4=CC5=C(C=C4)OCO5)NC#N"
+    },
+    {
+      "id": "619",
+      "fields": {
+        "cluster": "619",
+        "n_points": "115",
+        "MolecularWeight": "354.673652173913",
+        "ExactMass": "354.27627752113045",
+        "Charge": "-3.469446951953614e-18",
+        "XLogP": "2.402608695652174",
+        "TPSA": "113.90260869565218",
+        "HBondDonorCount": "3.0086956521739134",
+        "HBondAcceptorCount": "5.0",
+        "RotatableBondCount": "4.817391304347826",
+        "medoid_CID": "3036061",
+        "medoid_SMILES": "CCC(C)(C)NC(=N[C@@H]1[C@H](C(OC2=C1C=C(C=C2)C#N)(C)C)O)NC#N"
+      },
+      "cid": "3036061",
+      "smiles": "CCC(C)(C)NC(=N[C@@H]1[C@H](C(OC2=C1C=C(C=C2)C#N)(C)C)O)NC#N"
+    },
+    {
+      "id": "620",
+      "fields": {
+        "cluster": "620",
+        "n_points": "224",
+        "MolecularWeight": "315.8466964285714",
+        "ExactMass": "315.3639745015",
+        "Charge": "1.3877787807814457e-17",
+        "XLogP": "3.2540178571428573",
+        "TPSA": "96.88303571428571",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "4.066964285714286",
+        "RotatableBondCount": "2.714285714285715",
+        "medoid_CID": "808847",
+        "medoid_SMILES": "CC1=CC=CC=C1C2=NN=C(S2)NC(=O)NC3=CC=CC=C3"
+      },
+      "cid": "808847",
+      "smiles": "CC1=CC=CC=C1C2=NN=C(S2)NC(=O)NC3=CC=CC=C3"
+    },
+    {
+      "id": "621",
+      "fields": {
+        "cluster": "621",
+        "n_points": "2",
+        "MolecularWeight": "815.3499999999999",
+        "ExactMass": "814.597765255",
+        "Charge": "0.0",
+        "XLogP": "19.450000000000003",
+        "TPSA": "146.0",
+        "HBondDonorCount": "4.0",
+        "HBondAcceptorCount": "4.0",
+        "RotatableBondCount": "36.0",
+        "medoid_CID": "3991451",
+        "medoid_SMILES": "CCCCCCCCCCCCCCCCCCNC(=S)NC1=CC=C(C=C1)S(=O)(=O)C2=CC=C(C=C2)NC(=S)NCCCCCCCCCCCCCCCCCC"
+      },
+      "cid": "3991451",
+      "smiles": "CCCCCCCCCCCCCCCCCCNC(=S)NC1=CC=C(C=C1)S(=O)(=O)C2=CC=C(C=C2)NC(=S)NCCCCCCCCCCCCCCCCCC"
+    },
+    {
+      "id": "622",
+      "fields": {
+        "cluster": "622",
+        "n_points": "9",
+        "MolecularWeight": "545.6333333333333",
+        "ExactMass": "544.9101942622223",
+        "Charge": "1.0",
+        "XLogP": "7.4",
+        "TPSA": "92.34444444444445",
+        "HBondDonorCount": "1.222222222222222",
+        "HBondAcceptorCount": "4.555555555555555",
+        "RotatableBondCount": "5.333333333333333",
+        "medoid_CID": "3009188",
+        "medoid_SMILES": "CC1=CC(=CC(=[N+]1C2=CC(=CC=C2)S(=O)(=O)NC3=CC4=C(C=C3)OC5=CC=CC=C5S4)C)C6=CC=CC=C6"
+      },
+      "cid": "3009188",
+      "smiles": "CC1=CC(=CC(=[N+]1C2=CC(=CC=C2)S(=O)(=O)NC3=CC4=C(C=C3)OC5=CC=CC=C5S4)C)C6=CC=CC=C6"
+    },
+    {
+      "id": "623",
+      "fields": {
+        "cluster": "623",
+        "n_points": "145",
+        "MolecularWeight": "439.01862068965517",
+        "ExactMass": "438.2951226342069",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "5.058620689655172",
+        "TPSA": "94.29034482758621",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "5.924137931034483",
+        "RotatableBondCount": "5.172413793103448",
+        "medoid_CID": "6319891",
+        "medoid_SMILES": "CC1=CC(=CC(=C1NC2=NC(=NC=C2)NC3=CC=C(C=C3)C#N)Br)C=C(C)C#N"
+      },
+      "cid": "6319891",
+      "smiles": "CC1=CC(=CC(=C1NC2=NC(=NC=C2)NC3=CC=C(C=C3)C#N)Br)C=C(C)C#N"
+    },
+    {
+      "id": "624",
+      "fields": {
+        "cluster": "624",
+        "n_points": "45",
+        "MolecularWeight": "358.3828888888889",
+        "ExactMass": "358.03320626022224",
+        "Charge": "0.0",
+        "XLogP": "0.3533333333333335",
+        "TPSA": "104.50666666666667",
+        "HBondDonorCount": "0.0",
+        "HBondAcceptorCount": "7.2",
+        "RotatableBondCount": "4.0",
+        "medoid_CID": "976855",
+        "medoid_SMILES": "CC1=CC=C(C=C1)S(=O)(=O)N2CCN(CC2)S(=O)(=O)N(C)C"
+      },
+      "cid": "976855",
+      "smiles": "CC1=CC=C(C=C1)S(=O)(=O)N2CCN(CC2)S(=O)(=O)N(C)C"
+    },
+    {
+      "id": "625",
+      "fields": {
+        "cluster": "625",
+        "n_points": "2",
+        "MolecularWeight": "773.05",
+        "ExactMass": "772.4177401249999",
+        "Charge": "0.0",
+        "XLogP": "12.8",
+        "TPSA": "151.0",
+        "HBondDonorCount": "3.5",
+        "HBondAcceptorCount": "8.5",
+        "RotatableBondCount": "27.0",
+        "medoid_CID": "3086291",
+        "medoid_SMILES": "CCCCCCCCCCCCOC1=CC=C(C=C1)S(=O)(=O)NC2=CC(=C(C=C2)O)NS(=O)(=O)C3=CC=C(C=C3)OCCCCCCCCCCCC"
+      },
+      "cid": "3086291",
+      "smiles": "CCCCCCCCCCCCOC1=CC=C(C=C1)S(=O)(=O)NC2=CC(=C(C=C2)O)NS(=O)(=O)C3=CC=C(C=C3)OCCCCCCCCCCCC"
+    },
+    {
+      "id": "626",
+      "fields": {
+        "cluster": "626",
+        "n_points": "23",
+        "MolecularWeight": "367.19565217391306",
+        "ExactMass": "366.783815564087",
+        "Charge": "0.0",
+        "XLogP": "7.317391304347826",
+        "TPSA": "24.84782608695653",
+        "HBondDonorCount": "4.440892098500626e-16",
+        "HBondAcceptorCount": "2.0869565217391304",
+        "RotatableBondCount": "9.826086956521738",
+        "medoid_CID": "5845767",
+        "medoid_SMILES": "CCCCCCCCN1C2=CC=CC=C2N=C1/C=C/C3=CC=C(C=C3)OC"
+      },
+      "cid": "5845767",
+      "smiles": "CCCCCCCCN1C2=CC=CC=C2N=C1/C=C/C3=CC=C(C=C3)OC"
+    },
+    {
+      "id": "627",
+      "fields": {
+        "cluster": "627",
+        "n_points": "36",
+        "MolecularWeight": "592.2416666666667",
+        "ExactMass": "591.7118541613889",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "4.844444444444444",
+        "TPSA": "123.35277777777779",
+        "HBondDonorCount": "2.6944444444444446",
+        "HBondAcceptorCount": "6.805555555555555",
+        "RotatableBondCount": "15.194444444444441",
+        "medoid_CID": "513779",
+        "medoid_SMILES": "CC(C)CN([C@@H](CCCCNC(=O)N(CC1=CC=CC=C1)CC2=CC=C(C=C2)F)CO)S(=O)(=O)C3=CC=C(C=C3)N"
+      },
+      "cid": "513779",
+      "smiles": "CC(C)CN([C@@H](CCCCNC(=O)N(CC1=CC=CC=C1)CC2=CC=C(C=C2)F)CO)S(=O)(=O)C3=CC=C(C=C3)N"
+    },
+    {
+      "id": "628",
+      "fields": {
+        "cluster": "628",
+        "n_points": "27",
+        "MolecularWeight": "346.23333333333335",
+        "ExactMass": "345.8532384762963",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "0.6555555555555563",
+        "TPSA": "190.37037037037038",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "9.333333333333332",
+        "RotatableBondCount": "4.111111111111112",
+        "medoid_CID": "202890",
+        "medoid_SMILES": "C1=CC(=CC=C1S(=O)(=O)NC2=NN=C(S2)S(=O)(=O)N)Cl"
+      },
+      "cid": "202890",
+      "smiles": "C1=CC(=CC=C1S(=O)(=O)NC2=NN=C(S2)S(=O)(=O)N)Cl"
+    },
+    {
+      "id": "629",
+      "fields": {
+        "cluster": "629",
+        "n_points": "201",
+        "MolecularWeight": "365.53308457711444",
+        "ExactMass": "365.0719335424378",
+        "Charge": "1.3877787807814457e-17",
+        "XLogP": "3.6855721393034826",
+        "TPSA": "76.70348258706468",
+        "HBondDonorCount": "1.0",
+        "HBondAcceptorCount": "5.208955223880597",
+        "RotatableBondCount": "6.313432835820896",
+        "medoid_CID": "1582813",
+        "medoid_SMILES": "C1=CC=C(C(=C1)OC2=CC=C(C=C2)S(=O)(=O)NCC3=CC=CO3)Cl"
+      },
+      "cid": "1582813",
+      "smiles": "C1=CC=C(C(=C1)OC2=CC=C(C=C2)S(=O)(=O)NCC3=CC=CO3)Cl"
+    },
+    {
+      "id": "630",
+      "fields": {
+        "cluster": "630",
+        "n_points": "1",
+        "MolecularWeight": "1527.7",
+        "ExactMass": "1526.8079657",
+        "Charge": "0.0",
+        "XLogP": "-2.4",
+        "TPSA": "400.0",
+        "HBondDonorCount": "7.0",
+        "HBondAcceptorCount": "35.0",
+        "RotatableBondCount": "35.0",
+        "medoid_CID": "163860",
+        "medoid_SMILES": "CCOC[C@@H]1[C@@H]2[C@@H]([C@H]([C@H](O1)O[C@@H]3[C@H](O[C@@H]([C@@H]([C@H]3O)OCC)O[C@@H]4[C@H](O[C@@H]([C@@H]([C@H]4O)OCC)O[C@@H]5[C@H](O[C@@H]([C@@H]([C@H]5O)OCC)O[C@@H]6[C@H](O[C@@H]([C@@H]([C@H]6O)OCC)O[C@@H]7[C@H](O[C@@H]([C@@H]([C@H]7O)OCC)O[C@@H]8[C@H](O[C@H](O2)[C@@H]([C@H]8O)OCC)COCC)COCC)COCC)COCC)COCC)COCC)OCC)O"
+      },
+      "cid": "163860",
+      "smiles": "CCOC[C@@H]1[C@@H]2[C@@H]([C@H]([C@H](O1)O[C@@H]3[C@H](O[C@@H]([C@@H]([C@H]3O)OCC)O[C@@H]4[C@H](O[C@@H]([C@@H]([C@H]4O)OCC)O[C@@H]5[C@H](O[C@@H]([C@@H]([C@H]5O)OCC)O[C@@H]6[C@H](O[C@@H]([C@@H]([C@H]6O)OCC)O[C@@H]7[C@H](O[C@@H]([C@@H]([C@H]7O)OCC)O[C@@H]8[C@H](O[C@H](O2)[C@@H]([C@H]8O)OCC)COCC)COCC)COCC)COCC)COCC)COCC)OCC)O"
+    },
+    {
+      "id": "631",
+      "fields": {
+        "cluster": "631",
+        "n_points": "183",
+        "MolecularWeight": "352.0166120218579",
+        "ExactMass": "351.24318464639344",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "4.71912568306011",
+        "TPSA": "52.38579234972677",
+        "HBondDonorCount": "1.0000000000000002",
+        "HBondAcceptorCount": "3.0765027322404372",
+        "RotatableBondCount": "3.2240437158469946",
+        "medoid_CID": "7971452",
+        "medoid_SMILES": "C1=CC=C2C(=C1)C(=CC(=N2)/C=C/C3=CC=C(C=C3)Br)C(=O)O"
+      },
+      "cid": "7971452",
+      "smiles": "C1=CC=C2C(=C1)C(=CC(=N2)/C=C/C3=CC=C(C=C3)Br)C(=O)O"
+    },
+    {
+      "id": "632",
+      "fields": {
+        "cluster": "632",
+        "n_points": "110",
+        "MolecularWeight": "407.3823636363636",
+        "ExactMass": "406.7823026260909",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "4.380909090909091",
+        "TPSA": "73.73272727272727",
+        "HBondDonorCount": "0.9818181818181817",
+        "HBondAcceptorCount": "7.509090909090908",
+        "RotatableBondCount": "4.590909090909091",
+        "medoid_CID": "1476372",
+        "medoid_SMILES": "CCCN1C=NC2=C1C=C(C(=C2NS(=O)(=O)C3=CC=CC(=C3)C(F)(F)F)C)C"
+      },
+      "cid": "1476372",
+      "smiles": "CCCN1C=NC2=C1C=C(C(=C2NS(=O)(=O)C3=CC=CC(=C3)C(F)(F)F)C)C"
+    },
+    {
+      "id": "633",
+      "fields": {
+        "cluster": "633",
+        "n_points": "50",
+        "MolecularWeight": "189.22640000000004",
+        "ExactMass": "189.0812573422",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "0.46799999999999997",
+        "TPSA": "53.41400000000001",
+        "HBondDonorCount": "-2.220446049250313e-16",
+        "HBondAcceptorCount": "4.0",
+        "RotatableBondCount": "4.48",
+        "medoid_CID": "2763877",
+        "medoid_SMILES": "CCOC(=O)/C(=C/N(C)C)/C(=O)C"
+      },
+      "cid": "2763877",
+      "smiles": "CCOC(=O)/C(=C/N(C)C)/C(=O)C"
+    },
+    {
+      "id": "634",
+      "fields": {
+        "cluster": "634",
+        "n_points": "10",
+        "MolecularWeight": "574.76",
+        "ExactMass": "574.369403545",
+        "Charge": "0.0",
+        "XLogP": "2.8",
+        "TPSA": "158.4",
+        "HBondDonorCount": "5.600000000000001",
+        "HBondAcceptorCount": "6.3",
+        "RotatableBondCount": "12.0",
+        "medoid_CID": "250",
+        "medoid_SMILES": "CC1=C(NC(=C1CCC(=O)O)CC2=C(C(=C(N2)C=C3C(=C(C(=O)N3)C)C=C)C)CCC(=O)O)C=C4C(=C(C(=O)N4)C=C)C"
+      },
+      "cid": "250",
+      "smiles": "CC1=C(NC(=C1CCC(=O)O)CC2=C(C(=C(N2)C=C3C(=C(C(=O)N3)C)C=C)C)CCC(=O)O)C=C4C(=C(C(=O)N4)C=C)C"
+    },
+    {
+      "id": "635",
+      "fields": {
+        "cluster": "635",
+        "n_points": "42",
+        "MolecularWeight": "431.552380952381",
+        "ExactMass": "430.86383455619045",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "3.195238095238095",
+        "TPSA": "129.05238095238096",
+        "HBondDonorCount": "4.142857142857143",
+        "HBondAcceptorCount": "5.357142857142858",
+        "RotatableBondCount": "3.5238095238095237",
+        "medoid_CID": "5493622",
+        "medoid_SMILES": "C1=CC=C(C=C1)NC(=O)NC2=NC3=C(C(=C2C#N)C4=CC=C(C=C4)Cl)C(=O)NC(=O)N3"
+      },
+      "cid": "5493622",
+      "smiles": "C1=CC=C(C=C1)NC(=O)NC2=NC3=C(C(=C2C#N)C4=CC=C(C=C4)Cl)C(=O)NC(=O)N3"
+    },
+    {
+      "id": "636",
+      "fields": {
+        "cluster": "636",
+        "n_points": "5",
+        "MolecularWeight": "738.32",
+        "ExactMass": "737.798789428",
+        "Charge": "0.0",
+        "XLogP": "14.22",
+        "TPSA": "56.52",
+        "HBondDonorCount": "0.40000000000000013",
+        "HBondAcceptorCount": "4.4",
+        "RotatableBondCount": "25.0",
+        "medoid_CID": "640106",
+        "medoid_SMILES": "CCCCCCOC1=CC(=CC(=C1OCCCCCC)OCCCCCC)/C=C/C2=CC=C(C=C2)/C=C/C3=CC=C(C=C3)/C=C/C4=CC=C(C=C4)C=O"
+      },
+      "cid": "640106",
+      "smiles": "CCCCCCOC1=CC(=CC(=C1OCCCCCC)OCCCCCC)/C=C/C2=CC=C(C=C2)/C=C/C3=CC=C(C=C3)/C=C/C4=CC=C(C=C4)C=O"
+    },
+    {
+      "id": "637",
+      "fields": {
+        "cluster": "637",
+        "n_points": "117",
+        "MolecularWeight": "284.5670085470085",
+        "ExactMass": "284.21748026393163",
+        "Charge": "0.0",
+        "XLogP": "2.25982905982906",
+        "TPSA": "68.8974358974359",
+        "HBondDonorCount": "0.9999999999999997",
+        "HBondAcceptorCount": "4.521367521367521",
+        "RotatableBondCount": "6.598290598290599",
+        "medoid_CID": "4644959",
+        "medoid_SMILES": "CCOC(=O)C1=C(NC(=C(C1C=C)C(=O)OCC)C)C"
+      },
+      "cid": "4644959",
+      "smiles": "CCOC(=O)C1=C(NC(=C(C1C=C)C(=O)OCC)C)C"
+    },
+    {
+      "id": "638",
+      "fields": {
+        "cluster": "638",
+        "n_points": "52",
+        "MolecularWeight": "580.05",
+        "ExactMass": "578.7543533811538",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "7.363461538461538",
+        "TPSA": "101.14999999999999",
+        "HBondDonorCount": "2.019230769230769",
+        "HBondAcceptorCount": "4.288461538461538",
+        "RotatableBondCount": "5.480769230769231",
+        "medoid_CID": "3068375",
+        "medoid_SMILES": "C1=CC=C(C=C1)C=NC2=CC=C(C=C2)C3=NC4=CC=CC=C4C(=O)N3C5=C(C=C(C=C5)NC(=S)NC6=CC=CC=C6)Cl"
+      },
+      "cid": "3068375",
+      "smiles": "C1=CC=C(C=C1)C=NC2=CC=C(C=C2)C3=NC4=CC=CC=C4C(=O)N3C5=C(C=C(C=C5)NC(=S)NC6=CC=CC=C6)Cl"
+    },
+    {
+      "id": "639",
+      "fields": {
+        "cluster": "639",
+        "n_points": "86",
+        "MolecularWeight": "418.67325581395346",
+        "ExactMass": "418.2751422140698",
+        "Charge": "0.0",
+        "XLogP": "2.977906976744186",
+        "TPSA": "94.49186046511628",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "4.72093023255814",
+        "RotatableBondCount": "8.523255813953488",
+        "medoid_CID": "5767542",
+        "medoid_SMILES": "CSC1=CC=C(C=C1)/C=C(/C(=O)NCCN2CCOCC2)\\NC(=O)C3=CC=CC=C3"
+      },
+      "cid": "5767542",
+      "smiles": "CSC1=CC=C(C=C1)/C=C(/C(=O)NCCN2CCOCC2)\\NC(=O)C3=CC=CC=C3"
+    },
+    {
+      "id": "640",
+      "fields": {
+        "cluster": "640",
+        "n_points": "247",
+        "MolecularWeight": "346.9556275303644",
+        "ExactMass": "346.33569335206477",
+        "Charge": "1.3877787807814457e-17",
+        "XLogP": "3.919433198380567",
+        "TPSA": "94.23238866396761",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "4.076923076923077",
+        "RotatableBondCount": "3.461538461538462",
+        "medoid_CID": "881128",
+        "medoid_SMILES": "CC1=CC=C(C=C1)NC(=O)NC2=NN=C(S2)C3=CC=C(C=C3)Cl"
+      },
+      "cid": "881128",
+      "smiles": "CC1=CC=C(C=C1)NC(=O)NC2=NN=C(S2)C3=CC=C(C=C3)Cl"
+    },
+    {
+      "id": "641",
+      "fields": {
+        "cluster": "641",
+        "n_points": "38",
+        "MolecularWeight": "550.6342105263158",
+        "ExactMass": "549.915323065",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "5.605263157894736",
+        "TPSA": "155.18421052631578",
+        "HBondDonorCount": "0.7105263157894737",
+        "HBondAcceptorCount": "9.631578947368421",
+        "RotatableBondCount": "6.421052631578948",
+        "medoid_CID": "3297170",
+        "medoid_SMILES": "C1=CC(=CC(=C1)[N+](=O)[O-])C2=CSC(=NC3=CC=CC(=C3)C(F)(F)F)N2CCC4=CC=C(C=C4)S(=O)(=O)N"
+      },
+      "cid": "3297170",
+      "smiles": "C1=CC(=CC(=C1)[N+](=O)[O-])C2=CSC(=NC3=CC=CC(=C3)C(F)(F)F)N2CCC4=CC=C(C=C4)S(=O)(=O)N"
+    },
+    {
+      "id": "642",
+      "fields": {
+        "cluster": "642",
+        "n_points": "39",
+        "MolecularWeight": "120.83948717948718",
+        "ExactMass": "120.71849053397435",
+        "Charge": "1.0000000000000002",
+        "XLogP": "1.0410256410256409",
+        "TPSA": "13.36666666666666",
+        "HBondDonorCount": "0.20512820512820484",
+        "HBondAcceptorCount": "0.4358974358974361",
+        "RotatableBondCount": "0.6666666666666679",
+        "medoid_CID": "181751",
+        "medoid_SMILES": "C[N+]1=CC=C(C=C1)OC"
+      },
+      "cid": "181751",
+      "smiles": "C[N+]1=CC=C(C=C1)OC"
+    },
+    {
+      "id": "643",
+      "fields": {
+        "cluster": "643",
+        "n_points": "147",
+        "MolecularWeight": "350.81843537414966",
+        "ExactMass": "350.3806181287755",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "2.034013605442177",
+        "TPSA": "89.75238095238096",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "3.8299319727891157",
+        "RotatableBondCount": "4.190476190476191",
+        "medoid_CID": "730604",
+        "medoid_SMILES": "C1CCN(C1)S(=O)(=O)C2=CC=C(C=C2)NC(=O)NC3=CC=CC=C3"
+      },
+      "cid": "730604",
+      "smiles": "C1CCN(C1)S(=O)(=O)C2=CC=C(C=C2)NC(=O)NC3=CC=CC=C3"
+    },
+    {
+      "id": "644",
+      "fields": {
+        "cluster": "644",
+        "n_points": "50",
+        "MolecularWeight": "154.00820000000002",
+        "ExactMass": "153.89759858308",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "-0.94",
+        "TPSA": "83.76",
+        "HBondDonorCount": "3.02",
+        "HBondAcceptorCount": "2.3800000000000003",
+        "RotatableBondCount": "3.88",
+        "medoid_CID": "559345",
+        "medoid_SMILES": "C(CC#CCCN)CN=C(N)N"
+      },
+      "cid": "559345",
+      "smiles": "C(CC#CCCN)CN=C(N)N"
+    },
+    {
+      "id": "645",
+      "fields": {
+        "cluster": "645",
+        "n_points": "135",
+        "MolecularWeight": "342.77496296296295",
+        "ExactMass": "342.0509841426815",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "4.425185185185185",
+        "TPSA": "67.54740740740742",
+        "HBondDonorCount": "3.0000000000000004",
+        "HBondAcceptorCount": "1.5333333333333337",
+        "RotatableBondCount": "3.170370370370371",
+        "medoid_CID": "4457137",
+        "medoid_SMILES": "CC1=CC2=C(N1)C=CC(=C2)CNC(=S)NC3=C(C(=CC=C3)Cl)C"
+      },
+      "cid": "4457137",
+      "smiles": "CC1=CC2=C(N1)C=CC(=C2)CNC(=S)NC3=C(C(=CC=C3)Cl)C"
+    },
+    {
+      "id": "646",
+      "fields": {
+        "cluster": "646",
+        "n_points": "160",
+        "MolecularWeight": "418.0628125",
+        "ExactMass": "417.04850802918753",
+        "Charge": "1.3877787807814457e-17",
+        "XLogP": "5.553125",
+        "TPSA": "76.903125",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "2.6875",
+        "RotatableBondCount": "2.93125",
+        "medoid_CID": "2217553",
+        "medoid_SMILES": "CN(C)C1=CC=C(C=C1)NC(=S)NC(=O)C2=CC=CC3=C2C=CC=C3Br"
+      },
+      "cid": "2217553",
+      "smiles": "CN(C)C1=CC=C(C=C1)NC(=S)NC(=O)C2=CC=CC3=C2C=CC=C3Br"
+    },
+    {
+      "id": "647",
+      "fields": {
+        "cluster": "647",
+        "n_points": "1",
+        "MolecularWeight": "1379.3",
+        "ExactMass": "1378.4493742",
+        "Charge": "1.0",
+        "XLogP": "-10.9",
+        "TPSA": "569.0",
+        "HBondDonorCount": "19.0",
+        "HBondAcceptorCount": "36.0",
+        "RotatableBondCount": "11.0",
+        "medoid_CID": "453176",
+        "medoid_SMILES": "CC1=CC(=C(C(=C1)C)S(=O)(=O)OCC2C3C(C(C(O2)OC4C(OC(C(C4O)O)OC5C(OC(C(C5O)O)OC6C(OC(C(C6O)O)OC7C(OC(C(C7O)O)OC8C(OC(C(C8O)O)OC9C(OC(O3)C(C9O)O)C[N+]1=CC=CC=C1)CO)CO)CO)CO)CO)O)O)C"
+      },
+      "cid": "453176",
+      "smiles": "CC1=CC(=C(C(=C1)C)S(=O)(=O)OCC2C3C(C(C(O2)OC4C(OC(C(C4O)O)OC5C(OC(C(C5O)O)OC6C(OC(C(C6O)O)OC7C(OC(C(C7O)O)OC8C(OC(C(C8O)O)OC9C(OC(O3)C(C9O)O)C[N+]1=CC=CC=C1)CO)CO)CO)CO)CO)O)O)C"
+    },
+    {
+      "id": "648",
+      "fields": {
+        "cluster": "648",
+        "n_points": "64",
+        "MolecularWeight": "474.1315625",
+        "ExactMass": "473.113634893125",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "5.8359375",
+        "TPSA": "65.58281249999999",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "6.078125",
+        "RotatableBondCount": "3.828125",
+        "medoid_CID": "4098172",
+        "medoid_SMILES": "CC1=CC2=C(N1C3=CC=C(C=C3)NC(=O)NC4=CC=C(C=C4)OC(F)(F)F)CC(CC2=O)(C)C"
+      },
+      "cid": "4098172",
+      "smiles": "CC1=CC2=C(N1C3=CC=C(C=C3)NC(=O)NC4=CC=C(C=C4)OC(F)(F)F)CC(CC2=O)(C)C"
+    },
+    {
+      "id": "649",
+      "fields": {
+        "cluster": "649",
+        "n_points": "91",
+        "MolecularWeight": "323.78395604395604",
+        "ExactMass": "323.15467705524173",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "3.1065934065934067",
+        "TPSA": "72.49230769230769",
+        "HBondDonorCount": "-4.440892098500626e-16",
+        "HBondAcceptorCount": "4.010989010989011",
+        "RotatableBondCount": "2.197802197802197",
+        "medoid_CID": "5405455",
+        "medoid_SMILES": "C1=CC(=CC=C1S(=O)(=O)/N=C\\2/C=CC(=O)C(=C2)Cl)Cl"
+      },
+      "cid": "5405455",
+      "smiles": "C1=CC(=CC=C1S(=O)(=O)/N=C\\2/C=CC(=O)C(=C2)Cl)Cl"
+    },
+    {
+      "id": "650",
+      "fields": {
+        "cluster": "650",
+        "n_points": "119",
+        "MolecularWeight": "374.7898319327731",
+        "ExactMass": "374.23295081537816",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "1.8294117647058825",
+        "TPSA": "116.04117647058823",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "5.815126050420168",
+        "RotatableBondCount": "3.3277310924369754",
+        "medoid_CID": "9929470",
+        "medoid_SMILES": "CN1C=C2C(=N1)N=C(N3C2=NC(=N3)C4=CC=CO4)NC(=O)NC5=CC=CC=C5"
+      },
+      "cid": "9929470",
+      "smiles": "CN1C=C2C(=N1)N=C(N3C2=NC(=N3)C4=CC=CO4)NC(=O)NC5=CC=CC=C5"
+    },
+    {
+      "id": "651",
+      "fields": {
+        "cluster": "651",
+        "n_points": "136",
+        "MolecularWeight": "356.31838235294117",
+        "ExactMass": "355.65320478735293",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "2.8816176470588237",
+        "TPSA": "109.43529411764706",
+        "HBondDonorCount": "3.0",
+        "HBondAcceptorCount": "3.860294117647059",
+        "RotatableBondCount": "2.772058823529412",
+        "medoid_CID": "1482078",
+        "medoid_SMILES": "C1=CC=C2C(=C1)C(=NO2)CC(=O)NNC(=S)NC3=CC=C(C=C3)Cl"
+      },
+      "cid": "1482078",
+      "smiles": "C1=CC=C2C(=C1)C(=NO2)CC(=O)NNC(=S)NC3=CC=C(C=C3)Cl"
+    },
+    {
+      "id": "652",
+      "fields": {
+        "cluster": "652",
+        "n_points": "36",
+        "MolecularWeight": "416.4841666666667",
+        "ExactMass": "416.101789695",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "0.5527777777777776",
+        "TPSA": "170.22222222222223",
+        "HBondDonorCount": "1.8888888888888888",
+        "HBondAcceptorCount": "9.36111111111111",
+        "RotatableBondCount": "6.666666666666666",
+        "medoid_CID": "73281",
+        "medoid_SMILES": "CN(C)C(=O)C1=C(N=CC=C1)S(=O)(=O)NC(=O)NC2=NC(=CC(=N2)OC)OC"
+      },
+      "cid": "73281",
+      "smiles": "CN(C)C(=O)C1=C(N=CC=C1)S(=O)(=O)NC(=O)NC2=NC(=CC(=N2)OC)OC"
+    },
+    {
+      "id": "653",
+      "fields": {
+        "cluster": "653",
+        "n_points": "59",
+        "MolecularWeight": "440.3613559322034",
+        "ExactMass": "439.63775750661017",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "5.066101694915254",
+        "TPSA": "89.1135593220339",
+        "HBondDonorCount": "4.0",
+        "HBondAcceptorCount": "2.23728813559322",
+        "RotatableBondCount": "4.677966101694915",
+        "medoid_CID": "1039648",
+        "medoid_SMILES": "CC1=CC=CC=C1NC(=O)NC2=CC=C(C=C2)C3=CC=C(C=C3)NC(=O)NC4=CC=CC=C4C"
+      },
+      "cid": "1039648",
+      "smiles": "CC1=CC=CC=C1NC(=O)NC2=CC=C(C=C2)C3=CC=C(C=C3)NC(=O)NC4=CC=CC=C4C"
+    },
+    {
+      "id": "654",
+      "fields": {
+        "cluster": "654",
+        "n_points": "91",
+        "MolecularWeight": "254.67285714285714",
+        "ExactMass": "254.42035285803297",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "2.4285714285714284",
+        "TPSA": "55.79010989010989",
+        "HBondDonorCount": "0.0",
+        "HBondAcceptorCount": "4.362637362637362",
+        "RotatableBondCount": "5.681318681318682",
+        "medoid_CID": "6019202",
+        "medoid_SMILES": "CCOC(=O)/C(=C/C1=CC=C(C=C1)OC)/C(=O)C"
+      },
+      "cid": "6019202",
+      "smiles": "CCOC(=O)/C(=C/C1=CC=C(C=C1)OC)/C(=O)C"
+    },
+    {
+      "id": "655",
+      "fields": {
+        "cluster": "655",
+        "n_points": "125",
+        "MolecularWeight": "294.90256",
+        "ExactMass": "294.502620859656",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "3.2296",
+        "TPSA": "51.4776",
+        "HBondDonorCount": "-2.220446049250313e-16",
+        "HBondAcceptorCount": "3.768",
+        "RotatableBondCount": "5.688",
+        "medoid_CID": "2543314",
+        "medoid_SMILES": "COC1=CC=C(C=C1)/C=C/C(=O)OC2=CC=CC=C2C=O"
+      },
+      "cid": "2543314",
+      "smiles": "COC1=CC=C(C=C1)/C=C/C(=O)OC2=CC=CC=C2C=O"
+    },
+    {
+      "id": "656",
+      "fields": {
+        "cluster": "656",
+        "n_points": "1",
+        "MolecularWeight": "781.0",
+        "ExactMass": "780.46866704",
+        "Charge": "2.0",
+        "XLogP": "5.4",
+        "TPSA": "171.0",
+        "HBondDonorCount": "7.0",
+        "HBondAcceptorCount": "5.0",
+        "RotatableBondCount": "19.0",
+        "medoid_CID": "446150",
+        "medoid_SMILES": "CC(C)[C@@H](C(=O)N[C@@H](CC1=CC=CC=C1)C[C@@H]([C@H](CC2=CC=CC=C2)NC(=O)[C@H](C(C)C)NC(=O)N(C)CC3=CC=CC=[NH+]3)O)NC(=O)N(C)CC4=CC=CC=[NH+]4"
+      },
+      "cid": "446150",
+      "smiles": "CC(C)[C@@H](C(=O)N[C@@H](CC1=CC=CC=C1)C[C@@H]([C@H](CC2=CC=CC=C2)NC(=O)[C@H](C(C)C)NC(=O)N(C)CC3=CC=CC=[NH+]3)O)NC(=O)N(C)CC4=CC=CC=[NH+]4"
+    },
+    {
+      "id": "657",
+      "fields": {
+        "cluster": "657",
+        "n_points": "54",
+        "MolecularWeight": "138.67296296296297",
+        "ExactMass": "138.56264372466669",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "2.0203703703703706",
+        "TPSA": "26.24444444444444",
+        "HBondDonorCount": "1.0000000000000002",
+        "HBondAcceptorCount": "1.333333333333334",
+        "RotatableBondCount": "1.9259259259259265",
+        "medoid_CID": "2735162",
+        "medoid_SMILES": "C=CC1=CC=C(C=C1)CO"
+      },
+      "cid": "2735162",
+      "smiles": "C=CC1=CC=C(C=C1)CO"
+    },
+    {
+      "id": "658",
+      "fields": {
+        "cluster": "658",
+        "n_points": "19",
+        "MolecularWeight": "677.9315789473684",
+        "ExactMass": "677.33842484",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "3.4",
+        "TPSA": "155.21052631578948",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "9.842105263157894",
+        "RotatableBondCount": "9.526315789473685",
+        "medoid_CID": "3110901",
+        "medoid_SMILES": "CCC(C(=O)N1CCOCCN(CCOCC1)C(=O)C(CC)NS(=O)(=O)C2=CC=C(C=C2)C)NS(=O)(=O)C3=CC=C(C=C3)C"
+      },
+      "cid": "3110901",
+      "smiles": "CCC(C(=O)N1CCOCCN(CCOCC1)C(=O)C(CC)NS(=O)(=O)C2=CC=C(C=C2)C)NS(=O)(=O)C3=CC=C(C=C3)C"
+    },
+    {
+      "id": "659",
+      "fields": {
+        "cluster": "659",
+        "n_points": "7",
+        "MolecularWeight": "641.6142857142856",
+        "ExactMass": "641.2053693571429",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "5.928571428571429",
+        "TPSA": "125.77142857142857",
+        "HBondDonorCount": "3.4285714285714284",
+        "HBondAcceptorCount": "16.71428571428571",
+        "RotatableBondCount": "5.571428571428571",
+        "medoid_CID": "9497081",
+        "medoid_SMILES": "C1=CC(=CC=C1NC(=S)NC(=C(C(F)(F)F)C(F)(F)F)C(C(F)(F)F)(F)F)S(=O)(=O)NC2=NC=CS2"
+      },
+      "cid": "9497081",
+      "smiles": "C1=CC(=CC=C1NC(=S)NC(=C(C(F)(F)F)C(F)(F)F)C(C(F)(F)F)(F)F)S(=O)(=O)NC2=NC=CS2"
+    },
+    {
+      "id": "660",
+      "fields": {
+        "cluster": "660",
+        "n_points": "111",
+        "MolecularWeight": "410.93783783783783",
+        "ExactMass": "410.52800957216215",
+        "Charge": "1.0408340855860843e-17",
+        "XLogP": "3.9945945945945946",
+        "TPSA": "106.35675675675675",
+        "HBondDonorCount": "1.0",
+        "HBondAcceptorCount": "7.0990990990990985",
+        "RotatableBondCount": "7.423423423423425",
+        "medoid_CID": "7202333",
+        "medoid_SMILES": "CC1=C(SC(=N1)C2=CC=CC=C2)CCNS(=O)(=O)C3=CC(=C(C=C3)OC)F"
+      },
+      "cid": "7202333",
+      "smiles": "CC1=C(SC(=N1)C2=CC=CC=C2)CCNS(=O)(=O)C3=CC(=C(C=C3)OC)F"
+    },
+    {
+      "id": "661",
+      "fields": {
+        "cluster": "661",
+        "n_points": "9",
+        "MolecularWeight": "376.65555555555557",
+        "ExactMass": "376.40936891222225",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "0.411111111111111",
+        "TPSA": "113.02222222222223",
+        "HBondDonorCount": "1.2222222222222223",
+        "HBondAcceptorCount": "7.888888888888889",
+        "RotatableBondCount": "16.33333333333333",
+        "medoid_CID": "111389",
+        "medoid_SMILES": "CC(=C)C(=O)OCC(COCCOCC(COC(=O)C(=C)C)O)O"
+      },
+      "cid": "111389",
+      "smiles": "CC(=C)C(=O)OCC(COCCOCC(COC(=O)C(=C)C)O)O"
+    },
+    {
+      "id": "662",
+      "fields": {
+        "cluster": "662",
+        "n_points": "34",
+        "MolecularWeight": "580.9676470588236",
+        "ExactMass": "580.2357043702941",
+        "Charge": "0.0",
+        "XLogP": "7.988235294117647",
+        "TPSA": "108.36470588235294",
+        "HBondDonorCount": "1.9705882352941175",
+        "HBondAcceptorCount": "6.38235294117647",
+        "RotatableBondCount": "9.823529411764707",
+        "medoid_CID": "2486227",
+        "medoid_SMILES": "CC(C)(C)C1=CC=C(C=C1)S(=O)(=O)NC2=CC=C(C=C2)C3=CC=C(C=C3)NS(=O)(=O)C4=CC=C(C=C4)C(C)(C)C"
+      },
+      "cid": "2486227",
+      "smiles": "CC(C)(C)C1=CC=C(C=C1)S(=O)(=O)NC2=CC=C(C=C2)C3=CC=C(C=C3)NS(=O)(=O)C4=CC=C(C=C4)C(C)(C)C"
+    },
+    {
+      "id": "663",
+      "fields": {
+        "cluster": "663",
+        "n_points": "95",
+        "MolecularWeight": "380.87305263157896",
+        "ExactMass": "380.52382967978946",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "1.8936842105263159",
+        "TPSA": "91.84421052631579",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "4.273684210526316",
+        "RotatableBondCount": "5.5473684210526315",
+        "medoid_CID": "4074534",
+        "medoid_SMILES": "CCN(CC)CCNC(=S)NC1=CC2=C(C=C1)N=C3CCCCCN3C2=O"
+      },
+      "cid": "4074534",
+      "smiles": "CCN(CC)CCNC(=S)NC1=CC2=C(C=C1)N=C3CCCCCN3C2=O"
+    },
+    {
+      "id": "664",
+      "fields": {
+        "cluster": "664",
+        "n_points": "46",
+        "MolecularWeight": "453.41804347826087",
+        "ExactMass": "452.958463835",
+        "Charge": "3.469446951953614e-18",
+        "XLogP": "3.5782608695652174",
+        "TPSA": "78.15434782608696",
+        "HBondDonorCount": "1.0",
+        "HBondAcceptorCount": "8.152173913043478",
+        "RotatableBondCount": "7.217391304347826",
+        "medoid_CID": "3240067",
+        "medoid_SMILES": "C1CN(CCN1C2=CC=CC=C2)C(CNS(=O)(=O)C3=C(C=CC(=C3)F)F)C4=CN=CC=C4"
+      },
+      "cid": "3240067",
+      "smiles": "C1CN(CCN1C2=CC=CC=C2)C(CNS(=O)(=O)C3=C(C=CC(=C3)F)F)C4=CN=CC=C4"
+    },
+    {
+      "id": "665",
+      "fields": {
+        "cluster": "665",
+        "n_points": "1",
+        "MolecularWeight": "448.5",
+        "ExactMass": "448.22949941",
+        "Charge": "2.0",
+        "XLogP": "-1.0000000000000004",
+        "TPSA": "198.0",
+        "HBondDonorCount": "2.0",
+        "HBondAcceptorCount": "10.0",
+        "RotatableBondCount": "2.0",
+        "medoid_CID": "3003714",
+        "medoid_SMILES": "C1N(CC[N+]2(C1)CC[N+]3(CC2)CCN(CC3)/C(=C(\\[N+](=O)[O-])/C#N)/N)/C(=C(\\[N+](=O)[O-])/C#N)/N"
+      },
+      "cid": "3003714",
+      "smiles": "C1N(CC[N+]2(C1)CC[N+]3(CC2)CCN(CC3)/C(=C(\\[N+](=O)[O-])/C#N)/N)/C(=C(\\[N+](=O)[O-])/C#N)/N"
+    },
+    {
+      "id": "666",
+      "fields": {
+        "cluster": "666",
+        "n_points": "115",
+        "MolecularWeight": "481.6756521739131",
+        "ExactMass": "481.06046368156524",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "5.386086956521739",
+        "TPSA": "87.02695652173914",
+        "HBondDonorCount": "1.0",
+        "HBondAcceptorCount": "5.034782608695652",
+        "RotatableBondCount": "7.982608695652174",
+        "medoid_CID": "2979204",
+        "medoid_SMILES": "CC1=C(C=CC(=C1)S(=O)(=O)NC2CCCCC2)OCC(=O)N3CCC(CC3)CC4=CC=CC=C4"
+      },
+      "cid": "2979204",
+      "smiles": "CC1=C(C=CC(=C1)S(=O)(=O)NC2CCCCC2)OCC(=O)N3CCC(CC3)CC4=CC=CC=C4"
+    },
+    {
+      "id": "667",
+      "fields": {
+        "cluster": "667",
+        "n_points": "146",
+        "MolecularWeight": "315.921301369863",
+        "ExactMass": "315.5741514480822",
+        "Charge": "6.938893903907228e-18",
+        "XLogP": "1.3821917808219177",
+        "TPSA": "85.09520547945205",
+        "HBondDonorCount": "0.9999999999999998",
+        "HBondAcceptorCount": "5.335616438356165",
+        "RotatableBondCount": "5.835616438356165",
+        "medoid_CID": "3770602",
+        "medoid_SMILES": "C1=CC2=C(C(=C1)S(=O)(=O)NCCCN3C=CN=C3)N=CC=C2"
+      },
+      "cid": "3770602",
+      "smiles": "C1=CC2=C(C(=C1)S(=O)(=O)NCCCN3C=CN=C3)N=CC=C2"
+    }
+  ],
+  "reference": {
+    "id": "tfa",
+    "cid": "8442",
+    "smiles": "O=C(O)C(F)(F)F",
+    "fields": {
+      "name": "Neutral trifluoroacetic acid",
+      "formula": "C2HF3O2"
+    }
+  },
+  "tasks": []
+}

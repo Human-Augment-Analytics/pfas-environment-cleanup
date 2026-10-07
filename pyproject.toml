@@ -44,12 +44,16 @@ default-groups = "all"
 target-version = "py312"
 
 [tool.ty.src]
+# The dashboard has its own minimal environment and type-check lane.
 exclude = [
+    "web",
     "shivani_ml_models/gnn.py",
     "basic_molecule_gnn/basic_gnn_molecule.py",
 ]
 
 [tool.pytest.ini_options]
+# Web tests run separately with web/pyproject.toml and its own dependencies.
+testpaths = ["tests"]
 timeout = 2
 session_timeout = 60
 markers = [

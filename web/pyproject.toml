@@ -1,0 +1,17 @@
+[project]
+name = "pfas-dashboard"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1"]
+[dependency-groups]
+dev = ["pytest", "httpx", "ruff", "pytest-timeout", "ty"]
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+timeout = 5
+markers = ["slow: explicit chemistry and native QE smoke checks"]
+[tool.ty.environment]
+extra-paths = ["..", "../qespresso_pipeline"]
+[tool.ty.src]
+exclude = ["dashboard/diagram.py"]
