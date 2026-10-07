@@ -9,6 +9,7 @@
 
 &CONTROL
   calculation='relax',
+  restart_mode='restart',
   outdir='./Outputs',
   prefix='adsorbent',
   pseudo_dir='./Pseudopotentials',
