@@ -21,6 +21,13 @@ class Store:
         self.db.execute(
             "CREATE INDEX IF NOT EXISTS task_action ON tasks (json_extract(data, '$.kind'), json_extract(data, '$.candidate'), json_extract(data, '$.system'), json_extract(data, '$.status'))"
         )
+        self.db.execute(
+            "CREATE TABLE IF NOT EXISTS batches (id TEXT PRIMARY KEY, data TEXT NOT NULL)"
+        )
+        self.db.execute(
+            "CREATE TABLE IF NOT EXISTS settings (id TEXT PRIMARY KEY, data TEXT NOT NULL)"
+        )
+        self.db.commit()
         for task in self.tasks():
             if task["status"] in ("queued", "running"):
                 self.update(
@@ -29,6 +36,38 @@ class Store:
                     ended=now(),
                     error="Server restarted; retry explicitly",
                 )
+
+        # Recover a crash during batch acceptance, including tasks persisted before
+        # their batch entry was saved. No work is automatically requeued.
+        recovered_tasks = self.tasks()
+        for batch in self.batches():
+            entries = {entry["candidate"]: entry for entry in batch["entries"]}
+            task_ids = set(batch["task_ids"])
+            for task in recovered_tasks:
+                if task.get("batch_id") == batch["id"]:
+                    task_ids.add(task["id"])
+                    entries[task["candidate"]] = {
+                        "candidate": task["candidate"],
+                        "status": "queued",
+                        "task_id": task["id"],
+                        "reason": "",
+                    }
+            for candidate in batch["candidates"]:
+                entries.setdefault(
+                    candidate,
+                    {
+                        "candidate": candidate,
+                        "status": "unavailable",
+                        "reason": "Batch acceptance interrupted; review again",
+                    },
+                )
+            batch["entries"] = [entries[id] for id in batch["candidates"]]
+            batch["task_ids"] = [
+                entries[id]["task_id"]
+                for id in batch["candidates"]
+                if entries[id].get("task_id") in task_ids
+            ]
+            self.put_batch(batch)
 
     def tasks(self):
         with self.lock:
@@ -84,3 +123,45 @@ class Store:
                 "SELECT path FROM artifacts WHERE id=?", (id,)
             ).fetchone()
         return row[0] if row else None
+
+    def batches(self):
+        with self.lock:
+            return [
+                json.loads(row[0])
+                for row in self.db.execute(
+                    "SELECT data FROM batches ORDER BY rowid DESC"
+                )
+            ]
+
+    def batch(self, id):
+        with self.lock:
+            row = self.db.execute(
+                "SELECT data FROM batches WHERE id=?", (id,)
+            ).fetchone()
+        return json.loads(row[0]) if row else None
+
+    def put_batch(self, batch):
+        with self.lock, self.db:
+            self.db.execute(
+                "INSERT OR REPLACE INTO batches VALUES (?, ?)",
+                (batch["id"], json.dumps(batch)),
+            )
+        return batch
+
+    def settings(self, defaults):
+        with self.lock:
+            row = self.db.execute(
+                "SELECT data FROM settings WHERE id='queue'"
+            ).fetchone()
+        return {**defaults, **(json.loads(row[0]) if row else {})}
+
+    def set_settings(self, settings):
+        with self.lock, self.db:
+            self.db.execute(
+                "INSERT OR REPLACE INTO settings VALUES ('queue', ?)",
+                (json.dumps(settings),),
+            )
+        return settings
+
+    def queued(self):
+        return [t for t in reversed(self.tasks()) if t["status"] == "queued"]

@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useMemo, useState, useEffect } from "react";
 import { Action, Candidate, Data, Task } from "./data";
 import { PubChemLink } from "./PubChemLink";
 import {
@@ -8,6 +8,7 @@ import {
   parseClusterIDs,
   matchesClusterIDs,
 } from "./filters";
+import { BatchControls } from "./BatchControls";
 import { RunControls } from "./RunControls";
 
 const numericFields = new Set([
@@ -76,9 +77,11 @@ export function CandidateBrowser({
   action,
   filters,
   clearFilters,
+  refresh,
 }: {
   filters: Filter[];
   clearFilters: () => void;
+  refresh: () => Promise<void>;
   data: Data;
   busy: boolean;
   action: (path: string, body?: Action) => Promise<void>;
@@ -106,6 +109,23 @@ export function CandidateBrowser({
       ),
     [data.candidates, idFilter, sort, direction, filters],
   );
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    const visible = new Set(candidates.map((c) => c.id));
+    setSelected(
+      (previous) => new Set([...previous].filter((id) => visible.has(id))),
+    );
+  }, [candidates]);
+  const selectedIDs = candidates
+    .filter((c) => selected.has(c.id))
+    .map((c) => c.id);
+  const toggle = (id: string) =>
+    setSelected((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const live = data.mode === "live";
   const diagramContent = (c: Candidate, tile: boolean) => {
     const diagram = index.diagrams.get(c.id);
@@ -195,11 +215,6 @@ export function CandidateBrowser({
             <option value="desc">Descending</option>
           </select>
         </label>
-        {live && (
-          <button disabled={busy} onClick={() => action("diagrams")}>
-            Generate missing diagrams for all {data.candidates.length}
-          </button>
-        )}
       </div>
       <p
         id="cluster-filter-help"
@@ -220,10 +235,51 @@ export function CandidateBrowser({
         Showing {candidates.length} of {data.candidates.length} clusters.
       </p>
       {!candidates.length && <p>No clusters match your search.</p>}
+      {live && (
+        <>
+          <div className="controls selection-controls">
+            <button
+              disabled={!candidates.length || busy}
+              onClick={() => setSelected(new Set(candidates.map((c) => c.id)))}
+            >
+              Select all matching ({candidates.length})
+            </button>
+            <button
+              disabled={!selectedIDs.length}
+              onClick={() => setSelected(new Set())}
+            >
+              Clear selection
+            </button>
+            <span role="status">{selectedIDs.length} selected</span>
+          </div>
+          <BatchControls
+            ids={selectedIDs}
+            runtimes={data.queue?.runtimes}
+            onQueued={() => {
+              void refresh();
+              location.hash = "queue";
+            }}
+          />
+        </>
+      )}
       {view === "tiles" ? (
         <div className="candidate-grid">
           {candidates.map((c) => (
-            <div className="candidate-tile" key={c.id}>
+            <div
+              className={`candidate-tile ${selected.has(c.id) ? "selected" : ""}`}
+              key={c.id}
+            >
+              {live && (
+                <label className="tile-selection">
+                  <input
+                    type="checkbox"
+                    aria-label={`Select cluster ${c.id}`}
+                    checked={selected.has(c.id)}
+                    onChange={() => toggle(c.id)}
+                  />{" "}
+                  Select
+                </label>
+              )}
               <a
                 className="tile-entry"
                 href={`#candidate/${c.id}`}
@@ -272,7 +328,7 @@ export function CandidateBrowser({
               </tr>
               <tr>
                 <th className="cluster-heading" scope="col">
-                  ID
+                  ID / Select
                 </th>
                 <th className="cluster-heading" scope="col">
                   Points
@@ -304,6 +360,14 @@ export function CandidateBrowser({
                   <Fragment key={c.id}>
                     <tr data-cluster={c.id}>
                       <td className="cluster-cell">
+                        {live && (
+                          <input
+                            type="checkbox"
+                            aria-label={`Select cluster ${c.id}`}
+                            checked={selected.has(c.id)}
+                            onChange={() => toggle(c.id)}
+                          />
+                        )}
                         <a href={`#candidate/${c.id}`}>{c.id}</a>
                       </td>
                       <td className="cluster-cell">{c.fields.n_points}</td>
@@ -330,6 +394,10 @@ export function CandidateBrowser({
                                 action("tasks", {
                                   kind: "prepare",
                                   candidate: c.id,
+                                  runtime: data.queue?.runtimes.apptainer
+                                    .available
+                                    ? "apptainer"
+                                    : "native",
                                 })
                               }
                             >
@@ -387,6 +455,7 @@ export function CandidateBrowser({
                             key={run.candidate + run.system}
                             candidate={run.candidate}
                             system={run.system}
+                            runtimes={data.queue?.runtimes}
                             action={action}
                           />
                         </td>

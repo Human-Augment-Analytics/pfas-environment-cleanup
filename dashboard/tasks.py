@@ -9,9 +9,12 @@ import threading
 import uuid
 from pathlib import Path
 
+from .batches import Batches, validate_positive
+from .inputs import discover, dry_input, ram_reports, validate_references
 from .persistence import Store, now
 from .preparation import digest, pseudo_names
 from .processes import evidence, execute, tail
+from .runtimes import GIB, Runtimes, memory_ceiling
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -30,9 +33,33 @@ class Manager:
         }
         self.wake = threading.Event()
         self.stop = threading.Event()
-        self.cancel = threading.Event()
         self.guard = threading.RLock()
-        self.active = None
+        self.running = {}
+        self.previews = {}
+        self.runtimes = Runtimes(config)
+        self.batches = Batches(self)
+        self.settings = self.store.settings(
+            {
+                "paused": False,
+                "concurrency": 1,
+                "memory_bytes": min(8 * GIB, memory_ceiling() // 2),
+                "cpus": min(
+                    4,
+                    len(os.sched_getaffinity(0))
+                    if hasattr(os, "sched_getaffinity")
+                    else os.cpu_count() or 1,
+                ),
+            }
+        )
+        self.settings["memory_bytes"] = min(
+            self.settings["memory_bytes"], memory_ceiling() // 2
+        )
+        available_cpus = (
+            len(os.sched_getaffinity(0))
+            if hasattr(os, "sched_getaffinity")
+            else os.cpu_count() or 1
+        )
+        self.settings["cpus"] = min(self.settings["cpus"], available_cpus)
         self.thread = threading.Thread(target=self.worker, daemon=True)
 
     def start(self):
@@ -41,7 +68,8 @@ class Manager:
     def close(self):
         with self.guard:
             self.stop.set()
-            self.cancel.set()
+            for _, cancel, _ in self.running.values():
+                cancel.set()
             self.wake.set()
         if self.thread.is_alive():
             self.thread.join()
@@ -111,7 +139,32 @@ class Manager:
                     return path
         raise ValueError("Prepare inputs first")
 
-    def preview(self, candidate, system, processes, target):
+    def versions(self):
+        return [
+            {
+                "input_id": identifier,
+                "candidate": owner,
+                "system": system,
+                "label": path.name,
+            }
+            for identifier, (owner, system, path) in discover(
+                self.config.qe_inputs, self.candidates
+            ).items()
+        ]
+
+    def preview(
+        self,
+        candidate,
+        system,
+        processes,
+        target,
+        runtime="native",
+        input_id=None,
+        kind="qe",
+        issue_token=True,
+    ):
+        if runtime not in ("native", "apptainer"):
+            raise ValueError("Unknown runtime")
         if target != "local":
             raise NotImplementedError(
                 "Slurm and Slurm array execution are not implemented"
@@ -120,27 +173,42 @@ class Manager:
             raise ValueError("Process count must be a positive integer")
         if system not in ("tfa", "candidate", "complex"):
             raise ValueError("Unknown system")
-        path = self.input(candidate, system)
+        if candidate not in self.candidates or (candidate == "tfa" and system != "tfa"):
+            raise ValueError("Unknown candidate/system")
+        if kind not in ("qe", "estimate_ram"):
+            raise ValueError("Unknown preview task")
+        if input_id is None:
+            path = self.input(candidate, system)
+            label = "Prepared default"
+        else:
+            entry = discover(self.config.qe_inputs, self.candidates).get(input_id)
+            if not entry or entry[:2] != (
+                "tfa" if system == "tfa" else candidate,
+                system,
+            ):
+                raise ValueError("Invalid input identifier for candidate/system")
+            path = entry[2]
+            label = path.name
         input_bytes = path.read_bytes()
         text = input_bytes.decode()
-        # Keep all file references inside the new run directory, including edited inputs.
-        for key, expected in (
-            ("pseudo_dir", "./Pseudopotentials"),
-            ("outdir", "./Outputs"),
-        ):
-            match = re.search(
-                rf"\b{key}\s*=\s*['\"]([^'\"]+)['\"]", text, re.IGNORECASE
-            )
-            if not match or match[1] != expected:
-                raise ValueError(f"Input must use {key}='{expected}'")
+        validate_references(text)
+        source_hash = hashlib.sha256(input_bytes).hexdigest()
+        source_text = text
+        if kind == "estimate_ram":
+            text = dry_input(text)
         names = pseudo_names(text)
+        missing = [n for n in names if not (self.config.pseudos / n).is_file()]
+        if missing:
+            raise ValueError("Missing pseudopotentials: " + ", ".join(missing))
         hashes = {n: digest(self.config.pseudos / n) for n in names}
-        pw = self.executable(self.config.pw)
+        pw = "pw.x" if runtime == "apptainer" else self.executable(self.config.pw)
         command = (
             [pw, "-in", "input.in"]
             if processes == 1
             else [
-                self.executable(self.config.mpi),
+                "mpirun"
+                if runtime == "apptainer"
+                else self.executable(self.config.mpi),
                 "-np",
                 str(processes),
                 pw,
@@ -148,12 +216,38 @@ class Manager:
                 "input.in",
             ]
         )
-        return {
+        from .geometry import geometry
+
+        try:
+            initial_geometry = geometry(source_text)
+        except (ValueError, IndexError) as error:
+            initial_geometry = {"error": str(error)}
+        result = {
+            "input_id": input_id,
+            "version": label,
+            "source_hash": source_hash,
+            "executed_input_hash": hashlib.sha256(text.encode()).hexdigest(),
+            "geometry": initial_geometry,
+            "image_hash": self.runtimes.image_identity()
+            if runtime == "apptainer"
+            else None,
             "command": command,
             "input": text,
-            "input_hash": hashlib.sha256(input_bytes).hexdigest(),
+            "input_hash": hashlib.sha256(text.encode()).hexdigest(),
             "pseudopotentials": hashes,
         }
+
+        if issue_token:
+            token = uuid.uuid4().hex
+            with self.guard:
+                if len(self.previews) >= 1000:
+                    self.previews.pop(next(iter(self.previews)))
+                self.previews[token] = (
+                    (candidate, system, processes, target, runtime, input_id, kind),
+                    result.copy(),
+                )
+            result["preview_id"] = token
+        return result
 
     def queue(
         self,
@@ -164,36 +258,128 @@ class Manager:
         target="local",
         timeout=None,
         expected_hash=None,
+        runtime="native",
+        memory_gib=4,
+        batch_id=None,
+        position=None,
+        checked_preflight=False,
+        expected_pseudos=None,
+        input_id=None,
+        preview_id=None,
     ):
-        if kind == "qe" and target != "local":
+        if target != "local":
             raise NotImplementedError(
                 "Slurm and Slurm array execution are not implemented"
             )
         if candidate not in self.candidates:
             raise ValueError("Unknown candidate")
-        if kind not in ("diagram", "prepare", "qe"):
+        if kind not in ("diagram", "prepare", "qe", "estimate_ram"):
             raise ValueError("Unknown task")
         if timeout is not None and (
             not isinstance(timeout, (float, int)) or timeout <= 0
         ):
             raise ValueError("Timeout must be positive")
-        if kind != "qe":
+        if kind not in ("qe", "estimate_ram"):
+            processes = 1
             system = "tfa" if candidate == "tfa" else "candidate"
+        timeout = (
+            timeout
+            if timeout is not None
+            else self.config.prepare_timeout
+            if kind == "prepare"
+            else 60
+            if kind == "diagram"
+            else 120
+            if kind == "estimate_ram"
+            else None
+        )
+        resources = self.resources(
+            runtime,
+            processes if kind in ("qe", "estimate_ram") else 1,
+            memory_gib,
+            timeout,
+        )
+        image_hash = self.runtimes.verify() if runtime == "apptainer" else None
         with self.guard:
             existing = self.store.active(kind, candidate, system)
-            if existing:
+            if (
+                existing
+                and input_id is None
+                and kind != "estimate_ram"
+                and preview_id is None
+            ):
                 return existing
             preview = None
-            if kind == "prepare":
+            if kind == "prepare" and not checked_preflight:
                 try:
-                    self.preflight(self.candidates[candidate])
+                    if runtime == "native":
+                        self.preflight(self.candidates[candidate])
+                    else:
+                        report = self.runtimes.chemistry_probe(
+                            runtime,
+                            "import shutil; import rdkit,pymatgen.core,ase,openbabel; assert shutil.which('obabel'); assert shutil.which('cif2cell')",
+                        )
+                        if report.returncode:
+                            raise ValueError(
+                                "Preparation tools unavailable: "
+                                + report.stderr[-1000:]
+                            )
                 except (ValueError, OSError, subprocess.SubprocessError) as error:
                     logger.warning(
                         "Preparation rejected for cluster %s: %s", candidate, error
                     )
                     raise
-            if kind == "qe":
-                preview = self.preview(candidate, system, processes, target)
+            if kind in ("qe", "estimate_ram"):
+                preview = self.preview(
+                    candidate,
+                    system,
+                    processes,
+                    target,
+                    runtime,
+                    input_id,
+                    kind,
+                    issue_token=False,
+                )
+                if (
+                    preview_id is not None
+                    or input_id is not None
+                    or kind == "estimate_ram"
+                ):
+                    reviewed = self.previews.get(preview_id)
+                    if not reviewed or reviewed != (
+                        (candidate, system, processes, target, runtime, input_id, kind),
+                        preview,
+                    ):
+                        raise ValueError(
+                            "Input, pseudopotentials, or execution settings changed; preview again"
+                        )
+                if (
+                    preview_id is None
+                    and input_id is None
+                    and kind == "qe"
+                    and expected_pseudos is None
+                ):
+                    specification = (
+                        candidate,
+                        system,
+                        processes,
+                        target,
+                        runtime,
+                        input_id,
+                        kind,
+                    )
+                    if not any(
+                        record == (specification, preview)
+                        for record in self.previews.values()
+                    ):
+                        raise ValueError(
+                            "Input or pseudopotentials changed; preview again"
+                        )
+                if (
+                    expected_pseudos is not None
+                    and expected_pseudos != preview["pseudopotentials"]
+                ):
+                    raise ValueError("Pseudopotentials changed; preview again")
                 if expected_hash != preview["input_hash"]:
                     raise ValueError(
                         "Input changed or was not previewed; preview again"
@@ -212,6 +398,15 @@ class Manager:
                 "started": None,
                 "ended": None,
                 "timeout": timeout,
+                "runtime": runtime,
+                "resources": resources,
+                "image_hash": image_hash,
+                "batch_id": batch_id,
+                "position": position,
+                "source": {
+                    "cid": self.candidates[candidate]["cid"],
+                    "smiles": self.candidates[candidate]["smiles"],
+                },
                 "artifacts": {},
                 "error": "",
             }
@@ -228,7 +423,18 @@ class Manager:
                     if digest(dest) != hash:
                         raise ValueError("Pseudopotential changed while queuing")
                     (directory / "Pseudopotentials" / name).symlink_to(dest)
+                preview.pop("geometry", None)
                 task.update(preview)
+                if preview_id:
+                    self.previews.pop(preview_id, None)
+            for name in ("stdout.log", "stderr.log"):
+                path = directory / name
+                path.touch()
+                task["artifacts"][name] = self.store.register(id + "-" + name, path)
+            if preview:
+                task["artifacts"]["input.in"] = self.store.register(
+                    id + "-input.in", directory / "input.in"
+                )
             self.store.put(task)
             logger.info(
                 "Task %s queued: %s for cluster %s (%s)", id, kind, candidate, system
@@ -242,29 +448,183 @@ class Manager:
             if task["status"] == "queued":
                 self.store.update(id, status="canceled", ended=now())
                 logger.info("Task %s canceled before starting", id)
-            elif task["status"] == "running" and self.active == id:
+            elif task["status"] == "running" and id in self.running:
                 logger.info("Task %s stop requested", id)
-                self.cancel.set()
+                self.running[id][1].set()
+
+    def resources(self, runtime, cpus, memory_gib, timeout):
+        if runtime not in ("native", "apptainer"):
+            raise ValueError("Unknown runtime")
+        validate_positive(cpus, "CPU count", integer=True)
+        validate_positive(memory_gib, "Memory limit")
+        if timeout is not None:
+            validate_positive(timeout, "Timeout")
+        memory_bytes = int(memory_gib * GIB)
+        if cpus > self.settings["cpus"]:
+            raise ValueError("Job CPU count exceeds queue budget")
+        if runtime == "apptainer" and memory_bytes > self.settings["memory_bytes"]:
+            raise ValueError("Job memory limit exceeds queue budget")
+        return {
+            "cpus": int(cpus),
+            "memory_bytes": memory_bytes,
+            "timeout": timeout,
+            "hard_memory_limit": runtime == "apptainer",
+        }
+
+    def configure(self, values):
+        with self.guard:
+            settings = {**self.settings, **values}
+            validate_positive(settings["concurrency"], "Concurrency", integer=True)
+            validate_positive(settings["cpus"], "CPU budget", integer=True)
+            validate_positive(settings["memory_bytes"], "Memory budget", integer=True)
+            available_cpus = (
+                len(os.sched_getaffinity(0))
+                if hasattr(os, "sched_getaffinity")
+                else os.cpu_count() or 1
+            )
+            if settings["cpus"] > available_cpus:
+                raise ValueError("CPU budget exceeds available CPUs")
+            if settings["memory_bytes"] > memory_ceiling() // 2:
+                raise ValueError(
+                    "Keep at least half of host memory outside the queue budget"
+                )
+            running_tasks = [value[2] for value in self.running.values()]
+            if (
+                sum(t["resources"]["cpus"] for t in running_tasks) > settings["cpus"]
+                or sum(
+                    t["resources"]["memory_bytes"]
+                    for t in running_tasks
+                    if t.get("runtime") == "apptainer"
+                )
+                > settings["memory_bytes"]
+            ):
+                raise ValueError(
+                    "New budget is below current running reservations; stop jobs or wait for them to finish"
+                )
+            for task in self.store.queued():
+                resource = task.get(
+                    "resources", {"cpus": task["processes"], "memory_bytes": 4 * GIB}
+                )
+                if resource["cpus"] > settings["cpus"] or (
+                    task.get("runtime") == "apptainer"
+                    and resource["memory_bytes"] > settings["memory_bytes"]
+                ):
+                    raise ValueError(
+                        "New budget cannot accommodate an existing queued job"
+                    )
+            self.settings = self.store.set_settings(settings)
+            self.wake.set()
+            return self.settings
+
+    def queue_data(self):
+        tasks = self.store.tasks()
+        # No log tails, geometries, or raw input text in queue polling.
+        keys = (
+            "id",
+            "kind",
+            "candidate",
+            "system",
+            "processes",
+            "status",
+            "created",
+            "started",
+            "ended",
+            "runtime",
+            "resources",
+            "batch_id",
+            "position",
+            "error",
+            "exit_code",
+            "usage",
+            "evidence",
+            "version",
+            "source_hash",
+            "executed_input_hash",
+            "ram_estimate",
+            "artifacts",
+        )
+        return {
+            "settings": self.settings,
+            "runtimes": self.runtimes.availability(),
+            "batches": self.store.batches(),
+            "tasks": [{k: t[k] for k in keys if k in t} for t in tasks],
+            "running_count": len(self.running),
+        }
 
     def worker(self):
         while not self.stop.is_set():
             with self.guard:
+                for id, (thread, _, _) in list(self.running.items()):
+                    if not thread.is_alive():
+                        thread.join()
+                        del self.running[id]
                 if self.stop.is_set():
                     break
-                task = self.store.next_queued()
-                if task:
-                    self.active = task["id"]
-                    self.cancel.clear()
-                    self.store.update(task["id"], status="running", started=now())
-            if task is None:
-                self.wake.wait(0.2)
-                self.wake.clear()
-                continue
-            self.run(task)
-            with self.guard:
-                self.active = None
+                if not self.settings["paused"]:
+                    for task in self.store.queued():
+                        # Strict FIFO admission; starts follow the reviewed view order.
+                        runtime = task.get("runtime", "native")
+                        resources = task.get(
+                            "resources",
+                            {"cpus": task["processes"], "memory_bytes": 4 * GIB},
+                        )
+                        running_tasks = [value[2] for value in self.running.values()]
+                        if runtime == "native" and running_tasks:
+                            break
+                        if any(
+                            t.get("runtime", "native") == "native"
+                            for t in running_tasks
+                        ):
+                            break
+                        if len(running_tasks) >= self.settings["concurrency"]:
+                            break
+                        if (
+                            sum(t["resources"]["cpus"] for t in running_tasks)
+                            + resources["cpus"]
+                            > self.settings["cpus"]
+                        ):
+                            break
+                        if (
+                            runtime == "apptainer"
+                            and sum(
+                                t["resources"]["memory_bytes"] for t in running_tasks
+                            )
+                            + resources["memory_bytes"]
+                            > self.settings["memory_bytes"]
+                        ):
+                            break
+                        cancel = threading.Event()
+                        thread = threading.Thread(
+                            target=self.execute_attempt,
+                            args=(task, cancel),
+                            daemon=True,
+                        )
+                        self.store.update(task["id"], status="running", started=now())
+                        self.running[task["id"]] = (thread, cancel, task)
+                        thread.start()
+                        if runtime == "native":
+                            break
+            self.wake.wait(0.1)
+            self.wake.clear()
+        for thread, cancel, _ in list(self.running.values()):
+            cancel.set()
+            thread.join()
+        self.running.clear()
 
-    def run(self, task):
+    def execute_attempt(self, task, cancel):
+        try:
+            self.run(task, cancel)
+        except Exception as error:
+            # Catch artifact registration/finalization errors too; release the slot.
+            logger.exception("Task %s failed during finalization", task["id"])
+            self.store.update(
+                task["id"], status="failed", error=str(error), ended=now()
+            )
+        finally:
+            self.wake.set()
+
+    def run(self, task, cancel=None):
+        cancel = cancel or threading.Event()
         id = task["id"]
         directory = self.config.artifacts / id
         logger.info(
@@ -290,7 +650,7 @@ class Manager:
                     candidate["smiles"],
                     str(directory / "diagram.png"),
                 ]
-                timeout = 60
+                timeout = task["timeout"] or 60
             elif task["kind"] == "prepare":
                 request = {
                     "candidate": task["candidate"],
@@ -307,17 +667,23 @@ class Manager:
                         if (shared / "tfa.mol").exists() and (
                             shared / "tfa.in"
                         ).exists():
-                            manifest = json.loads(
-                                (shared / "manifest.json").read_text()
-                            )
-                            if digest(shared / "tfa.in") == manifest["inputs"][
-                                "tfa.in"
-                            ] and all(
-                                digest(self.config.pseudos / n) == h
-                                for n, h in manifest["pseudopotentials"].items()
-                            ):
-                                request["shared_tfa"] = str(shared)
-                                break
+                            try:
+                                manifest = json.loads(
+                                    (shared / "manifest.json").read_text()
+                                )
+                                if digest(shared / "tfa.in") == manifest["inputs"][
+                                    "tfa.in"
+                                ] and all(
+                                    digest(self.config.pseudos / n) == h
+                                    for n, h in manifest["pseudopotentials"].items()
+                                ):
+                                    request["shared_tfa"] = str(shared)
+                                    break
+                            except (OSError, KeyError, ValueError):
+                                logger.warning(
+                                    "Ignoring unavailable shared TFA from attempt %s",
+                                    previous["id"],
+                                )
                 (directory / "request.json").write_text(json.dumps(request))
                 command = [
                     self.config.prepare_python,
@@ -325,10 +691,21 @@ class Manager:
                     str(directory / "request.json"),
                     str(directory),
                 ]
-                timeout = self.config.prepare_timeout
+                timeout = task["timeout"] or self.config.prepare_timeout
             else:
                 command = task["command"]
+            runtime = task.get("runtime", "native")
+            if runtime == "apptainer":
+                if task["kind"] not in ("qe", "estimate_ram"):
+                    command[0] = "/opt/venv/bin/python"
+                command = self.runtimes.wrap(
+                    command, directory, task["resources"], task["image_hash"]
+                )
             self.store.update(id, command=command)
+
+            def usage(value):
+                self.store.update(id, usage=value)
+
             if task["kind"] == "qe":
                 logger.info(
                     "Task %s launch command: %s (cwd=%s)", id, command, directory
@@ -336,11 +713,15 @@ class Manager:
             code, status, error = execute(
                 command,
                 directory,
-                self.cancel,
+                cancel,
                 timeout,
-                env=self.chem_env if task["kind"] != "qe" else None,
+                env=self.chem_env
+                if task["kind"] not in ("qe", "estimate_ram")
+                else None,
+                on_usage=usage,
+                container=runtime == "apptainer",
             )
-            if status == "failed" and not error:
+            if status == "failed" and not error and task["kind"] != "estimate_ram":
                 detail = tail(directory / "stderr.log", limit=2000).strip()
                 error = f"Process exited with code {code}" + (
                     f": {detail}" if detail else ""
@@ -351,6 +732,32 @@ class Manager:
                 "error": error,
                 "ended": now(),
             }
+            if task["kind"] == "estimate_ram":
+                import itertools
+
+                with (
+                    (directory / "stdout.log").open(errors="replace") as stdout,
+                    (directory / "stderr.log").open(errors="replace") as stderr,
+                ):
+                    report, qe_error = ram_reports(itertools.chain(stdout, stderr))
+                values["ram_estimate"] = report
+                if not error and status != "canceled" and code in (0, 255):
+                    if qe_error:
+                        values.update(
+                            status="failed",
+                            error="QE reported an error during RAM estimation",
+                        )
+                    elif report["per_process"] is None:
+                        values.update(
+                            status="failed",
+                            error="QE did not report a per-process RAM estimate",
+                        )
+                    else:
+                        values.update(status="succeeded", error="")
+                if values["status"] == "failed" and not values["error"]:
+                    values["error"] = f"Process exited with code {code}"
+                if self.stop.is_set():
+                    values["status"] = "interrupted"
             if task["kind"] == "qe":
                 # Retain only scientific markers, bounding memory for long QE output.
                 markers = []
@@ -433,7 +840,12 @@ class Manager:
             task["stderr_tail"] = tail(directory / "stderr.log")
         return {
             "mode": "live",
+            "queue": {
+                "settings": self.settings,
+                "runtimes": self.runtimes.availability(),
+            },
             "candidates": [c for c in self.candidates.values() if c["id"] != "tfa"],
             "reference": self.candidates["tfa"],
             "tasks": tasks,
+            "input_versions": self.versions(),
         }

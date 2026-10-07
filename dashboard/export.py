@@ -37,6 +37,15 @@ def export(config, output):
                     "exit_code",
                     "evidence",
                     "elapsed_seconds",
+                    "runtime",
+                    "resources",
+                    "usage",
+                    "image_hash",
+                    "version",
+                    "source_hash",
+                    "executed_input_hash",
+                    "pseudopotentials",
+                    "ram_estimate",
                 )
                 if k in task
             }

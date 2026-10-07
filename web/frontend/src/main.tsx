@@ -5,6 +5,7 @@ import { AdvancedSearch } from "./AdvancedSearch";
 import { Filter } from "./filters";
 import { CandidateBrowser } from "./CandidateBrowser";
 import { CandidateDetail } from "./CandidateDetail";
+import { QueueView } from "./QueueView";
 import { TaskHistory } from "./TaskHistory";
 import "./style.css";
 function App() {
@@ -65,6 +66,7 @@ function App() {
           <a href="#advanced-search">Advanced search</a>
           <a href="#tfa">TFA reference</a>
           <a href="#tasks">All tasks</a>
+          {data?.mode === "live" && <a href="#queue">Job queue</a>}
           <button disabled={busy} onClick={refresh}>
             Refresh
           </button>
@@ -87,7 +89,7 @@ function App() {
           <>
             <p className="banner">
               {data.mode === "live"
-                ? "Local live dashboard · One active task at a time"
+                ? "Local live dashboard · Native jobs serial; container jobs follow queue limits"
                 : `Read-only snapshot · Exported ${data.timestamp}`}
             </p>
             {data.mode === "snapshot" && (
@@ -117,8 +119,12 @@ function App() {
                       Boolean(t.artifacts["tfa.in"])),
                 )}
                 live={data.mode === "live"}
+                runtimes={data.queue?.runtimes}
+                versions={data.input_versions}
                 action={action}
               />
+            ) : hash === "queue" && data.mode === "live" ? (
+              <QueueView />
             ) : hash === "tasks" ? (
               <TaskHistory
                 tasks={data.tasks}
@@ -139,6 +145,7 @@ function App() {
               hidden={
                 Boolean(candidate) ||
                 hash === "tasks" ||
+                (hash === "queue" && data.mode === "live") ||
                 hash === "advanced-search"
               }
             >
@@ -148,6 +155,7 @@ function App() {
                 action={action}
                 filters={filters}
                 clearFilters={() => setFilters([])}
+                refresh={refresh}
               />
             </div>
           </>

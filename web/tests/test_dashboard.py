@@ -284,7 +284,7 @@ def test_shutdown_active_and_queued(manager, tmp_path):
 
 
 def test_bulk_failure_does_not_block_success(manager, monkeypatch):
-    def fake(command, directory, cancel, timeout, env):
+    def fake(command, directory, cancel, timeout, env, **kwargs):
         assert timeout == 60
         if command[2] == manager.candidates["500"]["smiles"]:
             return -11, "failed", "crashed"

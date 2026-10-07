@@ -1,10 +1,15 @@
 import { useState } from "react";
-import { Action, post, Preview } from "./data";
+import { Action, post, Preview, RuntimeInfo, InputVersion } from "./data";
+import { GeometryViewer } from "./GeometryViewer";
 export function RunControls({
   candidate,
   system,
   action,
+  runtimes,
+  versions,
 }: {
+  runtimes?: RuntimeInfo;
+  versions?: InputVersion[];
   candidate: string;
   system: string;
   action: (path: string, body?: Action) => Promise<void>;
@@ -12,10 +17,19 @@ export function RunControls({
   const [processes, setProcesses] = useState(1),
     [target, setTarget] = useState("local"),
     [timeout, setTimeout] = useState("");
+  const [runtime, setRuntime] = useState(
+    runtimes?.apptainer.available ? "apptainer" : "native",
+  );
+  const [inputId, setInputId] = useState("");
+  const [kind, setKind] = useState("qe");
+  const [memory, setMemory] = useState(4);
   const [preview, setPreview] = useState<Preview | null>(null),
     [error, setError] = useState("");
   const body: Action = {
-    kind: "qe",
+    kind,
+    ...(inputId ? { input_id: inputId } : {}),
+    runtime,
+    memory_gib: memory,
     candidate,
     system,
     processes,
@@ -30,6 +44,72 @@ export function RunControls({
     <article>
       <h3>Run QE · {system}</h3>
       <div className="controls">
+        <label>
+          Input version{" "}
+          <select
+            value={inputId}
+            onChange={(e) => {
+              setInputId(e.target.value);
+              changed();
+            }}
+          >
+            <option value="">Prepared default</option>
+            {versions
+              ?.filter(
+                (v) =>
+                  v.system === system &&
+                  v.candidate === (system === "tfa" ? "tfa" : candidate),
+              )
+              .map((v) => (
+                <option key={v.input_id} value={v.input_id}>
+                  {v.label}
+                </option>
+              ))}
+          </select>
+        </label>
+        <label>
+          Task{" "}
+          <select
+            value={kind}
+            onChange={(e) => {
+              setKind(e.target.value);
+              changed();
+            }}
+          >
+            <option value="qe">Run QE</option>
+            <option value="estimate_ram">Estimate RAM</option>
+          </select>
+        </label>
+        <label>
+          Execution runtime{" "}
+          <select
+            value={runtime}
+            onChange={(e) => {
+              setRuntime(e.target.value);
+              changed();
+            }}
+          >
+            <option value="native">Native · serial, no hard memory cap</option>
+            <option value="apptainer" disabled={!runtimes?.apptainer.available}>
+              Apptainer · hard memory cap
+            </option>
+          </select>
+        </label>
+        {runtime === "apptainer" && (
+          <label>
+            Memory per job (GiB){" "}
+            <input
+              type="number"
+              min="0.125"
+              step="0.125"
+              value={memory}
+              onChange={(e) => {
+                setMemory(Number(e.target.value));
+                changed();
+              }}
+            />
+          </label>
+        )}
         <label>
           Processes{" "}
           <input
@@ -58,7 +138,8 @@ export function RunControls({
           </select>
         </label>
         <label>
-          Timeout in seconds (optional){" "}
+          Timeout in seconds (
+          {kind === "estimate_ram" ? "default 120" : "optional"}){" "}
           <input
             type="number"
             min="1"
@@ -86,6 +167,10 @@ export function RunControls({
       {preview && (
         <>
           <pre>{preview.command.join(" ")}</pre>
+          <GeometryViewer
+            key={preview.input_hash}
+            geometries={{ [system]: preview.geometry }}
+          />
           <details open>
             <summary>Exact input to be submitted</summary>
             <pre>{preview.input}</pre>
@@ -95,11 +180,13 @@ export function RunControls({
               await action("tasks", {
                 ...body,
                 expected_hash: preview.input_hash,
+                preview_id: preview.preview_id,
+                expected_pseudos: preview.pseudopotentials,
               });
               setPreview(null);
             }}
           >
-            Run QE
+            {kind === "estimate_ram" ? "Estimate RAM" : "Run QE"}
           </button>
         </>
       )}

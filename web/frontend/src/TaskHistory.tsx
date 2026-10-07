@@ -29,6 +29,33 @@ export function TaskHistory({
               `· ${t.elapsed_seconds.toFixed(1)} seconds`}{" "}
             {t.exit_code !== undefined && `· exit ${t.exit_code}`}
           </p>
+          {t.version && (
+            <p>
+              {t.version} · {t.processes} processes
+            </p>
+          )}
+          {t.ram_estimate && (
+            <p>
+              QE RAM estimates · Maximum per process:{" "}
+              {t.ram_estimate.per_process
+                ? `${t.ram_estimate.per_process.value} ${t.ram_estimate.per_process.unit}`
+                : "unavailable"}{" "}
+              · Total:{" "}
+              {t.ram_estimate.total
+                ? `${t.ram_estimate.total.value} ${t.ram_estimate.total.unit}`
+                : "unavailable"}
+            </p>
+          )}
+          {t.runtime && (
+            <p>
+              {t.runtime} ·{" "}
+              {t.resources?.hard_memory_limit
+                ? `${((t.resources?.memory_bytes || 0) / 1024 ** 3).toFixed(2)} GiB hard cap`
+                : "No hard memory cap"}
+              {t.usage &&
+                ` · ${(t.usage.peak_memory_bytes / 1024 ** 2).toFixed(1)} MiB measured peak (${t.usage.measurement})`}
+            </p>
+          )}
           {t.error && <p className="error">{t.error}</p>}
           {t.command && <code>{t.command.join(" ")}</code>}
           {t.evidence && (
@@ -45,13 +72,17 @@ export function TaskHistory({
           )}
           {live &&
             ["failed", "canceled", "interrupted"].includes(t.status) &&
-            t.kind !== "qe" && (
+            !["qe", "estimate_ram"].includes(t.kind) && (
               <button
                 onClick={() =>
                   action("tasks", {
                     kind: t.kind,
                     candidate: t.candidate,
                     system: t.system,
+                    runtime: t.runtime || "native",
+                    memory_gib:
+                      (t.resources?.memory_bytes || 4 * 1024 ** 3) / 1024 ** 3,
+                    timeout: t.resources?.timeout,
                   })
                 }
               >
@@ -59,7 +90,7 @@ export function TaskHistory({
               </button>
             )}
           {live &&
-            t.kind === "qe" &&
+            ["qe", "estimate_ram"].includes(t.kind) &&
             !["queued", "running"].includes(t.status) && (
               <p>
                 To retry, preview the current input and submit a new run below.

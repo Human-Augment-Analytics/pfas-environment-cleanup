@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Candidate, Task, Action } from "./data";
+import { Candidate, Task, Action, RuntimeInfo, InputVersion } from "./data";
 import { PubChemLink } from "./PubChemLink";
 import { TaskHistory } from "./TaskHistory";
 import { GeometryViewer } from "./GeometryViewer";
@@ -9,7 +9,11 @@ export function CandidateDetail({
   tasks,
   live,
   action,
+  runtimes,
+  versions,
 }: {
+  runtimes?: RuntimeInfo;
+  versions?: InputVersion[];
   candidate: Candidate;
   tasks: Task[];
   live: boolean;
@@ -17,6 +21,10 @@ export function CandidateDetail({
 }) {
   const [input, setInput] = useState(""),
     [error, setError] = useState("");
+  const [runtime, setRuntime] = useState(
+    runtimes?.apptainer.available ? "apptainer" : "native",
+  );
+  const [memory, setMemory] = useState(4);
   const latestDiagram = tasks.find((t) => t.kind === "diagram");
   const latestPreparation = tasks.find((t) => t.kind === "prepare");
   const diagram = tasks.find(
@@ -51,16 +59,55 @@ export function CandidateDetail({
       )}
       {live && (
         <div className="controls">
+          <label>
+            Preparation/diagram runtime{" "}
+            <select
+              value={runtime}
+              onChange={(e) => setRuntime(e.target.value)}
+            >
+              <option value="native">
+                Native · serial, no hard memory cap
+              </option>
+              <option
+                disabled={!runtimes?.apptainer.available}
+                value="apptainer"
+              >
+                Apptainer · hard memory cap
+              </option>
+            </select>
+          </label>
+          {runtime === "apptainer" && (
+            <label>
+              Memory per job (GiB){" "}
+              <input
+                type="number"
+                min="0.125"
+                step="0.125"
+                value={memory}
+                onChange={(e) => setMemory(Number(e.target.value))}
+              />
+            </label>
+          )}
           <button
             onClick={() =>
-              action("tasks", { kind: "diagram", candidate: candidate.id })
+              action("tasks", {
+                kind: "diagram",
+                candidate: candidate.id,
+                runtime,
+                memory_gib: memory,
+              })
             }
           >
             Generate diagram
           </button>
           <button
             onClick={() =>
-              action("tasks", { kind: "prepare", candidate: candidate.id })
+              action("tasks", {
+                kind: "prepare",
+                candidate: candidate.id,
+                runtime,
+                memory_gib: memory,
+              })
             }
           >
             Prepare inputs
@@ -189,6 +236,8 @@ export function CandidateDetail({
               key={candidate.id + system}
               candidate={candidate.id}
               system={system}
+              runtimes={runtimes}
+              versions={versions}
               action={action}
             />
           ),

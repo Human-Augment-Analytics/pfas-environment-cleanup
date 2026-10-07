@@ -8,15 +8,55 @@ from pathlib import Path
 
 
 def digest(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    result = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            result.update(chunk)
+    return result.hexdigest()
 
 
 def pseudo_names(text):
     import re
 
-    names = re.findall(r"(?m)^\s*\w+\s+[\d.]+\s+([^\s!]+\.UPF)\s*", text)
-    if not names or any(Path(n).name != n for n in names):
+    # Restrict references to the ATOMIC_SPECIES card, including malformed rows.
+    lines = [line.split("!")[0].strip() for line in text.splitlines()]
+    starts = [i for i, line in enumerate(lines) if line.upper() == "ATOMIC_SPECIES"]
+    if len(starts) != 1:
+        raise ValueError("Missing or duplicate ATOMIC_SPECIES")
+    names = []
+    for line in lines[starts[0] + 1 :]:
+        if not line:
+            continue
+        values = line.split()
+        if values[0].upper() in (
+            "ATOMIC_POSITIONS",
+            "K_POINTS",
+            "CELL_PARAMETERS",
+            "ATOMIC_FORCES",
+            "CONSTRAINTS",
+            "OCCUPATIONS",
+            "HUBBARD",
+            "SOLVENTS",
+            "ADDITIONAL_K_POINTS",
+        ):
+            break
+        if (
+            len(values) != 3
+            or not re.fullmatch(r"[A-Za-z]\w*", values[0])
+            or not re.fullmatch(
+                r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eEdD][+-]?\d+)?", values[1]
+            )
+        ):
+            raise ValueError("Invalid ATOMIC_SPECIES row")
+        name = values[2]
+        if Path(name).name != name or "\\" in name or not name.lower().endswith(".upf"):
+            raise ValueError("Missing or unsafe ATOMIC_SPECIES pseudopotentials")
+        names.append(name)
+    if not names:
         raise ValueError("Missing or unsafe ATOMIC_SPECIES pseudopotentials")
+    count = re.search(r"\bntyp\s*=\s*(\d+)", text, re.IGNORECASE)
+    if count and len(names) != int(count[1]):
+        raise ValueError("ATOMIC_SPECIES count does not match ntyp")
     return sorted(set(names))
 
 

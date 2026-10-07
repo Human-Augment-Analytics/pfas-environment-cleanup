@@ -138,7 +138,7 @@ export function GeometryViewer({
     <section>
       <h3>Initial geometry</h3>
       <p>
-        Starting coordinates from the prepared input, in Å. Drag to rotate; use
+        Starting coordinates from the selected input, in Å. Drag to rotate; use
         the zoom controls. Bonds are inferred for display.
       </p>
       <div className="controls">

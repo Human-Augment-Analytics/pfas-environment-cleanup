@@ -47,8 +47,9 @@ execution controls available only in live mode.
 
 Browsing never starts work. Use Generate diagram, Prepare inputs, or preview
 and submit a QE run. Refresh updates the queue, elapsed time, and bounded log
-tails. Only one task runs at a time. Preparation and QE are independent actions;
-there is no bulk preparation, bulk QE, or adsorption aggregation.
+tails. Native tasks run serially; verified Apptainer tasks can run within resource
+budgets. Preparation and QE are independent actions, including bulk batches;
+there is no automatic dependency execution or adsorption aggregation.
 
 ## Chemistry configuration
 
@@ -132,8 +133,8 @@ uv run --no-default-groups --group web python -m dashboard --dev
 ```
 
 Open the Vite URL (normally http://localhost:5173). Vite proxies `/api` to FastAPI;
-both stop on interrupt. React uses built-in state, `fetch`, manual refresh, and
-hash navigation. Components live under `web/frontend/src`. Plain CSS includes
+both stop on interrupt. React uses built-in state, `fetch`, manual refresh for
+candidate data, lightweight polling for the queue page, and hash navigation. Components live under `web/frontend/src`. Plain CSS includes
 narrow-screen layouts and a horizontally scrollable table.
 
 The launcher accepts `--host` and `--port`; it binds to loopback by default.
@@ -187,8 +188,8 @@ PFAS_SMOKE=1 uv run --locked --no-default-groups --group web --group preparation
   pytest web/tests/test_smoke.py -q
 ```
 
-Deferred: 3D viewing, bulk QE, automatic workflows, adsorption aggregation, Slurm,
-authentication, containers, and a shared live service.
+Deferred: relaxed-geometry viewing, automatic workflows, adsorption aggregation,
+Slurm submission, authentication, and a shared live service.
 
 ## Initial geometry viewer
 
@@ -207,3 +208,144 @@ snapshot build automatically; for a manual frontend snapshot build use
 `PFAS_DATA_MODE=snapshot npm run build --prefix web/frontend`. Exports also
 include prepared coordinates and input hashes, without raw input text or local
 paths.
+
+## Selected batches and job queue
+
+In tiles or rows, filter cluster IDs (for example `500-670`), choose **Average
+MolecularWeight / Ascending**, then **Select all matching**. This range includes
+171 clusters; sorting changes their start order, not their identities. MW is a
+cluster average, not the representative molecule's molecular weight. Checkboxes
+allow individual selection. Changing filters drops hidden selections; switching
+views or changing sorting preserves selections.
+
+Choose **Generate missing diagrams**, **Prepare missing inputs**, **Run QE ·
+isolated candidate**, or **Run QE · TFA complex**, then **Preview selected jobs**.
+Review eligibility, resource settings, and QE input text before **Queue jobs**.
+Completed preparations/diagrams with available artifacts are skipped. QE skips
+only confirmed results with matching input and pseudopotential hashes. Active
+actions are deduplicated. Each selected representative receives a separate
+attempt; failures do not stop the batch. Preparation never automatically runs
+QE, and QE never automatically prepares a missing input.
+
+The **Job queue** page polls lightweight state every two seconds. It shows
+batches, attempts, current/peak memory, and separate log-tail/full-log controls.
+Pause prevents new jobs from starting while active jobs finish. Stop cancels one
+job; Cancel batch stops its active jobs and cancels pending jobs. **Review
+unsuccessful jobs** creates a fresh preview, including incomplete QE results;
+submission creates new attempts. Shutdown/restart keeps unfinished work
+interrupted until explicitly retried. Queue settings and batches live in the
+existing local SQLite database; existing history remains readable.
+
+### Native and Apptainer execution
+
+Native execution works with the existing Python/QE configuration and stays
+serial, including when the container concurrency setting exceeds one. Native
+jobs have timeouts, process-group Stop, and measured process-tree RSS, but **no
+hard memory cap**. MPI processes within one QE job still use the selected process
+count. To protect WSL with enforced per-job limits, select Apptainer.
+
+Install Apptainer using its [official installation instructions](https://apptainer.org/docs/admin/latest/installation.html), then build the
+image explicitly from the repository root:
+
+```bash
+mkdir -p .container-build
+apptainer build --fakeroot .container-build/chemistry.sif containers/chemistry.def
+export PFAS_APPTAINER_IMAGE="$PWD/.container-build/chemistry.sif"
+uv run --no-default-groups --group web python -m dashboard
+```
+
+The definition uses Ubuntu 24.04, Python 3.12, the root locked Python dependency
+groups, and Ubuntu's QE/Open MPI packages. It includes native build tools for
+Open Babel bindings. Building with `--fakeroot` requires a correctly configured
+Apptainer installation; alternatively build on a supported host and copy the
+SIF. Do not commit images. The image records installed system/Python versions in
+`/opt/pfas-image/`; Python dependencies are locked, but Ubuntu package repositories
+can change between builds. Preserve the resulting SIF for exact reuse. The
+runtime records its SHA256 and rejects queued work if the image changes.
+`PFAS_APPTAINER` optionally overrides the executable path.
+
+The web server runs on the host. Chemistry and QE run inside the image, with
+repository code/pseudopotentials read-only and each attempt directory writable.
+Container QE uses its own MPI, not host MPI. Apptainer requires cgroups v2 and a
+working systemd user service for unprivileged memory limits. The dashboard runs
+a bounded probe and checks the actual memory and swap limits before accepting
+container work, then verifies enforcement again before each job starts. Failed
+verification never silently falls back to native. Select native explicitly if
+you want to proceed without hard isolation.
+
+Default container limits are **4 GiB/job**, **no additional swap**, and **one
+concurrent job**. Once a container preview verifies enforcement, increase
+**Maximum container jobs** on the queue page if desired. Defaults are an **8 GiB
+total reservation budget**, reduced to half the detected memory ceiling on
+smaller hosts, and at most **four available CPUs**. A job must fit both budgets;
+start order remains FIFO even when later smaller jobs could fit. Native work
+never overlaps any other job. Container reservations use limits, not current
+usage. The total memory budget cannot exceed half host memory; other processes
+remain outside these limits. Preparation/BLAS threads are limited to one; MPI
+processes count toward CPU reservations. Preparation defaults to 900 seconds,
+diagrams to 60 seconds, and QE has no timeout unless configured.
+
+Memory-limit failures are identified from cgroup OOM evidence, rather than
+assuming every exit 137 means OOM. Container memory accounting includes child
+processes and file cache; native RSS sums may double-count shared pages. Logs
+and partial artifacts survive failures. Slurm submission remains unavailable:
+the shared job specification separates runtime/image from CPU, memory, walltime,
+input snapshots, and outcome fields, ready for a later scheduler adapter. PACE
+MPI compatibility must be tested before introducing cluster execution; the
+legacy scripts document a native QE build separately from this local image.
+
+### Additional validation
+
+```bash
+uv run --locked --no-default-groups --group web --group dev pytest -m 'not slow'
+PFAS_SMOKE=1 uv run --locked --no-default-groups --group web --group preparation --group dev pytest web/tests/test_smoke.py -q
+PFAS_CONTAINER_SMOKE=1 uv run --locked --no-default-groups --group web --group dev pytest web/tests/test_container_smoke.py -q
+```
+
+Container checks require a configured built image and exercise real preparation,
+QE with one/two processes, a deliberately tiny 128 MiB OOM cap, descendant cleanup,
+and a subsequent successful job. They never build/install the runtime implicitly.
+
+### Local input versions and RAM estimates
+
+Keep externally edited QE inputs in `qe_inputs/<candidate-id>/`, for example
+`qe_inputs/500/candidate.large-cell.in` or
+`qe_inputs/500/complex.close-contact.in`. Shared reference versions belong in
+`qe_inputs/tfa/tfa.<version>.in`. Set `PFAS_QE_INPUTS` to change the root.
+Refresh the dashboard to discover new files; a missing root is allowed. Only
+named versions contained within that root are discovered. Select **Prepared
+default** to use the latest successful preparation, or select a local version
+without preparing first. Batch controls continue to use prepared inputs.
+
+Choose **Run QE** or **Estimate RAM**, select the runtime and process count,
+then preview the input, command, and initial geometry before submission.
+Estimates default to a 120-second timeout; the timeout field overrides it.
+The estimate captures a copy with `&CONTROL nstep=0`, leaving the original
+editable file unchanged. QE documents this initialization-only mode in its
+[input reference](https://www.quantum-espresso.org/Doc/INPUT_PW.html).
+A successful initialization may intentionally return exit code 255, as shown
+in [QE's dry-run implementation](https://github.com/QEF/q-e/blob/master/PW/src/run_pwscf.f90).
+
+Inputs must use `pseudo_dir='./Pseudopotentials'` and `outdir='./Outputs'`,
+with any explicit `wfcdir` also set to `./Outputs`. Pseudopotentials come from
+`PFAS_PSEUDOS`. Preview rejects unsafe references and missing pseudopotentials.
+Submission rejects source or pseudopotential changes since preview. Each
+queued attempt captures immutable input and pseudopotential copies, version
+label, source and executed-input SHA256 hashes, runtime, and process count.
+Retry requires a fresh preview; later edits or deletion do not alter queued
+attempts. New API clients submit the returned `preview_id`, `input_hash` as
+`expected_hash`, and optional `input_id` with their task request. Omitting
+`input_id` retains prepared-default behavior for existing clients.
+
+History displays **QE RAM estimates** separately from measured process memory.
+Reported MB/GB values are retained and converted to bytes using binary units
+(1024²/1024³). Total RAM is unavailable if QE omits it; it is never inferred
+from the maximum per-process value. Estimates do not contribute energy or
+convergence evidence and do not adjust memory limits. A missing per-process
+report or QE error fails the estimate; cancellation and timeout remain failures
+or canceled attempts. Snapshot exports retain version labels, hashes, and
+estimates while omitting local paths and raw inputs.
+
+Run the opt-in native estimate smoke check with
+`PFAS_RAM_SMOKE=1 .venv/bin/python -m pytest web/tests/test_ram_smoke.py -o session_timeout=180`.
+It needs an installed `pw.x` (or `PFAS_PW`) and `H.UPF` under `PFAS_PSEUDOS`.

@@ -614,3 +614,7 @@ is the accompanying notebook.
 
 Run `uv run --no-default-groups --group web --group preparation python -m dashboard` for the React/FastAPI dashboard of
 all clusters. See [dashboard setup, chemistry, QE, and snapshot publishing](docs/dashboard.md).
+
+The dashboard also supports selection from filtered tiles/rows, bulk preparation
+and QE batches, persistent queue controls, and optional Apptainer memory isolation
+with bounded parallel container jobs. See [dashboard setup and queue documentation](docs/dashboard.md#selected-batches-and-job-queue).

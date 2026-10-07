@@ -1062,6 +1062,7 @@ qe = [
 ]
 web = [
     { name = "fastapi" },
+    { name = "psutil" },
     { name = "rdkit" },
     { name = "uvicorn" },
 ]
@@ -1106,6 +1107,7 @@ qe = [
 ]
 web = [
     { name = "fastapi", specifier = ">=0.115,<1" },
+    { name = "psutil", specifier = ">=7,<8" },
     { name = "rdkit", specifier = ">=2024.9,<2027" },
     { name = "uvicorn", specifier = ">=0.30,<1" },
 ]

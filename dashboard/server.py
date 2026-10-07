@@ -6,10 +6,11 @@ from urllib.parse import urlparse
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, StrictInt
+from pydantic import BaseModel, Field, StrictInt
 
 from .candidates import TFA, load
 from .config import ROOT, Config
+from .processes import tail
 from .tasks import Manager
 
 
@@ -21,6 +22,33 @@ class Action(BaseModel):
     target: str = "local"
     timeout: float | None = None
     expected_hash: str | None = None
+    input_id: str | None = None
+    preview_id: str | None = None
+    expected_pseudos: dict[str, str] | None = None
+    runtime: str = "native"
+    memory_gib: float = 4
+
+
+class BatchAction(BaseModel):
+    target: str = "local"
+    candidates: list[str]
+    kind: str
+    system: str = "candidate"
+    runtime: str = "native"
+    processes: StrictInt = 1
+    memory_gib: float = 4
+    timeout: float | None = None
+    retry: bool = False
+    id: str | None = None
+    image_hash: str | None = None
+    expected: list[dict] = Field(default_factory=list)
+
+
+class QueueSettings(BaseModel):
+    paused: bool | None = None
+    concurrency: StrictInt | None = None
+    cpus: StrictInt | None = None
+    memory_bytes: StrictInt | None = None
 
 
 def create_app(config=None):
@@ -57,13 +85,64 @@ def create_app(config=None):
     def preview(action: Action):
         return checked(
             lambda: manager.preview(
-                action.candidate, action.system, action.processes, action.target
+                action.candidate,
+                action.system,
+                action.processes,
+                action.target,
+                action.runtime,
+                action.input_id,
+                action.kind,
             )
         )
 
     @app.post("/api/tasks")
     def queue(action: Action):
         return checked(lambda: manager.queue(**action.model_dump()))
+
+    @app.post("/api/batches/preview")
+    def batch_preview(action: BatchAction):
+        return checked(lambda: manager.batches.review(**action.model_dump()))
+
+    @app.post("/api/batches")
+    def batch_submit(action: BatchAction):
+        return checked(lambda: manager.batches.submit(action.model_dump()))
+
+    @app.get("/api/queue")
+    def queue_view():
+        return manager.queue_data()
+
+    @app.post("/api/queue/settings")
+    def queue_settings(settings: QueueSettings):
+        return checked(
+            lambda: manager.configure(settings.model_dump(exclude_none=True))
+        )
+
+    @app.post("/api/batches/{id}/cancel")
+    def batch_cancel(id: str):
+        with manager.guard:
+            batch = manager.store.batch(id)
+            if not batch:
+                raise HTTPException(404, "Unknown batch")
+            for task_id in batch["task_ids"]:
+                manager.cancel_task(task_id)
+        return {"status": "stop requested"}
+
+    @app.get("/api/batches/{id}/retry")
+    def batch_retry(id: str):
+        return checked(lambda: manager.batches.retry(id))
+
+    @app.get("/api/tasks/{id}/logs")
+    def task_logs(id: str):
+        return checked(
+            lambda: {
+                name: tail(
+                    manager.config.artifacts
+                    / manager.store.get(id)["id"]
+                    / (name + ".log")
+                )
+                for name in ("stdout", "stderr")
+            }
+        )
 
     @app.post("/api/diagrams")
     def bulk():
