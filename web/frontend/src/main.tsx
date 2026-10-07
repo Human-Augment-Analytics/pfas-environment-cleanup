@@ -123,10 +123,29 @@ function App() {
                 action={action}
               />
             ) : hash === "advanced-search" ? (
-              <AdvancedSearch candidates={data.candidates} filters={filters} apply={(next) => {setFilters(next); location.hash = "";}} />
+              <AdvancedSearch
+                candidates={data.candidates}
+                filters={filters}
+                apply={(next) => {
+                  setFilters(next);
+                  location.hash = "";
+                }}
+              />
             ) : null}
-            <div hidden={Boolean(candidate) || hash === "tasks" || hash === "advanced-search"}>
-              <CandidateBrowser data={data} busy={busy} action={action} filters={filters} clearFilters={() => setFilters([])} />
+            <div
+              hidden={
+                Boolean(candidate) ||
+                hash === "tasks" ||
+                hash === "advanced-search"
+              }
+            >
+              <CandidateBrowser
+                data={data}
+                busy={busy}
+                action={action}
+                filters={filters}
+                clearFilters={() => setFilters([])}
+              />
             </div>
           </>
         )}

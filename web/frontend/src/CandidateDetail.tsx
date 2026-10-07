@@ -34,7 +34,10 @@ export function CandidateDetail({
           ? "Shared neutral TFA reference"
           : `Cluster ${candidate.id}`}
       </h2>
-      <p className="representative-summary">Representative molecule · PubChem CID <PubChemLink cid={candidate.cid} /></p>
+      <p className="representative-summary">
+        Representative molecule · PubChem CID{" "}
+        <PubChemLink cid={candidate.cid} />
+      </p>
       <pre>{candidate.smiles}</pre>
       {diagram ? (
         <img
@@ -87,10 +90,51 @@ export function CandidateDetail({
               )}
             </div>
           ))}
-      {candidate.id === "tfa" ? <><h3>Reference identity</h3><dl>{Object.entries(candidate.fields).map(([k,v])=><div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl></> : <>
-        <section className="cluster-summary"><h3>Cluster information</h3><p>Descriptors are averages across the cluster.</p><dl>{Object.entries(candidate.fields).filter(([k])=>!k.startsWith("medoid_")).map(([k,v])=><div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl></section>
-        <section className="representative-summary"><h3>Representative molecule</h3><dl><div><dt>CID</dt><dd><PubChemLink cid={candidate.cid}/></dd></div><div><dt>SMILES</dt><dd>{candidate.smiles}</dd></div></dl></section>
-      </>}
+      {candidate.id === "tfa" ? (
+        <>
+          <h3>Reference identity</h3>
+          <dl>
+            {Object.entries(candidate.fields).map(([k, v]) => (
+              <div key={k}>
+                <dt>{k}</dt>
+                <dd>{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </>
+      ) : (
+        <>
+          <section className="cluster-summary">
+            <h3>Cluster information</h3>
+            <p>Descriptors are averages across the cluster.</p>
+            <dl>
+              {Object.entries(candidate.fields)
+                .filter(([k]) => !k.startsWith("medoid_"))
+                .map(([k, v]) => (
+                  <div key={k}>
+                    <dt>{k}</dt>
+                    <dd>{v}</dd>
+                  </div>
+                ))}
+            </dl>
+          </section>
+          <section className="representative-summary">
+            <h3>Representative molecule</h3>
+            <dl>
+              <div>
+                <dt>CID</dt>
+                <dd>
+                  <PubChemLink cid={candidate.cid} />
+                </dd>
+              </div>
+              <div>
+                <dt>SMILES</dt>
+                <dd>{candidate.smiles}</dd>
+              </div>
+            </dl>
+          </section>
+        </>
+      )}
       {prepared && (
         <section>
           <h3>Prepared inputs</h3>

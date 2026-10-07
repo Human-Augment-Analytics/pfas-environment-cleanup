@@ -88,7 +88,9 @@ export function CandidateBrowser({
   const candidates = useMemo(
     () =>
       sorted(
-        data.candidates.filter((c) => c.id.includes(search.trim()) && matchesFilters(c, filters)),
+        data.candidates.filter(
+          (c) => c.id.includes(search.trim()) && matchesFilters(c, filters),
+        ),
         sort,
         direction,
       ),
@@ -187,7 +189,13 @@ export function CandidateBrowser({
           </button>
         )}
       </div>
-      {filters.length > 0 && <p className="banner">Advanced filters: {describeFilters(filters)}. <a href="#advanced-search">Edit filters</a>{" "}<button onClick={clearFilters}>Clear advanced filters</button></p>}
+      {filters.length > 0 && (
+        <p className="banner">
+          Advanced filters: {describeFilters(filters)}.{" "}
+          <a href="#advanced-search">Edit filters</a>{" "}
+          <button onClick={clearFilters}>Clear advanced filters</button>
+        </p>
+      )}
       <p role="status">
         Showing {candidates.length} of {data.candidates.length} clusters.
       </p>
@@ -196,22 +204,76 @@ export function CandidateBrowser({
         <div className="candidate-grid">
           {candidates.map((c) => (
             <div className="candidate-tile" key={c.id}>
-              <a className="tile-entry" href={`#candidate/${c.id}`} aria-label={`Open cluster ${c.id}`}>
+              <a
+                className="tile-entry"
+                href={`#candidate/${c.id}`}
+                aria-label={`Open cluster ${c.id}`}
+              >
                 <strong className="tile-cluster">Cluster {c.id}</strong>
                 {diagramContent(c, true)}
               </a>
-              <span className="tile-representative">Representative CID <PubChemLink cid={c.cid} /></span>
+              <span className="tile-representative">
+                Representative CID <PubChemLink cid={c.cid} />
+              </span>
             </div>
           ))}
         </div>
       ) : (
-        <div className="table-wrap" role="region" aria-label="Cluster and representative table" tabIndex={0}>
+        <div
+          className="table-wrap"
+          role="region"
+          aria-label="Cluster and representative table"
+          tabIndex={0}
+        >
           <table className="candidate-table">
+            <colgroup>
+              <col style={{ width: "7%" }} />
+              <col style={{ width: "7%" }} />
+              <col style={{ width: "10%" }} />
+              <col style={{ width: "10%" }} />
+            </colgroup>
+            <colgroup>
+              <col style={{ width: "12%" }} />
+              <col style={{ width: live ? "18%" : "54%" }} />
+              {live && <col style={{ width: "36%" }} />}
+            </colgroup>
             <thead>
-              <tr className="group-headings"><th className="cluster-heading" scope="colgroup" colSpan={4}>Cluster</th><th className="representative-heading" scope="colgroup" colSpan={live ? 3 : 2}>Representative</th></tr>
+              <tr className="group-headings">
+                <th className="cluster-heading" scope="colgroup" colSpan={4}>
+                  Cluster
+                </th>
+                <th
+                  className="representative-heading"
+                  scope="colgroup"
+                  colSpan={live ? 3 : 2}
+                >
+                  Representative
+                </th>
+              </tr>
               <tr>
-                <th className="cluster-heading" scope="col">ID</th><th className="cluster-heading" scope="col">Points</th><th className="cluster-heading" scope="col">Avg MW</th><th className="cluster-heading" scope="col">Avg XLogP</th>
-                <th className="representative-heading" scope="col">CID</th><th className="representative-heading" scope="col">Diagram</th>{live && <th className="representative-heading" scope="col">Actions</th>}
+                <th className="cluster-heading" scope="col">
+                  ID
+                </th>
+                <th className="cluster-heading" scope="col">
+                  Points
+                </th>
+                <th className="cluster-heading" scope="col">
+                  Avg MW
+                </th>
+                <th className="cluster-heading" scope="col">
+                  Avg XLogP
+                </th>
+                <th className="representative-heading" scope="col">
+                  CID
+                </th>
+                <th className="representative-heading" scope="col">
+                  Diagram
+                </th>
+                {live && (
+                  <th className="representative-heading" scope="col">
+                    Actions
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -221,11 +283,19 @@ export function CandidateBrowser({
                 return (
                   <Fragment key={c.id}>
                     <tr data-cluster={c.id}>
-                      <td className="cluster-cell"><a href={`#candidate/${c.id}`}>{c.id}</a></td>
+                      <td className="cluster-cell">
+                        <a href={`#candidate/${c.id}`}>{c.id}</a>
+                      </td>
                       <td className="cluster-cell">{c.fields.n_points}</td>
-                      <td className="cluster-cell">{Number(c.fields.MolecularWeight).toFixed(2)}</td>
-                      <td className="cluster-cell">{Number(c.fields.XLogP).toFixed(2)}</td>
-                      <td className="representative-cell"><PubChemLink cid={c.cid} /></td>
+                      <td className="cluster-cell">
+                        {Number(c.fields.MolecularWeight).toFixed(2)}
+                      </td>
+                      <td className="cluster-cell">
+                        {Number(c.fields.XLogP).toFixed(2)}
+                      </td>
+                      <td className="representative-cell">
+                        <PubChemLink cid={c.cid} />
+                      </td>
                       <td className="representative-cell">
                         <a href={`#candidate/${c.id}`}>
                           {diagramContent(c, false)}

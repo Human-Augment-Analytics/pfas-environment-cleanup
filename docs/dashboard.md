@@ -17,9 +17,17 @@ all original fields are retained in its detail view.
 
 The default tile view shows five diagrams across on wide screens and adapts to
 smaller screens. Click a tile to open its entry. Switch to Rows for descriptors
-and live action buttons. Both views share search and sorting by any CSV field,
+and live action buttons. Both views share a quick filter for **cluster IDs only** and sorting by any CSV field,
 with ascending/descending numerical sorting for numeric descriptors and IDs.
-CSV order remains available. Row buttons prepare inputs or open inline QE controls
+CSV order remains available. The Advanced search page combines numeric conditions
+with AND, for example Avg MW < 500 and Avg XLogP >= 2. Applied conditions remain
+visible above the results and can be cleared. Missing values do not match.
+
+Rows have two header levels: Cluster (ID, Points, Avg MW, Avg XLogP) in green and
+Representative (CID, diagram, actions) in purple. CIDs in rows, tiles, and entries
+open the PubChem compound's 3D Status section in a new tab. The table uses wrapping
+action buttons, a bounded scroll area, and sticky headers so its scrollbars remain
+accessible on narrow screens and at larger zoom levels. Row buttons prepare inputs or open inline QE controls
 for the isolated candidate (single) and candidate–TFA complex. Preparation must
 succeed before those run buttons become available; preview the command and input
 before submitting. Snapshot views include tiles, rows, search, and sorting, with
