@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Candidate, Task, Action } from "./data";
 import { PubChemLink } from "./PubChemLink";
 import { TaskHistory } from "./TaskHistory";
+import { GeometryViewer } from "./GeometryViewer";
 import { RunControls } from "./RunControls";
 export function CandidateDetail({
   candidate,
@@ -134,6 +135,20 @@ export function CandidateDetail({
             </dl>
           </section>
         </>
+      )}
+      {prepared?.geometries && (
+        <GeometryViewer
+          key={prepared.id}
+          geometries={
+            candidate.id === "tfa"
+              ? Object.fromEntries(
+                  Object.entries(prepared.geometries).filter(
+                    ([name]) => name === "tfa",
+                  ),
+                )
+              : prepared.geometries
+          }
+        />
       )}
       {prepared && (
         <section>

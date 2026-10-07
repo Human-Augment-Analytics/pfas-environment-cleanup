@@ -4,7 +4,14 @@ export type Candidate = {
   smiles: string;
   fields: Record<string, string>;
 };
+export type Geometry = {
+  atoms?: { element: string; position: number[] }[];
+  units?: string;
+  input_hash?: string;
+  error?: string;
+};
 export type Task = {
+  geometries?: Record<string, Geometry>;
   id: string;
   kind: string;
   candidate: string;
@@ -47,7 +54,7 @@ export type Action = {
   expected_hash?: string;
 };
 export type Preview = { command: string[]; input: string; input_hash: string };
-let mode: Data["mode"] | undefined;
+declare const __DATA_MODE__: Data["mode"];
 
 export async function readLive(): Promise<Data> {
   const response = await fetch("/api/data");
@@ -62,21 +69,7 @@ export async function readSnapshot(): Promise<Data> {
 }
 
 export async function read(): Promise<Data> {
-  if (mode === "live") return readLive();
-  if (mode === "snapshot") return readSnapshot();
-  const snapshot = await fetch(new URL("snapshot/data.json", document.baseURI));
-  // Vite returns the HTML entry page for missing paths during development.
-  if (
-    snapshot.ok &&
-    snapshot.headers.get("content-type")?.includes("application/json")
-  ) {
-    const data: Data = await snapshot.json();
-    if (data.mode !== "snapshot") throw new Error("Invalid snapshot mode");
-    mode = "snapshot";
-    return data;
-  }
-  mode = "live";
-  return readLive();
+  return __DATA_MODE__ === "snapshot" ? readSnapshot() : readLive();
 }
 export async function post<T>(path: string, body?: Action): Promise<T> {
   const response = await fetch("/api/" + path, {

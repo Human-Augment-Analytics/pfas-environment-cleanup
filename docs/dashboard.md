@@ -157,7 +157,7 @@ Export does not trigger chemistry or QE. It builds the frontend, writes committe
 public data under `web/snapshot/`, and assembles the static site under ignored
 `web/public/` (use `--output` to change the assembled-site destination). Commit the
 snapshot data to update the public dashboard. Only summary JSON, existing
-successful diagrams, and selected result metadata are exported. Raw logs,
+successful diagrams, prepared coordinates, and selected result metadata are exported. Raw logs,
 databases, machine paths, scratch files, credentials, and mutation controls are
 excluded. The UI shows the export timestamp and local launch instructions.
 
@@ -189,3 +189,21 @@ PFAS_SMOKE=1 uv run --locked --no-default-groups --group web --group preparation
 
 Deferred: 3D viewing, bulk QE, automatic workflows, adsorption aggregation, Slurm,
 authentication, containers, and a shared live service.
+
+## Initial geometry viewer
+
+Open a prepared cluster entry (for example `#candidate/501`) and find **Initial
+geometry**. Select the isolated candidate, candidate–TFA complex, or neutral TFA;
+drag to rotate, use the zoom buttons, or download XYZ coordinates. The TFA
+reference page also offers this viewer after reference preparation. Existing
+preparations work without rerunning them. Coordinates come from the current
+prepared QE input, including external edits, converted to angstroms; this is the
+starting geometry, not a relaxed result. Bonds are inferred only for display.
+
+Live builds request `/api/data` directly. Snapshot builds request relative
+`snapshot/data.json` directly, so a missing snapshot no longer produces a 404
+probe during local browsing. The export command and Pages workflow select the
+snapshot build automatically; for a manual frontend snapshot build use
+`PFAS_DATA_MODE=snapshot npm run build --prefix web/frontend`. Exports also
+include prepared coordinates and input hashes, without raw input text or local
+paths.

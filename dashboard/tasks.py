@@ -411,8 +411,16 @@ class Manager:
                 logger.error("Task %s: %s", id, result["error"])
 
     def data(self):
+        from .geometry import prepared_geometries
+
         tasks = self.store.tasks()
         for task in tasks:
+
+            def registered_input(name, task_id=task["id"]):
+                path = self.store.artifact(task_id + "-" + name)
+                return Path(path) if path else None
+
+            task["geometries"] = prepared_geometries(task, registered_input)
             if task["started"]:
                 from datetime import datetime
 

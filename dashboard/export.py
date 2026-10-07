@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 
 from .candidates import TFA, load
+from .geometry import prepared_geometries
 from .persistence import now
 
 
@@ -39,6 +40,9 @@ def export(config, output):
                 )
                 if k in task
             }
+            item["geometries"] = prepared_geometries(
+                task, lambda name, task_id=task["id"]: config.artifacts / task_id / name
+            )
             item["artifacts"] = {}
             if task["kind"] == "diagram" and task["status"] == "succeeded":
                 source = config.artifacts / task["id"] / "diagram.png"

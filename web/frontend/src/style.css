@@ -337,3 +337,25 @@ summary {
 .filter-condition legend {
   font-weight: 600;
 }
+
+.geometry-canvas {
+  display: block;
+  width: 100%;
+  height: 380px;
+  border: 1px solid #cad4df;
+  border-radius: 8px;
+  touch-action: none;
+  cursor: grab;
+}
+.element-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 12px;
+}
+.element-key > span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid #485463;
+}

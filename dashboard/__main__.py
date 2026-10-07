@@ -3,6 +3,7 @@ import os
 import shutil
 import subprocess
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from .config import ROOT, Config
 from .export import export
@@ -22,8 +23,6 @@ def main():
     frontend = ROOT / "web/frontend"
     subprocess.run(["npm", "ci", "--no-audit", "--no-fund"], cwd=frontend, check=True)
     if args.action == "export":
-        subprocess.run(["npm", "run", "build"], cwd=frontend, check=True)
-        export(Config(), ROOT / "web/snapshot")
         output = Path(args.output).resolve()
         if (
             output == ROOT / "web/frontend/dist"
@@ -32,7 +31,15 @@ def main():
             or output == ROOT
         ):
             parser.error("Export destination must be a separate site directory")
-        shutil.copytree(frontend / "dist", output, dirs_exist_ok=True)
+        with TemporaryDirectory(prefix="pfas-snapshot-build-") as build:
+            subprocess.run(
+                ["npm", "run", "build", "--", "--outDir", build],
+                cwd=frontend,
+                check=True,
+                env={**os.environ, "PFAS_DATA_MODE": "snapshot"},
+            )
+            export(Config(), ROOT / "web/snapshot")
+            shutil.copytree(build, output, dirs_exist_ok=True)
         shutil.copytree(ROOT / "web/snapshot", output / "snapshot", dirs_exist_ok=True)
         print(f"Snapshot site exported to {output}; no tasks started")
         return
@@ -44,12 +51,18 @@ def main():
             start_new_session=True,
             env={
                 **os.environ,
+                "PFAS_DATA_MODE": "live",
                 "PFAS_API_PORT": str(args.port),
                 "PFAS_API_HOST": args.host,
             },
         )
     else:
-        subprocess.run(["npm", "run", "build"], cwd=frontend, check=True)
+        subprocess.run(
+            ["npm", "run", "build"],
+            cwd=frontend,
+            check=True,
+            env={**os.environ, "PFAS_DATA_MODE": "live"},
+        )
     try:
         import uvicorn
 

@@ -24,7 +24,7 @@ jobs:
       - run: uv run --locked --no-default-groups --group web --group dev ruff format --check dashboard web/tests
       - run: npm ci --prefix web/frontend
       - run: npm run format:check --prefix web/frontend
-      - run: npm run build --prefix web/frontend
+      - run: PFAS_DATA_MODE=snapshot npm run build --prefix web/frontend
       - run: cp -r web/snapshot web/frontend/dist/snapshot
       - uses: actions/upload-pages-artifact@v3
         with:

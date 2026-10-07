@@ -310,3 +310,51 @@ def test_preparation_interpreter_selection(monkeypatch):
     assert Config().python == sys.executable
     monkeypatch.setenv("PFAS_CHEM_PYTHON", "/custom/chem/python")
     assert Config().prepare_python == "/custom/chem/python"
+
+
+def test_existing_preparation_geometry_and_snapshot(manager, tmp_path):
+    source = prepared(manager)
+    source.write_text("nat=1\nATOMIC_POSITIONS angstrom\nH 1 2 3\n")
+    manager.store.register("prepared-candidate.in", source)
+    live = manager.data()["tasks"][0]["geometries"]["candidate"]
+    assert live["atoms"] == [{"element": "H", "position": [1, 2, 3]}]
+    before = (manager.config.artifacts / "tasks.sqlite").read_bytes()
+    snapshot = export(manager.config, tmp_path / "snapshot")
+    assert snapshot["tasks"][0]["geometries"]["candidate"] == live
+    assert (manager.config.artifacts / "tasks.sqlite").read_bytes() == before
+    source.write_text("nat=1\nATOMIC_POSITIONS angstrom\nH 4 5 6\n")
+    edited = manager.data()["tasks"][0]["geometries"]["candidate"]
+    assert edited["atoms"][0]["position"] == [4, 5, 6]
+    assert edited["input_hash"] != live["input_hash"]
+
+
+def test_export_builds_snapshot_without_replacing_live_frontend(tmp_path, monkeypatch):
+    from dashboard import __main__ as launcher
+
+    frontend = tmp_path / "web/frontend"
+    frontend.mkdir(parents=True)
+    (frontend / "dist").mkdir()
+    live = frontend / "dist/index.html"
+    live.write_text("live build")
+    output = tmp_path / "public"
+    monkeypatch.setattr(launcher, "ROOT", tmp_path)
+    monkeypatch.setattr(sys, "argv", ["dashboard", "export", "--output", str(output)])
+    calls = []
+
+    def run(command, **kwargs):
+        calls.append(command)
+        if "build" in command:
+            assert kwargs["env"]["PFAS_DATA_MODE"] == "snapshot"
+            Path(command[-1], "index.html").write_text("snapshot build")
+
+    def snapshot(config, destination):
+        destination.mkdir(parents=True)
+        (destination / "data.json").write_text('{"mode":"snapshot"}')
+
+    monkeypatch.setattr(launcher.subprocess, "run", run)
+    monkeypatch.setattr(launcher, "export", snapshot)
+    launcher.main()
+    assert calls[0][1] == "ci"
+    assert live.read_text() == "live build"
+    assert (output / "index.html").read_text() == "snapshot build"
+    assert (output / "snapshot/data.json").is_file()
