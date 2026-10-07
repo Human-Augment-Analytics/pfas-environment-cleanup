@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { read, post, Data, Action } from "./data";
+import { read, post, Data, Action, Task } from "./data";
 import { CandidateDetail } from "./CandidateDetail";
 import { TaskHistory } from "./TaskHistory";
 import "./style.css";
 function App() {
   const [data, setData] = useState<Data | null>(null),
     [error, setError] = useState(""),
+    [notice, setNotice] = useState(""),
     [search, setSearch] = useState(""),
     [hash, setHash] = useState(location.hash.slice(1)),
     [busy, setBusy] = useState(false);
@@ -26,8 +27,20 @@ function App() {
   }, []);
   const action = async (path: string, body?: Action) => {
     setBusy(true);
+    setNotice("");
     try {
-      await post(path, body);
+      const result = await post<Task | Task[] | null>(path, body);
+      if (Array.isArray(result)) {
+        setNotice(
+          `${result.length} diagram tasks queued. Open All tasks to view progress; use Refresh to update.`,
+        );
+      } else if (result?.kind) {
+        setNotice(
+          `${result.kind === "diagram" ? "Diagram" : result.kind === "prepare" ? "Preparation" : "QE"} task ${result.status}. Use Refresh to update progress.`,
+        );
+      } else {
+        setNotice("Stop requested. Use Refresh to update task status.");
+      }
       await refresh();
     } catch (e) {
       setError(String(e));
@@ -57,6 +70,11 @@ function App() {
         {error && (
           <p role="alert" className="error">
             {error}
+          </p>
+        )}
+        {notice && (
+          <p role="status" className="banner">
+            {notice}
           </p>
         )}
         {!data ? (

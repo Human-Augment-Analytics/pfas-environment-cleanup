@@ -15,6 +15,8 @@ export function CandidateDetail({
 }) {
   const [input, setInput] = useState(""),
     [error, setError] = useState("");
+  const latestDiagram = tasks.find((t) => t.kind === "diagram");
+  const latestPreparation = tasks.find((t) => t.kind === "prepare");
   const diagram = tasks.find(
     (t) =>
       t.kind === "diagram" &&
@@ -60,6 +62,30 @@ export function CandidateDetail({
           </button>
         </div>
       )}
+      {live &&
+        [latestDiagram, latestPreparation]
+          .filter((t): t is Task => Boolean(t))
+          .map((t) => (
+            <div
+              key={t.id}
+              role="status"
+              className={t.status === "failed" ? "error" : "banner"}
+            >
+              <strong>
+                {t.kind === "diagram" ? "Diagram" : "Preparation"}: {t.status}
+              </strong>
+              {["queued", "running"].includes(t.status) && (
+                <span> · Use Refresh to update progress.</span>
+              )}
+              {["failed", "interrupted", "canceled"].includes(t.status) && (
+                <pre>
+                  {t.error ||
+                    t.stderr_tail ||
+                    "See task history below for details."}
+                </pre>
+              )}
+            </div>
+          ))}
       <h3>
         {candidate.id === "tfa"
           ? "Reference identity"

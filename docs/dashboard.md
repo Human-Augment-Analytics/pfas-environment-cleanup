@@ -8,7 +8,8 @@ uv run --project web python -m dashboard
 
 Open http://localhost:8000. The launcher installs the locked npm dependencies,
 checks TypeScript, builds React, and serves the frontend and FastAPI from one
-process. The web Python environment is separate from the chemistry environment.
+process. The web Python environment includes RDKit for diagrams and is separate from the
+full chemistry environment needed for input preparation.
 The dashboard displays clusters **500–667 inclusive**, in the existing order of
 `shivani_ml_models/cluster_centers.csv` (168 candidates). CSV descriptors are
 cluster averages. CID and SMILES identify each cluster's representative molecule;
@@ -33,8 +34,9 @@ uv run --project web python -m dashboard
 ```
 
 Missing chemistry tools or element pseudopotentials reject preparation before
-it enters the queue; browsing still works. The chemistry environment is not
-installed by the web launcher. The preparation child entry point is
+it enters the queue; browsing still works. The full preparation environment is not
+installed by the web launcher. Diagrams work with the default web environment;
+if `PFAS_CHEM_PYTHON` is set, that interpreter must also provide RDKit. The preparation child entry point is
 `web/dashboard/preparation.py`; it reuses conversion, molecular-complex, and
 patching helpers and never executes QE.
 

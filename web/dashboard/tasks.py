@@ -315,6 +315,11 @@ class Manager:
                 timeout,
                 env=self.chem_env if task["kind"] != "qe" else None,
             )
+            if status == "failed" and not error:
+                detail = tail(directory / "stderr.log", limit=2000).strip()
+                error = f"Process exited with code {code}" + (
+                    f": {detail}" if detail else ""
+                )
             values = {
                 "status": "interrupted" if self.stop.is_set() else status,
                 "exit_code": code,
