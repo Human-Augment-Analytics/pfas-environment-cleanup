@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { read, post, Data, Action, Task } from "./data";
+import { AdvancedSearch } from "./AdvancedSearch";
+import { Filter } from "./filters";
+import { CandidateBrowser } from "./CandidateBrowser";
 import { CandidateDetail } from "./CandidateDetail";
 import { TaskHistory } from "./TaskHistory";
 import "./style.css";
@@ -8,9 +11,9 @@ function App() {
   const [data, setData] = useState<Data | null>(null),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
-    [search, setSearch] = useState(""),
     [hash, setHash] = useState(location.hash.slice(1)),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [filters, setFilters] = useState<Filter[]>([]);
   const refresh = async () => {
     try {
       setData(await read());
@@ -59,6 +62,7 @@ function App() {
         <a href="#">PFAS / Candidate dashboard</a>
         <nav>
           <a href="#">Candidates</a>
+          <a href="#advanced-search">Advanced search</a>
           <a href="#tfa">TFA reference</a>
           <a href="#tasks">All tasks</a>
           <button disabled={busy} onClick={refresh}>
@@ -118,87 +122,12 @@ function App() {
                 live={data.mode === "live"}
                 action={action}
               />
-            ) : (
-              <>
-                <h1>Clusters 500–667</h1>
-                <p>
-                  {data.candidates.length} candidates in CSV order. Descriptors
-                  are cluster averages; CID and SMILES identify the
-                  representative molecule.
-                </p>
-                <div className="controls">
-                  <label>
-                    Search candidates{" "}
-                    <input
-                      type="search"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Cluster, CID, SMILES or descriptor"
-                    />
-                  </label>
-                  {data.mode === "live" && (
-                    <button disabled={busy} onClick={() => action("diagrams")}>
-                      Generate missing diagrams for all {data.candidates.length}
-                    </button>
-                  )}
-                </div>
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Cluster</th>
-                        <th>Points</th>
-                        <th>Representative CID</th>
-                        <th>Average molecular weight</th>
-                        <th>Average XLogP</th>
-                        <th>Diagram</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.candidates
-                        .filter((c) =>
-                          Object.values(c.fields)
-                            .join(" ")
-                            .toLowerCase()
-                            .includes(search.toLowerCase()),
-                        )
-                        .map((c) => {
-                          const diagram = data.tasks.find(
-                            (t) =>
-                              t.candidate === c.id &&
-                              t.kind === "diagram" &&
-                              t.status === "succeeded",
-                          );
-                          return (
-                            <tr key={c.id}>
-                              <td>
-                                <a href={`#candidate/${c.id}`}>{c.id}</a>
-                              </td>
-                              <td>{c.fields.n_points}</td>
-                              <td>{c.cid}</td>
-                              <td>
-                                {Number(c.fields.MolecularWeight).toFixed(2)}
-                              </td>
-                              <td>{Number(c.fields.XLogP).toFixed(2)}</td>
-                              <td>
-                                {diagram?.artifacts["diagram.png"] ? (
-                                  <img
-                                    className="thumbnail"
-                                    src={diagram.artifacts["diagram.png"]}
-                                    alt={`Cluster ${c.id}`}
-                                  />
-                                ) : (
-                                  <span>Not generated</span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
+            ) : hash === "advanced-search" ? (
+              <AdvancedSearch candidates={data.candidates} filters={filters} apply={(next) => {setFilters(next); location.hash = "";}} />
+            ) : null}
+            <div hidden={Boolean(candidate) || hash === "tasks" || hash === "advanced-search"}>
+              <CandidateBrowser data={data} busy={busy} action={action} filters={filters} clearFilters={() => setFilters([])} />
+            </div>
           </>
         )}
       </main>

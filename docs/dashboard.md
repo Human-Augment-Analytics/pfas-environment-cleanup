@@ -10,10 +10,20 @@ Open http://localhost:8000. The launcher installs the locked npm dependencies,
 checks TypeScript, builds React, and serves the frontend and FastAPI from one
 process. The web Python environment includes RDKit for diagrams and is separate from the
 full chemistry environment needed for input preparation.
-The dashboard displays clusters **500–667 inclusive**, in the existing order of
-`shivani_ml_models/cluster_centers.csv` (168 candidates). CSV descriptors are
+The dashboard displays **all 1,000 clusters (0–999)** from
+`shivani_ml_models/cluster_centers.csv`. CSV descriptors are
 cluster averages. CID and SMILES identify each cluster's representative molecule;
 all original fields are retained in its detail view.
+
+The default tile view shows five diagrams across on wide screens and adapts to
+smaller screens. Click a tile to open its entry. Switch to Rows for descriptors
+and live action buttons. Both views share search and sorting by any CSV field,
+with ascending/descending numerical sorting for numeric descriptors and IDs.
+CSV order remains available. Row buttons prepare inputs or open inline QE controls
+for the isolated candidate (single) and candidate–TFA complex. Preparation must
+succeed before those run buttons become available; preview the command and input
+before submitting. Snapshot views include tiles, rows, search, and sorting, with
+execution controls available only in live mode.
 
 Browsing never starts work. Use Generate diagram, Prepare inputs, or preview
 and submit a QE run. Refresh updates the queue, elapsed time, and bounded log
@@ -139,7 +149,7 @@ npm run format:check --prefix web/frontend
 Opt-in smoke checks use real tools, isolated temporary directories, a 90-second
 preparation timeout and 45-second QE timeouts. The small H2 SCF fixture checks
 native one- and two-process execution; it does not validate production scientific
-accuracy or convergence of the 168 candidates:
+accuracy or convergence of the candidates:
 
 ```bash
 PFAS_SMOKE=1 PFAS_CHEM_PYTHON="$PWD/.venv/bin/python" \

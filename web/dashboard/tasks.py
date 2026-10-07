@@ -176,13 +176,9 @@ class Manager:
         if kind != "qe":
             system = "tfa" if candidate == "tfa" else "candidate"
         with self.guard:
-            for task in self.store.tasks():
-                if (task["kind"], task["candidate"], task["system"]) == (
-                    kind,
-                    candidate,
-                    system,
-                ) and task["status"] in ("queued", "running"):
-                    return task
+            existing = self.store.active(kind, candidate, system)
+            if existing:
+                return existing
             preview = None
             if kind == "prepare":
                 self.preflight(self.candidates[candidate])
@@ -240,10 +236,7 @@ class Manager:
             with self.guard:
                 if self.stop.is_set():
                     break
-                queued = [
-                    t for t in reversed(self.store.tasks()) if t["status"] == "queued"
-                ]
-                task = queued[0] if queued else None
+                task = self.store.next_queued()
                 if task:
                     self.active = task["id"]
                     self.cancel.clear()

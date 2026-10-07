@@ -13,7 +13,6 @@ def load():
                 "smiles": row["medoid_SMILES"],
             }
             for row in csv.DictReader(stream)
-            if 500 <= int(row["cluster"]) <= 667
         ]
 
 

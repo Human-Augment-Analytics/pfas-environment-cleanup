@@ -60,7 +60,7 @@ def wait(manager, id):
 
 def test_selection():
     candidates = load()
-    assert [c["id"] for c in candidates] == list(map(str, range(500, 668)))
+    assert [c["id"] for c in candidates] == list(map(str, range(1000)))
     assert len(candidates[0]["fields"]) == 12
     assert candidates[0]["smiles"] == candidates[0]["fields"]["medoid_SMILES"]
 
@@ -169,10 +169,10 @@ def test_evidence(text, calc, confirmed):
     assert evidence(text, calc)["confirmed"] is confirmed
 
 
-def test_api_readonly_bulk_and_origins(manager):
+def test_api_readonly_bulk_and_origins(manager, monkeypatch):
     app = create_app(manager.config)
     with TestClient(app) as client:
-        assert len(client.get("/api/data").json()["candidates"]) == 168
+        assert len(client.get("/api/data").json()["candidates"]) == 1000
         assert client.get("/api/data").json()["tasks"] == []
         assert (
             client.post(
@@ -208,7 +208,15 @@ def test_api_readonly_bulk_and_origins(manager):
                 "ended": None,
             }
         )
-        assert len(client.post("/api/diagrams").json()) == 167
+        # Exercise selection and skip logic without starting 999 subprocess attempts.
+        monkeypatch.setattr(
+            manager2,
+            "queue",
+            lambda kind, candidate: {"kind": kind, "candidate": candidate},
+        )
+        queued = client.post("/api/diagrams").json()
+        assert len(queued) == 999
+        assert "500" not in {task["candidate"] for task in queued}
 
 
 def test_export_is_readonly_and_redacted(manager, tmp_path):
@@ -220,7 +228,7 @@ def test_export_is_readonly_and_redacted(manager, tmp_path):
     output = tmp_path / "public"
     data = export(manager.config, output)
     assert data["mode"] == "snapshot"
-    assert len(data["candidates"]) == 168
+    assert len(data["candidates"]) == 1000
     text = (output / "data.json").read_text()
     assert (
         "/private" not in text and "stdout_tail" not in text and "command" not in text

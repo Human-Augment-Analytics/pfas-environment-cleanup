@@ -613,4 +613,4 @@ is the accompanying notebook.
 ## PFAS candidate dashboard
 
 Run `uv run --project web python -m dashboard` for the React/FastAPI dashboard of
-clusters 500–667. See [dashboard setup, chemistry, QE, and snapshot publishing](docs/dashboard.md).
+all clusters. See [dashboard setup, chemistry, QE, and snapshot publishing](docs/dashboard.md).

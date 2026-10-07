@@ -21,3 +21,4 @@ web/frontend/node_modules/
 web/frontend/dist/
 web/frontend/*.tsbuildinfo
 web/public/
+web/snapshot

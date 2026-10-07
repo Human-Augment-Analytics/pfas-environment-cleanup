@@ -18,6 +18,9 @@ class Store:
         self.db.execute(
             "CREATE TABLE IF NOT EXISTS artifacts (id TEXT PRIMARY KEY, path TEXT NOT NULL)"
         )
+        self.db.execute(
+            "CREATE INDEX IF NOT EXISTS task_action ON tasks (json_extract(data, '$.kind'), json_extract(data, '$.candidate'), json_extract(data, '$.system'), json_extract(data, '$.status'))"
+        )
         for task in self.tasks():
             if task["status"] in ("queued", "running"):
                 self.update(
@@ -35,7 +38,26 @@ class Store:
             ]
 
     def get(self, id):
-        return next(t for t in self.tasks() if t["id"] == id)
+        with self.lock:
+            row = self.db.execute("SELECT data FROM tasks WHERE id=?", (id,)).fetchone()
+        if row is None:
+            raise ValueError("Unknown task")
+        return json.loads(row[0])
+
+    def active(self, kind, candidate, system):
+        with self.lock:
+            row = self.db.execute(
+                "SELECT data FROM tasks WHERE json_extract(data, '$.kind')=? AND json_extract(data, '$.candidate')=? AND json_extract(data, '$.system')=? AND json_extract(data, '$.status') IN ('queued', 'running') LIMIT 1",
+                (kind, candidate, system),
+            ).fetchone()
+        return json.loads(row[0]) if row else None
+
+    def next_queued(self):
+        with self.lock:
+            row = self.db.execute(
+                "SELECT data FROM tasks WHERE json_extract(data, '$.status')='queued' ORDER BY rowid LIMIT 1"
+            ).fetchone()
+        return json.loads(row[0]) if row else None
 
     def put(self, task):
         with self.lock, self.db:
