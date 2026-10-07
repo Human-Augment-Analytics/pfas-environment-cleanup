@@ -38,6 +38,8 @@
   conv_thr=1.0d-5,
   mixing_beta=0.15d0,
   electron_maxstep=200,
+  startingpot='file',
+  startingwfc='file',
 /
 
 &IONS
