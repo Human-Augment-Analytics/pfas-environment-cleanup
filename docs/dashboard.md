@@ -315,7 +315,15 @@ Keep externally edited QE inputs in `qe_inputs/<candidate-id>/`, for example
 Refresh the dashboard to discover new files; a missing root is allowed. Only
 named versions contained within that root are discovered. Select **Prepared
 default** to use the latest successful preparation, or select a local version
-without preparing first. Batch controls continue to use prepared inputs.
+without preparing first. Batch controls use prepared inputs, including
+**Estimate RAM · isolated candidate** and **Estimate RAM · TFA complex**.
+Select molecules, preview the selected jobs, and queue eligible estimates.
+Each estimate uses the selected process count and runtime, defaults to 120
+seconds, and captures its own initialization-only input. The review skips active
+estimates and successful estimates matching the source input, pseudopotentials,
+runtime/image, and process count. Missing prepared inputs are listed as
+unavailable. Results appear in the queue and individual task history.
+**Review unsuccessful jobs** requires a fresh preview before retrying.
 
 Choose **Run QE** or **Estimate RAM**, select the runtime and process count,
 then preview the input, command, and initial geometry before submission.

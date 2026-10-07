@@ -33,7 +33,7 @@ export function BatchControls({
     kind,
     system,
     runtime,
-    processes: kind === "qe" ? processes : 1,
+    processes: ["qe", "estimate_ram"].includes(kind) ? processes : 1,
     memory_gib: memory,
     timeout: timeout ? Number(timeout) : undefined,
     retry: initial?.retry || false,
@@ -63,10 +63,19 @@ export function BatchControls({
         ...request,
         id: submissionID,
         expected: current.entries.map(
-          ({ candidate, status, input_hash, pseudopotentials }) => ({
+          ({
             candidate,
             status,
             input_hash,
+            source_hash,
+            preview_id,
+            pseudopotentials,
+          }) => ({
+            candidate,
+            status,
+            input_hash,
+            source_hash,
+            preview_id,
             pseudopotentials,
           }),
         ),
@@ -109,6 +118,12 @@ export function BatchControls({
             <option value="prepare/candidate">Prepare missing inputs</option>
             <option value="qe/candidate">Run QE · isolated candidate</option>
             <option value="qe/complex">Run QE · TFA complex</option>
+            <option value="estimate_ram/candidate">
+              Estimate RAM · isolated candidate
+            </option>
+            <option value="estimate_ram/complex">
+              Estimate RAM · TFA complex
+            </option>
           </select>
         </label>
         <label>
@@ -137,7 +152,7 @@ export function BatchControls({
             />
           </label>
         )}
-        {kind === "qe" && (
+        {["qe", "estimate_ram"].includes(kind) && (
           <label>
             Processes per job{" "}
             <input
@@ -162,7 +177,9 @@ export function BatchControls({
                 ? "900"
                 : kind === "diagram"
                   ? "60"
-                  : "No timeout"
+                  : kind === "estimate_ram"
+                    ? "120"
+                    : "No timeout"
             }
             onChange={(e) => setTimeout(e.target.value)}
           />
@@ -171,6 +188,13 @@ export function BatchControls({
           Preview selected jobs
         </button>
       </div>
+      {kind === "estimate_ram" && (
+        <p>
+          Uses prepared inputs with nstep=0. Matching estimates for the same
+          input, runtime, and process count are skipped. Results appear in the
+          queue and task history.
+        </p>
+      )}
       {runtime === "native" && (
         <p>
           Native jobs run one at a time. Their memory is not isolated from WSL;

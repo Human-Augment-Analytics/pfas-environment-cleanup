@@ -394,3 +394,167 @@ def test_remote_batch_rejected_before_work(manager):
     with pytest.raises(NotImplementedError):
         manager.queue("prepare", "500", target="slurm")
     assert manager.store.tasks() == []
+
+
+@pytest.mark.parametrize("system", ["candidate", "complex"])
+def test_bulk_ram_estimates_order_resources_snapshots_and_results(
+    manager, monkeypatch, system
+):
+    manager.config.pw = sys.executable
+    manager.config.mpi = sys.executable
+    originals = []
+    for candidate in ["501", "500"]:
+        path = prepare_qe(manager, candidate)
+        if system == "complex":
+            alternate = path.with_name("complex.in")
+            alternate.write_text(path.read_text())
+            path = alternate
+        originals.append(path)
+    body = request(
+        ["501", "500", "502"], "estimate_ram", system=system, processes=2, id="ram-bulk"
+    )
+    preview = manager.batches.review(**body)
+    assert preview["resources"]["timeout"] == 120
+    assert preview["resources"]["cpus"] == 2
+    assert [entry["status"] for entry in preview["entries"]] == [
+        "eligible",
+        "eligible",
+        "unavailable",
+    ]
+    assert all(
+        "nstep=0" in entry["input"] and entry["preview_id"]
+        for entry in preview["entries"][:2]
+    )
+    batch = manager.batches.submit({**body, "expected": preview["entries"]})
+    tasks = [manager.store.get(id) for id in batch["task_ids"]]
+    assert [t["candidate"] for t in tasks] == ["501", "500"]
+    assert all(
+        t["kind"] == "estimate_ram" and t["system"] == system and t["processes"] == 2
+        for t in tasks
+    )
+    for original, task in zip(originals, tasks):
+        assert "nstep=0" not in original.read_text()
+        original.unlink()
+        assert (
+            "nstep=0"
+            in (manager.config.artifacts / task["id"] / "input.in").read_text()
+        )
+    (manager.config.pseudos / "H.UPF").unlink()
+
+    def execute(command, directory, *args, **kwargs):
+        assert command[1:3] == ["-np", "2"]
+        assert (directory / "Pseudopotentials/H.UPF").read_text() == "hydrogen"
+        (directory / "stdout.log").write_text(
+            "Estimated max dynamical RAM per process > 2.0 MB\n"
+        )
+        return 255, "failed", ""
+
+    monkeypatch.setattr("dashboard.tasks.execute", execute)
+    manager.start()
+    wait_tasks(manager)
+    assert all(manager.store.get(t["id"])["status"] == "succeeded" for t in tasks)
+    assert all("evidence" not in manager.store.get(t["id"]) for t in tasks)
+    queued = manager.queue_data()["tasks"]
+    assert all(
+        t["ram_estimate"]["per_process"]["value"] == "2.0"
+        for t in queued
+        if t["kind"] == "estimate_ram"
+    )
+    assert manager.batches.submit({**body, "expected": preview["entries"]}) == batch
+
+
+@pytest.mark.parametrize("change", ["source", "pseudo", "processes", "missing_preview"])
+def test_bulk_ram_requires_original_preview(manager, change):
+    manager.config.pw = sys.executable
+    manager.config.mpi = sys.executable
+    source = prepare_qe(manager, "500")
+    source.write_text(source.read_text().replace("&CONTROL", "&CONTROL\n nstep=1,"))
+    body = request(["500"], "estimate_ram")
+    preview = manager.batches.review(**body)
+    if change == "source":
+        source.write_text(source.read_text().replace("nstep=1", "nstep=2"))
+        current = manager.batches.review(**body)["entries"][0]
+        assert current["input_hash"] == preview["entries"][0]["input_hash"]
+        assert current["source_hash"] != preview["entries"][0]["source_hash"]
+    elif change == "pseudo":
+        (manager.config.pseudos / "H.UPF").write_text("edited")
+    elif change == "processes":
+        body["processes"] = 2
+    else:
+        preview["entries"][0].pop("preview_id")
+    batch = manager.batches.submit({**body, "expected": preview["entries"]})
+    assert not batch["task_ids"]
+    assert batch["entries"][0]["status"] == "unavailable"
+    assert "preview" in batch["entries"][0]["reason"]
+
+
+def test_bulk_ram_completed_matching_and_retry(manager):
+    manager.config.pw = sys.executable
+    manager.config.mpi = sys.executable
+    source = prepare_qe(manager, "500")
+    body = request(["500"], "estimate_ram", timeout=35)
+    batch = submit(manager, body)
+    task = manager.store.get(batch["task_ids"][0])
+    assert task["timeout"] == 35
+    manager.store.update(
+        task["id"],
+        status="succeeded",
+        ram_estimate={
+            "per_process": {"value": "2", "unit": "MB", "bytes": 2 * 1024**2},
+            "total": None,
+        },
+    )
+    assert manager.batches.review(**body)["entries"][0]["status"] == "completed"
+    assert (
+        manager.batches.review(**{**body, "processes": 2})["entries"][0]["status"]
+        == "eligible"
+    )
+    source.write_text(source.read_text() + "! edited\n")
+    assert manager.batches.review(**body)["entries"][0]["status"] == "eligible"
+    manager.store.update(task["id"], status="canceled")
+    retry = manager.batches.retry(batch["id"])
+    assert retry["kind"] == "estimate_ram" and retry["candidates"] == ["500"]
+    fresh = submit(manager, retry)
+    assert fresh["task_ids"][0] != task["id"]
+
+
+def test_api_bulk_ram_preview_submission_cancel_and_retry(manager, monkeypatch):
+    manager.config.pw = sys.executable
+    source = prepare_qe(manager, "500")
+    app = create_app(manager.config)
+    monkeypatch.setattr(app.state.manager, "start", lambda: None)
+    with TestClient(app) as client:
+        body = request(["500", "501"], "estimate_ram")
+        response = client.post("/api/batches/preview", json=body)
+        assert response.status_code == 200
+        preview = response.json()
+        # Submit exactly the fields the bulk controls send.
+        expected = [
+            {
+                k: e[k]
+                for k in (
+                    "candidate",
+                    "status",
+                    "input_hash",
+                    "source_hash",
+                    "preview_id",
+                    "pseudopotentials",
+                )
+                if k in e
+            }
+            for e in preview["entries"]
+        ]
+        response = client.post(
+            "/api/batches", json={**body, "expected": expected, "id": "ram-api"}
+        )
+        assert response.status_code == 200
+        assert len(response.json()["task_ids"]) == 1
+        queued = client.get("/api/queue").json()
+        task = next(t for t in queued["tasks"] if t["kind"] == "estimate_ram")
+        assert task["resources"]["timeout"] == 120
+        assert task["version"] == "Prepared default"
+        assert source.exists()
+        assert client.post("/api/batches/ram-api/cancel").status_code == 200
+        retry = client.get("/api/batches/ram-api/retry").json()
+        assert retry["kind"] == "estimate_ram"
+        assert retry["candidates"] == ["500", "501"]

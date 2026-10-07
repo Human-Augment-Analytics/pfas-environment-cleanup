@@ -148,6 +148,8 @@ export type BatchRequest = {
   retry?: boolean;
 };
 export type BatchEntry = {
+  source_hash?: string;
+  preview_id?: string;
   candidate: string;
   status: string;
   reason?: string;

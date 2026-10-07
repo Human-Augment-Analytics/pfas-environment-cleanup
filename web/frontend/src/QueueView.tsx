@@ -231,6 +231,23 @@ export function QueueView() {
                 seconds elapsed
               </p>
             )}
+            {t.version && (
+              <p>
+                {t.version} · {t.processes} processes
+              </p>
+            )}
+            {t.ram_estimate && (
+              <p>
+                QE RAM estimates · Maximum per process:{" "}
+                {t.ram_estimate.per_process
+                  ? `${t.ram_estimate.per_process.value} ${t.ram_estimate.per_process.unit}`
+                  : "unavailable"}{" "}
+                · Total:{" "}
+                {t.ram_estimate.total
+                  ? `${t.ram_estimate.total.value} ${t.ram_estimate.total.unit}`
+                  : "unavailable"}
+              </p>
+            )}
             {t.evidence && (
               <p>
                 QE completion{" "}

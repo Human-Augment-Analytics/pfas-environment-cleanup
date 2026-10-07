@@ -240,7 +240,7 @@ class Manager:
         if issue_token:
             token = uuid.uuid4().hex
             with self.guard:
-                if len(self.previews) >= 1000:
+                if len(self.previews) >= 2048:
                     self.previews.pop(next(iter(self.previews)))
                 self.previews[token] = (
                     (candidate, system, processes, target, runtime, input_id, kind),

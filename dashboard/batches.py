@@ -24,12 +24,13 @@ class Batches:
         timeout=None,
         retry=False,
         target="local",
+        issue_tokens=True,
         **_,
     ):
         manager = self.manager
         if target != "local":
             raise NotImplementedError("Slurm execution is not implemented")
-        if kind not in ("diagram", "prepare", "qe") or system not in (
+        if kind not in ("diagram", "prepare", "qe", "estimate_ram") or system not in (
             "candidate",
             "complex",
             "tfa",
@@ -50,10 +51,15 @@ class Batches:
             if kind == "prepare"
             else 60
             if kind == "diagram"
+            else 120
+            if kind == "estimate_ram"
             else None
         )
         resources = manager.resources(
-            runtime, processes if kind == "qe" else 1, memory_gib, timeout
+            runtime,
+            processes if kind in ("qe", "estimate_ram") else 1,
+            memory_gib,
+            timeout,
         )
         identity = manager.runtimes.verify() if runtime == "apptainer" else None
         molecules = {}
@@ -86,7 +92,11 @@ print(json.dumps(results))
         for candidate in candidates:
             entry = {"candidate": candidate, "status": "eligible", "reason": ""}
             owner_system = (
-                system if kind == "qe" else "tfa" if candidate == "tfa" else "candidate"
+                system
+                if kind in ("qe", "estimate_ram")
+                else "tfa"
+                if candidate == "tfa"
+                else "candidate"
             )
             if candidate in molecules:
                 elements = molecules[candidate]
@@ -117,21 +127,37 @@ print(json.dumps(results))
                 entry.update(status="active", reason="Already queued or running")
             else:
                 try:
-                    if kind == "qe":
+                    if kind in ("qe", "estimate_ram"):
                         preview = manager.preview(
-                            candidate, system, processes, "local", runtime
+                            candidate,
+                            system,
+                            processes,
+                            "local",
+                            runtime,
+                            kind=kind,
+                            issue_token=issue_tokens,
                         )
                         entry.update(preview)
                         if not retry and any(
                             t["status"] == "succeeded"
-                            and t.get("evidence", {}).get("confirmed")
                             and t.get("input_hash") == preview["input_hash"]
                             and t.get("pseudopotentials") == preview["pseudopotentials"]
+                            and (
+                                t.get("evidence", {}).get("confirmed")
+                                if kind == "qe"
+                                else t.get("ram_estimate", {}).get("per_process")
+                                and t.get("source_hash") == preview["source_hash"]
+                                and t.get("runtime", "native") == runtime
+                                and t.get("processes") == processes
+                                and t.get("image_hash") == identity
+                            )
                             for t in related
                         ):
                             entry.update(
                                 status="completed",
-                                reason="Matching confirmed result exists",
+                                reason="Matching confirmed result exists"
+                                if kind == "qe"
+                                else "Matching QE RAM estimate exists",
                             )
                     elif not retry:
                         names = (
@@ -177,7 +203,7 @@ print(json.dumps(results))
             previous = manager.store.batch(batch_id)
             if previous:
                 return previous
-            review = self.review(**request)
+            review = self.review(**request, issue_tokens=False)
             if review["image_hash"] != request.get("image_hash"):
                 raise ValueError("Container image changed; review the batch again")
             expected = {e["candidate"]: e for e in request.get("expected", [])}
@@ -202,9 +228,14 @@ print(json.dumps(results))
                         not old
                         or old.get("status") != "eligible"
                         or (
-                            request["kind"] == "qe"
+                            request["kind"] in ("qe", "estimate_ram")
                             and (
                                 old.get("input_hash") != entry.get("input_hash")
+                                or (
+                                    request["kind"] == "estimate_ram"
+                                    and old.get("source_hash")
+                                    != entry.get("source_hash")
+                                )
                                 or old.get("pseudopotentials")
                                 != entry.get("pseudopotentials")
                             )
@@ -223,6 +254,9 @@ print(json.dumps(results))
                                 processes=request.get("processes", 1),
                                 timeout=request.get("timeout"),
                                 expected_hash=entry.get("input_hash"),
+                                preview_id=old.get("preview_id")
+                                if request["kind"] == "estimate_ram"
+                                else None,
                                 expected_pseudos=entry.get("pseudopotentials"),
                                 runtime=review["runtime"],
                                 memory_gib=request.get("memory_gib", 4),
