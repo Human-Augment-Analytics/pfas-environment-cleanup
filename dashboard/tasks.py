@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import threading
@@ -42,7 +43,7 @@ class Manager:
             {
                 "paused": False,
                 "concurrency": 1,
-                "memory_bytes": min(8 * GIB, memory_ceiling() // 2),
+                "memory_bytes": min(8 * GIB, memory_ceiling() * 9 // 10),
                 "cpus": min(
                     4,
                     len(os.sched_getaffinity(0))
@@ -52,7 +53,7 @@ class Manager:
             }
         )
         self.settings["memory_bytes"] = min(
-            self.settings["memory_bytes"], memory_ceiling() // 2
+            self.settings["memory_bytes"], memory_ceiling() * 9 // 10
         )
         available_cpus = (
             len(os.sched_getaffinity(0))
@@ -131,9 +132,9 @@ class Manager:
         if missing:
             raise ValueError("Missing pseudopotentials: " + ", ".join(missing))
 
-    def input(self, candidate, system):
+    def input(self, candidate, system, tasks=None):
         owner = "tfa" if system == "tfa" else candidate
-        for task in self.store.tasks():
+        for task in self.store.prepared(candidate, system) if tasks is None else tasks:
             if (
                 task["kind"] == "prepare"
                 and task["status"] == "succeeded"
@@ -167,6 +168,8 @@ class Manager:
         input_id=None,
         kind="qe",
         issue_token=True,
+        _tasks=None,
+        _pseudo_hashes=None,
     ):
         if runtime not in ("native", "apptainer"):
             raise ValueError("Unknown runtime")
@@ -183,7 +186,7 @@ class Manager:
         if kind not in ("qe", "estimate_ram"):
             raise ValueError("Unknown preview task")
         if input_id is None:
-            path = self.input(candidate, system)
+            path = self.input(candidate, system, tasks=_tasks)
             label = "Prepared default"
         else:
             entry = discover(self.config.qe_inputs, self.candidates).get(input_id)
@@ -205,7 +208,17 @@ class Manager:
         missing = [n for n in names if not (self.config.pseudos / n).is_file()]
         if missing:
             raise ValueError("Missing pseudopotentials: " + ", ".join(missing))
-        hashes = {n: digest(self.config.pseudos / n) for n in names}
+        hashes = {}
+        for name in names:
+            path = self.config.pseudos / name
+            if _pseudo_hashes is None:
+                hashes[name] = digest(path)
+            else:
+                stat = path.stat()
+                key = (path, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)
+                if key not in _pseudo_hashes:
+                    _pseudo_hashes[key] = digest(path)
+                hashes[name] = _pseudo_hashes[key]
         pw = "pw.x" if runtime == "apptainer" else self.executable(self.config.pw)
         command = (
             [pw, "-in", "input.in"]
@@ -456,6 +469,15 @@ class Manager:
             elif task["status"] == "running" and id in self.running:
                 logger.info("Task %s stop requested", id)
                 self.running[id][1].set()
+                self.store.update(id, stop_requested=True)
+
+    def clear_queue(self):
+        # Hold admission while canceling the snapshot so waiting jobs cannot start.
+        with self.guard:
+            tasks = self.store.queued()
+            for task in tasks:
+                self.cancel_task(task["id"])
+            return {"canceled_count": len(tasks)}
 
     def resources(self, runtime, cpus, memory_gib, timeout):
         if runtime not in ("native", "apptainer"):
@@ -489,9 +511,11 @@ class Manager:
             )
             if settings["cpus"] > available_cpus:
                 raise ValueError("CPU budget exceeds available CPUs")
-            if settings["memory_bytes"] > memory_ceiling() // 2:
+            memory_limit = memory_ceiling() * 9 // 10
+            if settings["memory_bytes"] > memory_limit:
                 raise ValueError(
-                    "Keep at least half of host memory outside the queue budget"
+                    f"Memory budget cannot exceed {memory_limit / GIB:.2f} GiB "
+                    f"({memory_limit} bytes; 90% of detected host memory)"
                 )
             running_tasks = [value[2] for value in self.running.values()]
             if (
@@ -531,6 +555,7 @@ class Manager:
             "system",
             "processes",
             "status",
+            "stop_requested",
             "created",
             "started",
             "ended",
@@ -706,15 +731,31 @@ class Manager:
                 command = self.runtimes.wrap(
                     command, directory, task["resources"], task["image_hash"]
                 )
-            self.store.update(id, command=command)
+            entrypoint = directory / "entrypoint.log"
+            entrypoint.write_text(
+                f"[{now()}] Task: {id}\nKind: {task['kind']}\nRuntime: {runtime}\n"
+                f"Working directory: {directory}\n"
+                f"Entrypoint: {shlex.join(command)}\n"
+                f"Processes: {task['processes']}\nTimeout: {timeout}\n"
+                f"Image hash: {task.get('image_hash')}\n"
+                f"Source hash: {task.get('source_hash')}\n"
+                f"Input hash: {task.get('input_hash')}\n"
+                f"Resources: {json.dumps(task.get('resources', {}))}\n"
+            )
+            artifacts = {
+                **task["artifacts"],
+                "entrypoint.log": self.store.register(
+                    id + "-entrypoint.log", entrypoint
+                ),
+            }
+            self.store.update(id, command=command, artifacts=artifacts)
 
             def usage(value):
                 self.store.update(id, usage=value)
 
-            if task["kind"] == "qe":
-                logger.info(
-                    "Task %s launch command: %s (cwd=%s)", id, command, directory
-                )
+            logger.info(
+                "Task %s entrypoint: %s (cwd=%s)", id, shlex.join(command), directory
+            )
             code, status, error = execute(
                 command,
                 directory,
@@ -800,6 +841,7 @@ class Manager:
         finally:
             artifacts = {}
             for name in (
+                "entrypoint.log",
                 "stdout.log",
                 "stderr.log",
                 "diagram.png",

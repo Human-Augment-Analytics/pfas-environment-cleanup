@@ -132,11 +132,80 @@ def test_process_timeout_cancel_and_tail(tmp_path):
     assert len(tail(tmp_path / "stdout.log")) == 16000
 
 
+def test_timestamped_logs_preserve_output_and_ram_markers(tmp_path):
+    from datetime import datetime
+
+    from dashboard.inputs import ram_reports
+
+    (tmp_path / "entrypoint.log").write_text("Input hash: abc123\nRuntime: native\n")
+    script = (
+        "import sys; "
+        "print('output line\\n' * 2000, end=''); "
+        "print('Estimated max dynamical RAM per process > 2.0 MB'); "
+        "sys.stderr.write('partial final line')"
+    )
+    _, status, _ = execute([sys.executable, "-c", script], tmp_path, threading.Event())
+    assert status == "succeeded"
+    lines = (tmp_path / "stdout.log").read_text().splitlines()
+    assert sum(line.endswith("output line") for line in lines) == 2000
+    assert any(line.endswith("Input hash: abc123") for line in lines)
+    for line in lines:
+        assert datetime.fromisoformat(line[1:].split("]", 1)[0]).tzinfo is not None
+    assert (tmp_path / "stderr.log").read_text().rstrip().endswith("partial final line")
+    report, error = ram_reports(lines)
+    assert not error and report["per_process"]["value"] == "2.0"
+
+
+@pytest.mark.parametrize("runtime", ["native", "apptainer"])
+def test_task_entrypoint_log_retains_command_hashes_and_artifact(
+    manager, monkeypatch, runtime
+):
+    import shlex
+
+    prepared(manager)
+    monkeypatch.setattr(manager.runtimes, "verify", lambda: "image123")
+    monkeypatch.setattr(manager.runtimes, "image_identity", lambda: "image123")
+    monkeypatch.setattr(
+        manager.runtimes,
+        "wrap",
+        lambda command, *args: ["apptainer", "exec", "image.sif", *command],
+    )
+    preview = manager.preview(
+        "500", "candidate", 1, "local", runtime, kind="estimate_ram"
+    )
+    task = manager.queue(
+        "estimate_ram",
+        "500",
+        runtime=runtime,
+        expected_hash=preview["input_hash"],
+        preview_id=preview["preview_id"],
+    )
+    commands = []
+
+    def run(command, directory, *args, **kwargs):
+        commands.append(command)
+        (directory / "stdout.log").write_text(
+            "Estimated max dynamical RAM per process > 2 MB\n"
+        )
+        return 255, "failed", ""
+
+    monkeypatch.setattr("dashboard.tasks.execute", run)
+    manager.run(task)
+    result = manager.store.get(task["id"])
+    assert result["status"] == "succeeded"
+    log = (manager.config.artifacts / task["id"] / "entrypoint.log").read_text()
+    assert f"Task: {task['id']}" in log
+    assert f"Input hash: {preview['input_hash']}" in log
+    assert f"Source hash: {preview['source_hash']}" in log
+    assert f"Entrypoint: {shlex.join(commands[0])}" in log
+    assert "entrypoint.log" in result["artifacts"]
+
+
 def test_group_cancellation(tmp_path):
     # Child ignores SIGTERM; terminating the leader still kills its children.
     script = "import subprocess,sys,time; p=subprocess.Popen([sys.executable,'-c','import signal,time;signal.signal(signal.SIGTERM,signal.SIG_IGN);time.sleep(20)']); print(p.pid,flush=True);time.sleep(20)"
     execute([sys.executable, "-c", script], tmp_path, threading.Event(), 0.15)
-    pid = int((tmp_path / "stdout.log").read_text())
+    pid = int((tmp_path / "stdout.log").read_text().splitlines()[-1].split("] ", 1)[1])
     stat = Path(f"/proc/{pid}/stat")
     deadline = time.monotonic() + 0.5
     while (
@@ -273,13 +342,21 @@ def test_shutdown_active_and_queued(manager, tmp_path):
     manager.start()
     deadline = time.monotonic() + 1
     while time.monotonic() < deadline:
-        if tail(manager.config.artifacts / active["id"] / "stdout.log"):
+        if (
+            tail(manager.config.artifacts / active["id"] / "stdout.log")
+            .rstrip()
+            .endswith("] 1")
+        ):
             break
         time.sleep(0.01)
     manager.close()
     assert manager.store.get(active["id"])["status"] == "interrupted"
     assert manager.store.get(queued["id"])["status"] == "queued"
-    assert tail(manager.config.artifacts / active["id"] / "stdout.log").strip() == "1"
+    assert (
+        tail(manager.config.artifacts / active["id"] / "stdout.log")
+        .strip()
+        .endswith("] 1")
+    )
     assert manager.store.get(active["id"])["artifacts"]["stderr.log"]
 
 

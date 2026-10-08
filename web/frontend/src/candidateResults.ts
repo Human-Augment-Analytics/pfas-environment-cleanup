@@ -1,10 +1,8 @@
 import type { Candidate, Task } from "./data";
 
 export const ramFields: Record<string, string> = {
-  candidate_ram_per_process_gib: "Candidate RAM (GB)",
-  complex_ram_per_process_gib: "Complex RAM (GB)",
-  candidate_ram_total_gib: "Candidate total RAM (GB, when reported)",
-  complex_ram_total_gib: "Complex total RAM (GB, when reported)",
+  candidate_ram_per_process_gib: "Candidate Est RAM (GB)",
+  complex_ram_per_process_gib: "Complex Est RAM (GB)",
 };
 
 export function withTaskFields(
@@ -22,6 +20,7 @@ export function withTaskFields(
     }
     if (
       task.kind === "estimate_ram" &&
+      task.processes === 1 &&
       task.status === "succeeded" &&
       ["candidate", "complex"].includes(task.system) &&
       task.ram_estimate?.per_process &&
@@ -36,15 +35,12 @@ export function withTaskFields(
     const fields = { ...candidate.fields };
     for (const system of ["candidate", "complex"]) {
       const estimate = summary.ram[system]?.ram_estimate;
-      for (const [metric, value] of [
-        ["per_process", estimate?.per_process],
-        ["total", estimate?.total],
-      ] as const) {
-        fields[`${system}_ram_${metric}_gib`] =
-          value && Number.isFinite(value.bytes) && value.bytes >= 0
-            ? String(value.bytes / 1024 ** 3)
-            : "";
-      }
+      const value = estimate?.per_process;
+      fields[`${system}_ram_per_process_gib`] =
+        value && Number.isFinite(value.bytes) && value.bytes >= 0
+          ? String(value.bytes / 1024 ** 3)
+          : "";
+      delete fields[`${system}_ram_total_gib`];
     }
     return { ...candidate, fields, task_summary: summary };
   });

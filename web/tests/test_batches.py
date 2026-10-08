@@ -217,6 +217,28 @@ def test_cancel_batch_restart_and_persisted_pause(manager):
     assert restarted.store.batch(batch["id"]) == batch
 
 
+def test_queue_memory_budget_allows_ninety_percent_and_survives_restart(manager):
+    limit = 16 * GIB * 9 // 10
+    assert manager.configure({"memory_bytes": limit})["memory_bytes"] == limit
+    with pytest.raises(ValueError, match="90%") as error:
+        manager.configure({"memory_bytes": limit + 1})
+    assert "14.40 GiB" in str(error.value)
+    assert f"{limit} bytes" in str(error.value)
+    assert manager.settings["memory_bytes"] == limit
+    restarted = Manager(manager.config, manager.candidates)
+    assert restarted.settings["memory_bytes"] == limit
+    restarted.close()
+
+
+def test_queue_default_memory_budget_on_small_hosts(manager, monkeypatch):
+    monkeypatch.setattr("dashboard.tasks.memory_ceiling", lambda: 4 * GIB)
+    manager.store.db.execute("DELETE FROM settings")
+    manager.store.db.commit()
+    restarted = Manager(manager.config, manager.candidates)
+    assert restarted.settings["memory_bytes"] == 4 * GIB * 9 // 10
+    restarted.close()
+
+
 def test_container_missing_and_image_changed_do_not_fallback(
     manager, monkeypatch, tmp_path
 ):
@@ -257,6 +279,76 @@ def test_container_argv_and_no_host_mpi(manager, monkeypatch, tmp_path):
     )
     assert command[-6:] == ["mpirun", "-np", "2", "pw.x", "-in", "input.in"]
     assert "--pid" in command and "--cleanenv" in command
+
+
+def test_api_cancel_running_batch(manager, monkeypatch, tmp_path):
+    executable = tmp_path / "slow-diagram"
+    executable.write_text(
+        f"#!{sys.executable}\nimport time\nprint('started', flush=True)\ntime.sleep(30)\n"
+    )
+    executable.chmod(0o755)
+    app = create_app(manager.config)
+    runner = app.state.manager
+    runner.config.python = str(executable)
+    batch = submit(runner, request(["500", "501"]))
+    unrelated = runner.queue("diagram", "502")
+    with TestClient(app) as client:
+        running_id = batch["task_ids"][0]
+        log = runner.config.artifacts / running_id / "stdout.log"
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline:
+            if log.exists() and "started" in log.read_text():
+                break
+            time.sleep(0.01)
+        else:
+            raise AssertionError("Batch job did not start")
+        # Leave unrelated waiting work paused while cancellation finishes.
+        runner.configure({"paused": True})
+        assert client.post(f"/api/batches/{batch['id']}/cancel").status_code == 200
+        assert runner.store.get(running_id)["stop_requested"]
+        assert runner.store.get(batch["task_ids"][1])["status"] == "canceled"
+        deadline = time.monotonic() + 3
+        while runner.store.get(running_id)["status"] == "running":
+            assert time.monotonic() < deadline, "Running batch job did not stop"
+            time.sleep(0.01)
+        assert runner.store.get(running_id)["status"] == "canceled"
+        assert runner.store.get(unrelated["id"])["status"] == "queued"
+        assert client.post(f"/api/batches/{batch['id']}/cancel").status_code == 200
+        assert client.post("/api/batches/missing/cancel").status_code == 404
+
+
+def test_api_clear_queue_preserves_running_jobs_and_history(manager, monkeypatch):
+    app = create_app(manager.config)
+    runner = app.state.manager
+    monkeypatch.setattr(runner, "start", lambda: None)
+    batch = submit(runner, request(["500", "501"]))
+    standalone = runner.queue("diagram", "502")
+    running_id = batch["task_ids"][0]
+    runner.store.update(running_id, status="running", started=now())
+    cancel = threading.Event()
+    runner.running[running_id] = (None, cancel, runner.store.get(running_id))
+    completed = {**standalone, "id": "completed", "status": "succeeded"}
+    runner.store.put(completed)
+    with TestClient(app) as client:
+        assert client.post("/api/queue/clear").json() == {"canceled_count": 2}
+        assert not cancel.is_set()
+        assert runner.store.get(running_id)["status"] == "running"
+        assert runner.store.get(completed["id"]) == completed
+        for id in (batch["task_ids"][1], standalone["id"]):
+            task = runner.store.get(id)
+            assert task["status"] == "canceled" and task["ended"]
+        assert runner.store.batch(batch["id"]) == batch
+        assert runner.batches.retry(batch["id"])["candidates"] == ["501"]
+        assert client.post("/api/queue/clear").json() == {"canceled_count": 0}
+        assert (
+            client.post(
+                "/api/queue/clear", headers={"origin": "https://evil.test"}
+            ).status_code
+            == 403
+        )
+    restarted = Manager(manager.config, manager.candidates)
+    assert restarted.store.get(standalone["id"])["status"] == "canceled"
+    restarted.close()
 
 
 def test_api_batch_queue_and_origins(manager, monkeypatch):
@@ -630,3 +722,82 @@ def test_api_bulk_ram_rerun_checkbox(manager, monkeypatch):
         )
         assert response.status_code == 200
         assert len(response.json()["task_ids"]) == 1
+
+
+def test_999_ram_previews_share_history_and_pseudo_reads(manager, monkeypatch):
+    from dashboard.preparation import digest
+
+    candidates = [str(i) for i in range(999)]
+    for candidate in candidates:
+        manager.candidates[candidate] = {"id": candidate, "smiles": "O"}
+        prepare_qe(manager, candidate)
+    # A missing newer artifact must still fall back to the older prepared input.
+    manager.store.put(
+        {
+            "id": "missing-artifact",
+            "candidate": "0",
+            "kind": "prepare",
+            "system": "candidate",
+            "status": "succeeded",
+        }
+    )
+    reads = []
+    hashes = []
+    tasks = manager.store.tasks
+
+    def read_tasks():
+        reads.append(1)
+        return tasks()
+
+    def hash_pseudo(path):
+        hashes.append(path)
+        return digest(path)
+
+    monkeypatch.setattr(manager.store, "tasks", read_tasks)
+    monkeypatch.setattr("dashboard.tasks.digest", hash_pseudo)
+    monkeypatch.setattr(manager.runtimes, "verify", lambda: "image-hash")
+    monkeypatch.setattr(manager.runtimes, "image_identity", lambda: "image-hash")
+    body = request(
+        candidates, "estimate_ram", runtime="apptainer", memory_gib=2, processes=1
+    )
+    preview = manager.batches.review(**body)
+    assert reads == [1]
+    assert hashes == [manager.config.pseudos / "H.UPF"]
+    assert [e["candidate"] for e in preview["entries"]] == candidates
+    assert all(e["status"] == "eligible" for e in preview["entries"])
+    assert len({e["preview_id"] for e in preview["entries"]}) == 999
+    assert preview["resources"]["memory_bytes"] == 2 * GIB
+    assert preview["resources"]["cpus"] == 1
+    # Cached hashes expire with the review, including same-size pseudo edits.
+    (manager.config.pseudos / "H.UPF").write_text("modified")
+    fresh = manager.batches.review(**{**body, "candidates": ["0"]})
+    assert (
+        fresh["entries"][0]["pseudopotentials"]
+        != preview["entries"][0]["pseudopotentials"]
+    )
+
+
+def test_queue_default_input_uses_targeted_history_and_falls_back(manager, monkeypatch):
+    original = prepare_qe(manager, "500")
+    prepare_qe(manager, "501")
+    manager.store.put(
+        {
+            "id": "missing-newer-input",
+            "candidate": "500",
+            "kind": "prepare",
+            "system": "candidate",
+            "status": "succeeded",
+        }
+    )
+
+    def no_full_history():
+        raise AssertionError("Single-job lookup must not reload full history")
+
+    monkeypatch.setattr(manager.store, "tasks", no_full_history)
+    assert manager.input("500", "candidate") == original
+    tfa = original.with_name("tfa.in")
+    tfa.write_text(original.read_text())
+    assert manager.input("tfa", "tfa") == tfa
+    with pytest.raises(ValueError, match="Prepare inputs first"):
+        manager.input("502", "candidate")
+    monkeypatch.undo()

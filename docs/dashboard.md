@@ -116,8 +116,9 @@ existing successful PNGs, deduplicate active attempts, and continue after failur
 
 ## Local QE and MPI
 
-`PFAS_PW` and `PFAS_MPI` override the `pw.x` and `mpirun` executable paths. Otherwise
-both resolve through PATH. MPI is required only for more than one process.
+For native execution, `PFAS_PW` and `PFAS_MPI` override the `pw.x` and `mpirun`
+executable paths. Otherwise both resolve through PATH. Apptainer execution uses
+the image's QE and MPI executables. MPI is required only for more than one process.
 Commands use argument lists directly, without a shell:
 
 ```text
@@ -260,16 +261,29 @@ views or changing sorting preserves selections.
 Choose **Generate missing diagrams**, **Prepare missing inputs**, **Run QE ·
 isolated candidate**, or **Run QE · TFA complex**, then **Preview selected jobs**.
 Review eligibility, resource settings, and QE input text before **Queue jobs**.
+Batch review displays 50 jobs per page and renders exact input text when its
+details are opened. Preview and submission show elapsed time; server logs report
+review and acceptance progress every 100 entries. Numeric fields can be cleared
+while editing; action buttons wait for valid resource values. RAM estimation
+uses one process; its result is labeled **Est RAM**.
 Completed preparations/diagrams with available artifacts are skipped. QE skips
 only confirmed results with matching input and pseudopotential hashes. Active
 actions are deduplicated. Each selected representative receives a separate
 attempt; failures do not stop the batch. Preparation never automatically runs
 QE, and QE never automatically prepares a missing input.
 
-The **Job queue** page polls lightweight state every two seconds. It shows
+The **Job queue** page polls lightweight state every two seconds. Jobs and batch
+entries are paginated in groups of 50; batches are paginated in groups of 10.
+Task logs include UTC timestamps and a task/hash header. Each task also has an
+`entrypoint.log` with its full launch command, working directory, hashes, and
+resource settings, available in the log viewer and as a download. The page shows
 batches, attempts, current/peak memory, and separate log-tail/full-log controls.
 Pause prevents new jobs from starting while active jobs finish. Stop cancels one
-job; Cancel batch stops its active jobs and cancels pending jobs. **Review
+job; Cancel batch stops its active jobs and cancels pending jobs. Running jobs
+show **Stopping…** after a stop request; batches with no active jobs cannot be
+canceled again. **Clear queue** cancels all waiting jobs across batches and
+individual submissions, keeping running jobs, history, and artifacts intact.
+**Review
 unsuccessful jobs** creates a fresh preview, including incomplete QE results;
 submission creates new attempts. Shutdown/restart preserves waiting jobs and
 resumes them automatically, respecting
@@ -296,11 +310,18 @@ uv run --no-default-groups --group web python -m dashboard
 ```
 
 The definition uses Ubuntu 24.04, Python 3.12, the root locked Python dependency
-groups, and Ubuntu's QE/Open MPI packages. It includes native build tools for
-Open Babel bindings. Building with `--fakeroot` requires a correctly configured
+groups, and QE 7.6 compiled from the `qe-7.6` release against Ubuntu's Open MPI.
+It builds `pw.x` with two compiler jobs and fails if MPI support is absent.
+The image test initializes a small hydrogen system in a writable temporary
+directory using two MPI processes, requiring the QE 7.6 banner, two-process MPI
+banner, and `JOB DONE`. It performs no SCF iterations. Do not skip this test.
+Source compilation makes the first build slower than a package installation.
+The definition also includes native build tools for Open Babel bindings.
+Building with `--fakeroot` requires a correctly configured
 Apptainer installation; alternatively build on a supported host and copy the
 SIF. Do not commit images. The image records installed system/Python versions in
-`/opt/pfas-image/`; Python dependencies are locked, but Ubuntu package repositories
+`/opt/pfas-image/`, including the QE source commit and build configuration;
+Python dependencies are locked, but Ubuntu package repositories
 can change between builds. Preserve the resulting SIF for exact reuse. The
 runtime records its SHA256 and rejects queued work if the image changes.
 `PFAS_APPTAINER` optionally overrides the executable path.
@@ -317,11 +338,11 @@ you want to proceed without hard isolation.
 Default container limits are **4 GiB/job**, **no additional swap**, and **one
 concurrent job**. Once a container preview verifies enforcement, increase
 **Maximum container jobs** on the queue page if desired. Defaults are an **8 GiB
-total reservation budget**, reduced to half the detected memory ceiling on
+total reservation budget**, reduced to 90% of the detected memory ceiling on
 smaller hosts, and at most **four available CPUs**. A job must fit both budgets;
 start order remains FIFO even when later smaller jobs could fit. Native work
 never overlaps any other job. Container reservations use limits, not current
-usage. The total memory budget cannot exceed half host memory; other processes
+usage. The total memory budget can use up to 90% of detected host memory; other processes
 remain outside these limits. Preparation/BLAS threads are limited to one; MPI
 processes count toward CPU reservations. Preparation defaults to 900 seconds,
 diagrams to 60 seconds, and QE has no timeout unless configured.
@@ -369,7 +390,8 @@ preview. Missing prepared inputs are listed as
 unavailable. Results appear in the queue and individual task history.
 **Review unsuccessful jobs** requires a fresh preview before retrying.
 
-Choose **Run QE** or **Estimate RAM**, select the runtime and process count,
+Choose **Run QE** or **Estimate RAM** and select the runtime. QE runs allow a
+process count; dashboard RAM estimates always use one process. Then
 then preview the input, command, and initial geometry before submission.
 Estimates default to a 120-second timeout; the timeout field overrides it.
 The estimate captures a copy with `&CONTROL nstep=0`, leaving the original
@@ -389,10 +411,11 @@ attempts. New API clients submit the returned `preview_id`, `input_hash` as
 `expected_hash`, and optional `input_id` with their task request. Omitting
 `input_id` retains prepared-default behavior for existing clients.
 
-History displays **QE RAM estimates** separately from measured process memory.
+History displays **Est RAM** for one-process estimates separately from measured process memory.
 Reported MB/GB values are retained and converted to bytes using binary units
-(1024²/1024³). Total RAM is unavailable if QE omits it; it is never inferred
-from the maximum per-process value. Estimates do not contribute energy or
+(1024²/1024³). The display uses QE's maximum RAM report from the single process;
+total RAM fields are not displayed. Older estimates using multiple processes
+do not populate the candidate's Est RAM value. Estimates do not contribute energy or
 convergence evidence and do not adjust memory limits. A missing per-process
 report or QE error fails the estimate; cancellation and timeout remain failures
 or canceled attempts. Snapshot exports retain version labels, hashes, and

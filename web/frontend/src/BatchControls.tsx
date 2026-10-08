@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { post, BatchRequest, BatchPreview, RuntimeInfo } from "./data";
 
 export function BatchControls({
@@ -21,14 +21,27 @@ export function BatchControls({
   const [rerunCompleted, setRerunCompleted] = useState(
     initial?.rerun_completed || false,
   );
-  const [processes, setProcesses] = useState(initial?.processes || 1);
-  const [memory, setMemory] = useState(initial?.memory_gib || 4);
+  const [processes, setProcesses] = useState(String(initial?.processes || 1));
+  const [memory, setMemory] = useState(String(initial?.memory_gib || 4));
   const [timeout, setTimeout] = useState(
     initial?.timeout ? String(initial.timeout) : "",
   );
   const [preview, setPreview] = useState<BatchPreview | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [operation, setOperation] = useState("");
+  const [elapsed, setElapsed] = useState(0);
+  const [page, setPage] = useState(0);
+  useEffect(() => {
+    if (!busy) return;
+    setElapsed(0);
+    const started = Date.now();
+    const timer = window.setInterval(
+      () => setElapsed(Math.floor((Date.now() - started) / 1000)),
+      1000,
+    );
+    return () => window.clearInterval(timer);
+  }, [busy]);
   const [reviewKey, setReviewKey] = useState("");
   const [submissionID, setSubmissionID] = useState("");
   const request: BatchRequest = {
@@ -36,19 +49,26 @@ export function BatchControls({
     kind,
     system,
     runtime,
-    processes: ["qe", "estimate_ram"].includes(kind) ? processes : 1,
-    memory_gib: memory,
+    processes: kind === "qe" ? Number(processes) : 1,
+    memory_gib: Number(memory),
     timeout: timeout ? Number(timeout) : undefined,
     retry: initial?.retry || false,
     rerun_completed: kind === "estimate_ram" && rerunCompleted,
   };
   const key = JSON.stringify(request);
+  const valid =
+    Number(memory) > 0 &&
+    (kind !== "qe" ||
+      (Number.isInteger(Number(processes)) && Number(processes) >= 1)) &&
+    (!timeout || Number(timeout) > 0);
   const current = key === reviewKey ? preview : null;
   async function review() {
+    setOperation(`Reviewing ${ids.length} selected jobs`);
     setBusy(true);
     setError("");
     try {
       setPreview(await post<BatchPreview>("batches/preview", request));
+      setPage(0);
       setReviewKey(key);
       setSubmissionID(crypto.randomUUID());
     } catch (e) {
@@ -60,6 +80,7 @@ export function BatchControls({
   }
   async function submit() {
     if (!current) return;
+    setOperation(`Queueing ${counts?.eligible || 0} jobs`);
     setBusy(true);
     setError("");
     try {
@@ -152,11 +173,11 @@ export function BatchControls({
               min="0.125"
               step="0.125"
               value={memory}
-              onChange={(e) => setMemory(Number(e.target.value))}
+              onChange={(e) => setMemory(e.target.value)}
             />
           </label>
         )}
-        {["qe", "estimate_ram"].includes(kind) && (
+        {kind === "qe" && (
           <label>
             Processes per job{" "}
             <input
@@ -165,7 +186,7 @@ export function BatchControls({
               min="1"
               step="1"
               value={processes}
-              onChange={(e) => setProcesses(Number(e.target.value))}
+              onChange={(e) => setProcesses(e.target.value)}
             />
           </label>
         )}
@@ -198,7 +219,7 @@ export function BatchControls({
             Rerun existing estimates
           </label>
         )}
-        <button disabled={busy || !ids.length} onClick={review}>
+        <button disabled={busy || !ids.length || !valid} onClick={review}>
           Preview selected jobs
         </button>
       </div>
@@ -218,6 +239,11 @@ export function BatchControls({
         <p className="filter-help">
           For container execution, install Apptainer, build the chemistry image,
           and set PFAS_APPTAINER_IMAGE. See the dashboard documentation.
+        </p>
+      )}
+      {busy && (
+        <p role="status">
+          {operation} · {elapsed}s elapsed…
         </p>
       )}
       {error && (
@@ -242,8 +268,22 @@ export function BatchControls({
               ? `${current.resources.timeout}s timeout`
               : "No timeout"}
           </p>
-          <ol className="batch-preview">
-            {current.entries.map((entry) => (
+          <p>
+            Showing {page * 50 + 1}–
+            {Math.min((page + 1) * 50, current.entries.length)} of{" "}
+            {current.entries.length} jobs
+          </p>
+          <button disabled={page === 0} onClick={() => setPage(page - 1)}>
+            Previous jobs
+          </button>
+          <button
+            disabled={(page + 1) * 50 >= current.entries.length}
+            onClick={() => setPage(page + 1)}
+          >
+            Next jobs
+          </button>
+          <ol className="batch-preview" start={page * 50 + 1}>
+            {current.entries.slice(page * 50, (page + 1) * 50).map((entry) => (
               <li key={entry.candidate}>
                 <a href={`#candidate/${entry.candidate}`}>
                   Cluster {entry.candidate}
@@ -251,20 +291,34 @@ export function BatchControls({
                 · {entry.status}
                 {entry.reason && ` · ${entry.reason}`}
                 {entry.input && (
-                  <details>
-                    <summary>Command and exact input</summary>
-                    <code>{entry.command?.join(" ")}</code>
-                    <pre>{entry.input}</pre>
-                  </details>
+                  <JobInput input={entry.input} command={entry.command} />
                 )}
               </li>
             ))}
           </ol>
-          <button disabled={busy || !counts?.eligible} onClick={submit}>
+          <button
+            disabled={busy || !counts?.eligible || !valid}
+            onClick={submit}
+          >
             Queue {counts?.eligible || 0} jobs
           </button>
         </div>
       )}
     </section>
+  );
+}
+
+function JobInput({ input, command }: { input: string; command?: string[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <details onToggle={(event) => setOpen(event.currentTarget.open)}>
+      <summary>Command and exact input</summary>
+      {open && (
+        <>
+          <code>{command?.join(" ")}</code>
+          <pre>{input}</pre>
+        </>
+      )}
+    </details>
   );
 }

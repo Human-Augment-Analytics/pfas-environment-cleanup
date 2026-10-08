@@ -51,7 +51,7 @@ const attempt = (id, overrides = {}) => ({
 
 test("latest successful estimates remain separate by system and retain provenance", () => {
   const latest = attempt("3", {
-    processes: 4,
+    processes: 1,
     version: "candidate.big.in",
     ram_estimate: {
       per_process: ram(2 * 1024 ** 3),
@@ -72,9 +72,9 @@ test("latest successful estimates remain separate by system and retain provenanc
   ];
   const [result] = withTaskFields([candidate()], tasks);
   assert.equal(result.fields.candidate_ram_per_process_gib, "2");
-  assert.equal(result.fields.candidate_ram_total_gib, "5");
+  assert.equal(result.fields.candidate_ram_total_gib, undefined);
   assert.equal(result.fields.complex_ram_per_process_gib, "6");
-  assert.equal(result.fields.complex_ram_total_gib, "");
+  assert.equal(result.fields.complex_ram_total_gib, undefined);
   assert.equal(result.task_summary.ram.candidate, latest);
 });
 
@@ -92,6 +92,24 @@ test("missing and unsuccessful estimates never become zero or enter numeric filt
       false,
     );
   }
+});
+
+test("Est RAM keeps single-process estimates when a newer multi-process run exists", () => {
+  const [row] = withTaskFields(
+    [candidate()],
+    [
+      attempt("1"),
+      attempt("2", {
+        processes: 4,
+        ram_estimate: {
+          per_process: ram(8 * 1024 ** 3),
+          total: ram(10 * 1024 ** 3),
+        },
+      }),
+    ],
+  );
+  assert.equal(row.fields.candidate_ram_per_process_gib, "1");
+  assert.equal(row.fields.candidate_ram_total_gib, undefined);
 });
 
 test("RAM conditions use binary GiB and combine with descriptor filters", () => {

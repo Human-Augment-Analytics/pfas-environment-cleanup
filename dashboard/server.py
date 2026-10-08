@@ -102,7 +102,13 @@ def create_app(config=None):
 
     @app.post("/api/batches/preview")
     def batch_preview(action: BatchAction):
-        return checked(lambda: manager.batches.review(**action.model_dump()))
+        review = checked(lambda: manager.batches.review(**action.model_dump()))
+        # Bulk review has no geometry viewer; keep coordinates in single-job previews.
+        review["entries"] = [
+            {key: value for key, value in entry.items() if key != "geometry"}
+            for entry in review["entries"]
+        ]
+        return review
 
     @app.post("/api/batches")
     def batch_submit(action: BatchAction):
@@ -117,6 +123,10 @@ def create_app(config=None):
         return checked(
             lambda: manager.configure(settings.model_dump(exclude_none=True))
         )
+
+    @app.post("/api/queue/clear")
+    def queue_clear():
+        return manager.clear_queue()
 
     @app.post("/api/batches/{id}/cancel")
     def batch_cancel(id: str):
@@ -141,7 +151,7 @@ def create_app(config=None):
                     / manager.store.get(id)["id"]
                     / (name + ".log")
                 )
-                for name in ("stdout", "stderr")
+                for name in ("entrypoint", "stdout", "stderr")
             }
         )
 

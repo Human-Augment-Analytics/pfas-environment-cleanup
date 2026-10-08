@@ -14,7 +14,7 @@ export function RunControls({
   system: string;
   action: (path: string, body?: Action) => Promise<void>;
 }) {
-  const [processes, setProcesses] = useState(1),
+  const [processes, setProcesses] = useState("1"),
     [target, setTarget] = useState("local"),
     [timeout, setTimeout] = useState("");
   const [runtime, setRuntime] = useState(
@@ -22,20 +22,25 @@ export function RunControls({
   );
   const [inputId, setInputId] = useState("");
   const [kind, setKind] = useState("qe");
-  const [memory, setMemory] = useState(4);
+  const [memory, setMemory] = useState("4");
   const [preview, setPreview] = useState<Preview | null>(null),
     [error, setError] = useState("");
   const body: Action = {
     kind,
     ...(inputId ? { input_id: inputId } : {}),
     runtime,
-    memory_gib: memory,
+    memory_gib: Number(memory),
     candidate,
     system,
-    processes,
+    processes: kind === "estimate_ram" ? 1 : Number(processes),
     target,
     ...(timeout ? { timeout: Number(timeout) } : {}),
   };
+  const valid =
+    Number(memory) > 0 &&
+    (kind === "estimate_ram" ||
+      (Number.isInteger(Number(processes)) && Number(processes) >= 1)) &&
+    (!timeout || Number(timeout) > 0);
   const changed = () => {
     setPreview(null);
     setError("");
@@ -104,25 +109,27 @@ export function RunControls({
               step="0.125"
               value={memory}
               onChange={(e) => {
-                setMemory(Number(e.target.value));
+                setMemory(e.target.value);
                 changed();
               }}
             />
           </label>
         )}
-        <label>
-          Processes{" "}
-          <input
-            type="number"
-            min="1"
-            step="1"
-            value={processes}
-            onChange={(e) => {
-              setProcesses(Number(e.target.value));
-              changed();
-            }}
-          />
-        </label>
+        {kind === "qe" && (
+          <label>
+            Processes{" "}
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={processes}
+              onChange={(e) => {
+                setProcesses(e.target.value);
+                changed();
+              }}
+            />
+          </label>
+        )}
         <label>
           Target{" "}
           <select
@@ -151,6 +158,7 @@ export function RunControls({
           />
         </label>
         <button
+          disabled={!valid}
           onClick={async () => {
             try {
               setPreview(await post<Preview>("preview", body));
@@ -176,6 +184,7 @@ export function RunControls({
             <pre>{preview.input}</pre>
           </details>
           <button
+            disabled={!valid}
             onClick={async () => {
               await action("tasks", {
                 ...body,

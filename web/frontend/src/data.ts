@@ -41,6 +41,7 @@ export type Task = {
   system: string;
   processes: number;
   status: string;
+  stop_requested?: boolean;
   created: string;
   started?: string;
   ended?: string;

@@ -217,9 +217,9 @@ export function CandidateBrowser({
               .map((field) => (
                 <option key={field} value={field}>
                   {(field === "candidate_ram_per_process_gib"
-                    ? "RAM · Candidate"
+                    ? "Est RAM · Candidate"
                     : field === "complex_ram_per_process_gib"
-                      ? "RAM · Complex"
+                      ? "Est RAM · Complex"
                       : ramFields[field]) ||
                     (field === "cluster"
                       ? "Cluster ID"

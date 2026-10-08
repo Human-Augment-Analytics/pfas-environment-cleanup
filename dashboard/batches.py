@@ -8,6 +8,8 @@ import uuid
 from .persistence import now
 from .runtimes import GIB
 
+logger = logging.getLogger("uvicorn.error")
+
 
 class Batches:
     def __init__(self, manager):
@@ -45,6 +47,9 @@ class Batches:
             raise ValueError("Provide distinct selected candidate IDs")
         if any(id not in manager.candidates for id in candidates):
             raise ValueError("Unknown candidate")
+        logger.info(
+            "Batch preview: reviewing %s selected %s jobs", len(candidates), kind
+        )
         timeout = (
             timeout
             if timeout is not None
@@ -89,6 +94,18 @@ print(json.dumps(results))
                 )
             molecules = json.loads(getattr(result, "stdout", "{}"))
         tasks = manager.store.tasks()
+        related_tasks = {}
+        prepared_tasks = {}
+        all_prepared = []
+        for task in tasks:
+            related_tasks.setdefault(
+                (task["candidate"], task["kind"], task["system"]), []
+            ).append(task)
+            if task["kind"] == "prepare" and task["status"] == "succeeded":
+                prepared_tasks.setdefault(task["candidate"], []).append(task)
+                all_prepared.append(task)
+        # Share only within this review. Submission rereads history and file hashes.
+        pseudo_hashes = {}
         entries = []
         for candidate in candidates:
             entry = {"candidate": candidate, "status": "eligible", "reason": ""}
@@ -115,13 +132,7 @@ print(json.dumps(results))
                         status="unavailable",
                         reason="Missing pseudopotentials: " + ", ".join(missing),
                     )
-            related = [
-                t
-                for t in tasks
-                if t["candidate"] == candidate
-                and t["kind"] == kind
-                and t["system"] == owner_system
-            ]
+            related = related_tasks.get((candidate, kind, owner_system), [])
             if entry["status"] == "unavailable":
                 pass
             elif any(t["status"] in ("queued", "running") for t in related):
@@ -137,6 +148,10 @@ print(json.dumps(results))
                             runtime,
                             kind=kind,
                             issue_token=issue_tokens,
+                            _tasks=all_prepared
+                            if system == "tfa"
+                            else prepared_tasks.get(candidate, []),
+                            _pseudo_hashes=pseudo_hashes,
                         )
                         entry.update(preview)
                         if not (
@@ -190,6 +205,10 @@ print(json.dumps(results))
                 except (ValueError, OSError) as error:
                     entry.update(status="unavailable", reason=str(error))
             entries.append(entry)
+            if len(entries) % 100 == 0 or len(entries) == len(candidates):
+                logger.info(
+                    "Batch preview: reviewed %s/%s jobs", len(entries), len(candidates)
+                )
         return {
             "entries": entries,
             "resources": resources,
@@ -206,6 +225,7 @@ print(json.dumps(results))
             previous = manager.store.batch(batch_id)
             if previous:
                 return previous
+            logger.info("Batch %s: validating selected jobs before queueing", batch_id)
             review = self.review(**request, issue_tokens=False)
             if review["image_hash"] != request.get("image_hash"):
                 raise ValueError("Container image changed; review the batch again")
@@ -297,6 +317,14 @@ print(json.dumps(results))
                     }
                 )
                 manager.store.put_batch(batch)
+                if (position + 1) % 100 == 0 or position + 1 == len(review["entries"]):
+                    logger.info(
+                        "Batch %s: accepted %s/%s entries (%s queued)",
+                        batch_id,
+                        position + 1,
+                        len(review["entries"]),
+                        len(batch["task_ids"]),
+                    )
             return batch
 
     def retry(self, id):

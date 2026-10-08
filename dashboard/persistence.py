@@ -83,6 +83,19 @@ class Store:
             raise ValueError("Unknown task")
         return json.loads(row[0])
 
+    def prepared(self, candidate, system):
+        # Resolve defaults without decoding the entire history for every queued job.
+        sql = "SELECT data FROM tasks WHERE json_extract(data, '$.kind')='prepare' AND json_extract(data, '$.status')='succeeded'"
+        parameters = ()
+        if system != "tfa":
+            sql += " AND json_extract(data, '$.candidate')=?"
+            parameters = (candidate,)
+        with self.lock:
+            return [
+                json.loads(row[0])
+                for row in self.db.execute(sql + " ORDER BY rowid DESC", parameters)
+            ]
+
     def active(self, kind, candidate, system):
         with self.lock:
             row = self.db.execute(

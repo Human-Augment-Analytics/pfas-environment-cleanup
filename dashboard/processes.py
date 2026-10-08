@@ -8,6 +8,8 @@ from pathlib import Path
 
 import psutil
 
+from .persistence import now
+
 
 def terminate(process):
     # Capture descendants before the leader exits; MPI can create other groups.
@@ -54,11 +56,31 @@ def execute(
         (directory / "stdout.log").open("wb") as out,
         (directory / "stderr.log").open("wb") as err,
     ):
+        metadata = directory / "entrypoint.log"
+        header = [f"Task: {directory.name}"]
+        if metadata.is_file():
+            header.extend(
+                line
+                for line in metadata.read_text().splitlines()
+                if line.startswith(
+                    (
+                        "Input hash:",
+                        "Source hash:",
+                        "Image hash:",
+                        "Runtime:",
+                        "Resources:",
+                    )
+                )
+            )
+        for name, log in (("stdout", out), ("stderr", err)):
+            for line in [*header, f"Stream: {name}"]:
+                log.write(f"[{now()}] {line}\n".encode())
+            log.flush()
         process = subprocess.Popen(
             command,
             cwd=directory,
-            stdout=out,
-            stderr=err,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             start_new_session=True,
             env={
                 **(env or os.environ),
@@ -69,6 +91,36 @@ def execute(
                 "NUMEXPR_NUM_THREADS": "1",
             },
         )
+        streams = [
+            (process.stdout, out, bytearray()),
+            (process.stderr, err, bytearray()),
+        ]
+        for stream, _, _ in streams:
+            os.set_blocking(stream.fileno(), False)
+
+        def drain(final=False):
+            for stream, log, buffer in streams:
+                # Bound each drain so noisy output cannot starve timeout/cancel checks.
+                for _ in range(16):
+                    try:
+                        chunk = os.read(stream.fileno(), 65536)
+                    except BlockingIOError:
+                        break
+                    if not chunk:
+                        break
+                    buffer.extend(chunk)
+                    while b"\n" in buffer or len(buffer) >= 65536:
+                        end = buffer.find(b"\n")
+                        size = end + 1 if end >= 0 else 65536
+                        log.write(f"[{now()}] ".encode() + bytes(buffer[:size]))
+                        del buffer[:size]
+                if final:
+                    if buffer:
+                        log.write(f"[{now()}] ".encode() + bytes(buffer) + b"\n")
+                        buffer.clear()
+                    stream.close()
+                log.flush()
+
         on_start(process)
         peak = 0
         group_peak = 0
@@ -136,15 +188,18 @@ def execute(
                 raise
 
         while process.poll() is None:
+            drain()
             if time.monotonic() - previous_sample > 0.25:
                 sample()
                 previous_sample = time.monotonic()
             if memory_events:
                 terminate(process)
+                drain(final=True)
                 sample()
                 return process.returncode, "failed", memory_events
             if cancel.is_set() or (timeout and time.monotonic() - start > timeout):
                 terminate(process)
+                drain(final=True)
                 sample()
                 return (
                     process.returncode,
@@ -152,6 +207,7 @@ def execute(
                     "Stopped" if cancel.is_set() else "Timed out",
                 )
             time.sleep(0.05)
+        drain(final=True)
         sample()
         return (
             process.returncode,
