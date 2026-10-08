@@ -39,6 +39,7 @@ class BatchAction(BaseModel):
     memory_gib: float = 4
     timeout: float | None = None
     retry: bool = False
+    rerun_completed: bool = False
     id: str | None = None
     image_hash: str | None = None
     expected: list[dict] = Field(default_factory=list)

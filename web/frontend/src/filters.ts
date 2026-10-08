@@ -90,3 +90,39 @@ export function matchesClusterIDs(id: string, ranges: [number, number][]) {
     ranges.some(([start, end]) => Number(id) >= start && Number(id) <= end)
   );
 }
+
+const numericFields = new Set([
+  ...Object.keys(ramFields),
+  "cluster",
+  "n_points",
+  "medoid_CID",
+  "MolecularWeight",
+  "ExactMass",
+  "Charge",
+  "XLogP",
+  "TPSA",
+  "HBondDonorCount",
+  "HBondAcceptorCount",
+  "RotatableBondCount",
+]);
+
+export function sortCandidates(
+  candidates: Candidate[],
+  field: string,
+  direction: string,
+) {
+  if (!field) return candidates;
+  return [...candidates].sort((a, b) => {
+    const left = a.fields[field]?.trim(),
+      right = b.fields[field]?.trim();
+    const numeric = numericFields.has(field);
+    const missingLeft = !left || (numeric && !Number.isFinite(Number(left)));
+    const missingRight = !right || (numeric && !Number.isFinite(Number(right)));
+    if (missingLeft || missingRight)
+      return Number(missingLeft) - Number(missingRight);
+    const comparison = numeric
+      ? Number(left) - Number(right)
+      : left!.localeCompare(right!);
+    return direction === "desc" ? -comparison : comparison;
+  });
+}

@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState, useEffect } from "react";
+import { lazy, Suspense, useMemo, useState, useEffect, useRef } from "react";
 import { Action, Candidate, Data, Task } from "./data";
 import { PubChemLink } from "./PubChemLink";
 import {
@@ -7,48 +7,16 @@ import {
   describeFilters,
   parseClusterIDs,
   matchesClusterIDs,
+  sortCandidates,
 } from "./filters";
-import {
-  ramFields,
-  preparationLabel,
-  matchesPreparation,
-} from "./candidateResults";
+import { ramFields, matchesPreparation } from "./candidateResults";
 import { BatchControls } from "./BatchControls";
+const CandidateGrid = lazy(() =>
+  import("./CandidateGrid").then((module) => ({
+    default: module.CandidateGrid,
+  })),
+);
 import { RunControls } from "./RunControls";
-
-const numericFields = new Set([
-  ...Object.keys(ramFields),
-  "cluster",
-  "n_points",
-  "medoid_CID",
-  "MolecularWeight",
-  "ExactMass",
-  "Charge",
-  "XLogP",
-  "TPSA",
-  "HBondDonorCount",
-  "HBondAcceptorCount",
-  "RotatableBondCount",
-]);
-
-function sorted(candidates: Candidate[], field: string, direction: string) {
-  if (!field) return candidates;
-  return [...candidates].sort((a, b) => {
-    const left = a.fields[field],
-      right = b.fields[field];
-    // Empty and nonnumeric values always appear last.
-    const missingLeft =
-      !left || (numericFields.has(field) && !Number.isFinite(Number(left)));
-    const missingRight =
-      !right || (numericFields.has(field) && !Number.isFinite(Number(right)));
-    if (missingLeft || missingRight)
-      return Number(missingLeft) - Number(missingRight);
-    const comparison = numericFields.has(field)
-      ? Number(left) - Number(right)
-      : left.localeCompare(right);
-    return direction === "desc" ? -comparison : comparison;
-  });
-}
 
 function taskIndex(tasks: Task[]) {
   const diagrams = new Map<string, Task>();
@@ -97,54 +65,30 @@ export function CandidateBrowser({
   const [sort, setSort] = useState(""),
     [direction, setDirection] = useState("asc");
   const [preparationFilter, setPreparationFilter] = useState("all");
-  const [ramField, setRamField] = useState("complex_ram_per_process_gib");
-  const [minRAM, setMinRAM] = useState(""),
-    [maxRAM, setMaxRAM] = useState("");
-  const ramRangeInvalid =
-    (minRAM !== "" &&
-      (!Number.isFinite(Number(minRAM)) || Number(minRAM) < 0)) ||
-    (maxRAM !== "" &&
-      (!Number.isFinite(Number(maxRAM)) || Number(maxRAM) < 0)) ||
-    (minRAM !== "" && maxRAM !== "" && Number(minRAM) > Number(maxRAM));
   const [run, setRun] = useState<{ candidate: string; system: string } | null>(
     null,
   );
+  const runPanel = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (run)
+      runPanel.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [run]);
   const index = useMemo(() => taskIndex(data.tasks), [data.tasks]);
   const idFilter = useMemo(() => parseClusterIDs(search), [search]);
   const candidates = useMemo(
     () =>
-      sorted(
+      sortCandidates(
         data.candidates.filter(
           (c) =>
             !idFilter.error &&
-            !ramRangeInvalid &&
             matchesPreparation(c, preparationFilter) &&
-            matchesFilters(c, [
-              ...(minRAM !== ""
-                ? [{ field: ramField, operator: ">=", value: minRAM }]
-                : []),
-              ...(maxRAM !== ""
-                ? [{ field: ramField, operator: "<=", value: maxRAM }]
-                : []),
-            ]) &&
             matchesClusterIDs(c.id, idFilter.ranges) &&
             matchesFilters(c, filters),
         ),
         sort,
         direction,
       ),
-    [
-      data.candidates,
-      idFilter,
-      sort,
-      direction,
-      filters,
-      preparationFilter,
-      ramField,
-      minRAM,
-      maxRAM,
-      ramRangeInvalid,
-    ],
+    [data.candidates, idFilter, sort, direction, filters, preparationFilter],
   );
   const [selected, setSelected] = useState<Set<string>>(new Set());
   useEffect(() => {
@@ -186,9 +130,8 @@ export function CandidateBrowser({
   return (
     <>
       <h1>All clusters</h1>
-      <p>
-        {data.candidates.length} candidates. Descriptors are cluster averages;
-        CID and SMILES identify the representative molecule.
+      <p className="browser-summary">
+        Cluster descriptors and representative molecules.
       </p>
       <div className="controls browser-controls">
         <div className="view-switch" role="group" aria-label="Candidate view">
@@ -230,52 +173,6 @@ export function CandidateBrowser({
           </select>
         </label>
         <label>
-          RAM field{" "}
-          <select
-            aria-label="RAM field"
-            value={ramField}
-            onChange={(e) => setRamField(e.target.value)}
-          >
-            {Object.entries(ramFields).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Min RAM (GiB){" "}
-          <input
-            aria-label="Minimum RAM (GiB)"
-            type="number"
-            min="0"
-            step="any"
-            value={minRAM}
-            onChange={(e) => setMinRAM(e.target.value)}
-          />
-        </label>
-        <label>
-          Max RAM (GiB){" "}
-          <input
-            aria-label="Maximum RAM (GiB)"
-            type="number"
-            min="0"
-            step="any"
-            value={maxRAM}
-            onChange={(e) => setMaxRAM(e.target.value)}
-          />
-        </label>
-        <button
-          disabled={!minRAM && !maxRAM && preparationFilter === "all"}
-          onClick={() => {
-            setMinRAM("");
-            setMaxRAM("");
-            setPreparationFilter("all");
-          }}
-        >
-          Clear RAM/preparation filters
-        </button>
-        <label>
           Sort by{" "}
           <select
             aria-label="Sort by"
@@ -283,20 +180,26 @@ export function CandidateBrowser({
             onChange={(e) => setSort(e.target.value)}
           >
             <option value="">CSV order</option>
-            {Object.keys(data.candidates[0]?.fields || {}).map((field) => (
-              <option key={field} value={field}>
-                {ramFields[field] ||
-                  (field === "cluster"
-                    ? "Cluster ID"
-                    : field === "n_points"
-                      ? "Points"
-                      : field === "medoid_CID"
-                        ? "Representative CID"
-                        : field === "medoid_SMILES"
-                          ? "Representative SMILES"
-                          : `Average ${field}`)}
-              </option>
-            ))}
+            {Object.keys(data.candidates[0]?.fields || {})
+              .filter((field) => !field.endsWith("_ram_total_gib"))
+              .map((field) => (
+                <option key={field} value={field}>
+                  {(field === "candidate_ram_per_process_gib"
+                    ? "RAM · Candidate"
+                    : field === "complex_ram_per_process_gib"
+                      ? "RAM · Complex"
+                      : ramFields[field]) ||
+                    (field === "cluster"
+                      ? "Cluster ID"
+                      : field === "n_points"
+                        ? "Points"
+                        : field === "medoid_CID"
+                          ? "Representative CID"
+                          : field === "medoid_SMILES"
+                            ? "Representative SMILES"
+                            : `Average ${field}`)}
+                </option>
+              ))}
           </select>
         </label>
         <label>
@@ -312,25 +215,15 @@ export function CandidateBrowser({
           </select>
         </label>
       </div>
-      <p
-        id="cluster-filter-help"
-        className={idFilter.error ? "error" : "filter-help"}
-        role={idFilter.error ? "alert" : undefined}
-      >
-        {idFilter.error ||
-          "Use an ID, a range (20-50), or a comma-separated list (2-10, 15)."}
-      </p>
-      {ramRangeInvalid && (
-        <p className="error" role="alert">
-          Enter nonnegative RAM limits with the minimum no greater than the
-          maximum.
+      {idFilter.error && (
+        <p
+          id="cluster-filter-help"
+          className={idFilter.error ? "error" : "filter-help"}
+          role={idFilter.error ? "alert" : undefined}
+        >
+          {idFilter.error}
         </p>
       )}
-      <p className="filter-help">
-        RAM values are latest successful QE estimates, separately for each
-        system. Missing estimates do not match RAM limits. Use Advanced search
-        to combine RAM conditions.
-      </p>
       {filters.length > 0 && (
         <p className="banner">
           Advanced filters: {describeFilters(filters)}.{" "}
@@ -351,22 +244,28 @@ export function CandidateBrowser({
             >
               Select all matching ({candidates.length})
             </button>
-            <button
-              disabled={!selectedIDs.length}
-              onClick={() => setSelected(new Set())}
-            >
-              Clear selection
-            </button>
-            <span role="status">{selectedIDs.length} selected</span>
+            {selectedIDs.length > 0 && (
+              <button
+                disabled={!selectedIDs.length}
+                onClick={() => setSelected(new Set())}
+              >
+                Clear selection
+              </button>
+            )}
+            {selectedIDs.length > 0 && (
+              <span role="status">{selectedIDs.length} selected</span>
+            )}
           </div>
-          <BatchControls
-            ids={selectedIDs}
-            runtimes={data.queue?.runtimes}
-            onQueued={() => {
-              void refresh();
-              location.hash = "queue";
-            }}
-          />
+          {selectedIDs.length > 0 && (
+            <BatchControls
+              ids={selectedIDs}
+              runtimes={data.queue?.runtimes}
+              onQueued={() => {
+                void refresh();
+                location.hash = "queue";
+              }}
+            />
+          )}
         </>
       )}
       {view === "tiles" ? (
@@ -402,245 +301,47 @@ export function CandidateBrowser({
           ))}
         </div>
       ) : (
-        <div
-          className="table-wrap"
-          role="region"
-          aria-label="Cluster and representative table"
-          tabIndex={0}
-        >
-          <table className="candidate-table">
-            <colgroup>
-              <col style={{ width: "6%" }} />
-              <col style={{ width: "6%" }} />
-              <col style={{ width: "6%" }} />
-              <col style={{ width: "6%" }} />
-            </colgroup>
-            <colgroup>
-              <col style={{ width: "10%" }} />
-              <col style={{ width: "13%" }} />
-              <col style={{ width: "13%" }} />
-            </colgroup>
-            <colgroup>
-              <col style={{ width: live ? "9%" : "10%" }} />
-              <col style={{ width: live ? "10%" : "30%" }} />
-              {live && <col style={{ width: "21%" }} />}
-            </colgroup>
-            <thead>
-              <tr className="group-headings">
-                <th className="cluster-heading" scope="colgroup" colSpan={4}>
-                  Cluster
-                </th>
-                <th className="task-heading" scope="colgroup" colSpan={3}>
-                  Preparation and QE estimates
-                </th>
-                <th
-                  className="representative-heading"
-                  scope="colgroup"
-                  colSpan={live ? 3 : 2}
-                >
-                  Representative
-                </th>
-              </tr>
-              <tr>
-                <th className="cluster-heading" scope="col">
-                  ID / Select
-                </th>
-                <th className="cluster-heading" scope="col">
-                  Points
-                </th>
-                <th className="cluster-heading" scope="col">
-                  Avg MW
-                </th>
-                <th className="cluster-heading" scope="col">
-                  Avg XLogP
-                </th>
-                <th className="task-heading" scope="col">
-                  Inputs
-                </th>
-                <th className="task-heading" scope="col">
-                  Candidate RAM / process (GiB)
-                </th>
-                <th className="task-heading" scope="col">
-                  Complex RAM / process (GiB)
-                </th>
-                <th className="representative-heading" scope="col">
-                  CID
-                </th>
-                <th className="representative-heading" scope="col">
-                  Diagram
-                </th>
-                {live && (
-                  <th className="representative-heading" scope="col">
-                    Actions
-                  </th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {candidates.map((c) => {
-                const preparation = index.prepared.get(c.id);
-                const preparing = index.active.has(`${c.id}/prepare/candidate`);
-                return (
-                  <Fragment key={c.id}>
-                    <tr data-cluster={c.id}>
-                      <td className="cluster-cell">
-                        {live && (
-                          <input
-                            type="checkbox"
-                            aria-label={`Select cluster ${c.id}`}
-                            checked={selected.has(c.id)}
-                            onChange={() => toggle(c.id)}
-                          />
-                        )}
-                        <a href={`#candidate/${c.id}`}>{c.id}</a>
-                      </td>
-                      <td className="cluster-cell">{c.fields.n_points}</td>
-                      <td className="cluster-cell">
-                        {Number(c.fields.MolecularWeight).toFixed(2)}
-                      </td>
-                      <td className="cluster-cell">
-                        {Number(c.fields.XLogP).toFixed(2)}
-                      </td>
-                      <td className="task-cell">
-                        <strong>{preparationLabel(c)}</strong>
-                        {c.task_summary?.prepared &&
-                          c.task_summary.latestPreparation?.id !==
-                            c.task_summary.prepared.id && (
-                            <small>
-                              Latest attempt:{" "}
-                              {c.task_summary.latestPreparation?.status}
-                            </small>
-                          )}
-                      </td>
-                      {["candidate", "complex"].map((system) => {
-                        const estimate = c.task_summary?.ram[system];
-                        const report = estimate?.ram_estimate;
-                        return (
-                          <td
-                            key={system}
-                            className="task-cell"
-                            title={
-                              estimate
-                                ? `${estimate.created} · ${estimate.runtime || "native"} · QE reported ${report?.per_process?.value} ${report?.per_process?.unit} per process`
-                                : "No successful QE estimate"
-                            }
-                          >
-                            {report?.per_process ? (
-                              <>
-                                <strong>
-                                  {(
-                                    report.per_process.bytes /
-                                    1024 ** 3
-                                  ).toFixed(3)}
-                                </strong>
-                                <small>
-                                  Total:{" "}
-                                  {report.total
-                                    ? `${(report.total.bytes / 1024 ** 3).toFixed(3)} GiB`
-                                    : "unavailable"}
-                                </small>
-                                <small>
-                                  {estimate?.version || "Prepared default"} ·{" "}
-                                  {estimate?.processes} process(es)
-                                </small>
-                              </>
-                            ) : (
-                              "Unavailable"
-                            )}
-                          </td>
-                        );
-                      })}
-                      <td className="representative-cell">
-                        <PubChemLink cid={c.cid} />
-                      </td>
-                      <td className="representative-cell">
-                        <a href={`#candidate/${c.id}`}>
-                          {diagramContent(c, false)}
-                        </a>
-                      </td>
-                      {live && (
-                        <td className="representative-cell actions-cell">
-                          <div className="row-actions">
-                            <button
-                              disabled={busy || preparing}
-                              onClick={() =>
-                                action("tasks", {
-                                  kind: "prepare",
-                                  candidate: c.id,
-                                  runtime: data.queue?.runtimes.apptainer
-                                    .available
-                                    ? "apptainer"
-                                    : "native",
-                                })
-                              }
-                            >
-                              {preparing
-                                ? "Preparing inputs…"
-                                : "Prepare inputs"}
-                            </button>
-                            {[
-                              {
-                                system: "candidate",
-                                label: "Run pw.x · single",
-                              },
-                              {
-                                system: "complex",
-                                label: "Run pw.x · TFA complex",
-                              },
-                            ].map(({ system, label }) => (
-                              <button
-                                key={system}
-                                disabled={
-                                  busy ||
-                                  !preparation?.artifacts[`${system}.in`] ||
-                                  index.active.has(`${c.id}/qe/${system}`)
-                                }
-                                title={
-                                  !preparation?.artifacts[`${system}.in`]
-                                    ? "Prepare inputs first"
-                                    : "Review the command and input before submitting"
-                                }
-                                aria-expanded={
-                                  run?.candidate === c.id &&
-                                  run.system === system
-                                }
-                                onClick={() =>
-                                  setRun({ candidate: c.id, system })
-                                }
-                              >
-                                {label}
-                              </button>
-                            ))}
-                          </div>
-                          {preparing && (
-                            <small>Use Refresh to update progress.</small>
-                          )}
-                        </td>
-                      )}
-                    </tr>
-                    {live && run?.candidate === c.id && (
-                      <tr className="run-row">
-                        <td colSpan={10}>
-                          <button onClick={() => setRun(null)}>
-                            Close run controls
-                          </button>
-                          <RunControls
-                            key={run.candidate + run.system}
-                            candidate={run.candidate}
-                            system={run.system}
-                            runtimes={data.queue?.runtimes}
-                            versions={data.input_versions}
-                            action={action}
-                          />
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <Suspense fallback={<p role="status">Loading rows…</p>}>
+            <CandidateGrid
+              candidates={candidates}
+              data={data}
+              busy={busy}
+              action={action}
+              selected={selected}
+              onSelection={setSelected}
+              sort={sort}
+              direction={direction}
+              onSort={(field, nextDirection) => {
+                setSort(field);
+                setDirection(nextDirection);
+              }}
+              diagrams={index.diagrams}
+              latestDiagram={index.latestDiagram}
+              prepared={index.prepared}
+              active={index.active}
+              onRun={(candidate, system) => setRun({ candidate, system })}
+            />
+          </Suspense>
+          {live && run && (
+            <section
+              ref={runPanel}
+              className="grid-run-controls"
+              aria-label={`Run controls for cluster ${run.candidate}`}
+            >
+              <h3>Cluster {run.candidate}</h3>
+              <button onClick={() => setRun(null)}>Close run controls</button>
+              <RunControls
+                key={run.candidate + run.system}
+                candidate={run.candidate}
+                system={run.system}
+                runtimes={data.queue?.runtimes}
+                versions={data.input_versions}
+                action={action}
+              />
+            </section>
+          )}
+        </>
       )}
     </>
   );

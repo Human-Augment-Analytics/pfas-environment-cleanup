@@ -151,6 +151,7 @@ export type BatchRequest = {
   memory_gib: number;
   timeout?: number;
   retry?: boolean;
+  rerun_completed?: boolean;
 };
 export type BatchEntry = {
   source_hash?: string;

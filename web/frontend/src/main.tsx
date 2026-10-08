@@ -80,7 +80,14 @@ function App() {
           </button>
         </nav>
       </header>
-      <main aria-busy={busy}>
+      <main
+        aria-busy={busy}
+        className={
+          !candidate && !["tasks", "advanced-search", "queue"].includes(hash)
+            ? "candidate-page"
+            : undefined
+        }
+      >
         {error && (
           <p role="alert" className="error">
             {error}

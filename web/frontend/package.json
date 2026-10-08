@@ -12,6 +12,8 @@
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
+    "ag-grid-community": "36.2.0",
+    "ag-grid-react": "36.2.0",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },

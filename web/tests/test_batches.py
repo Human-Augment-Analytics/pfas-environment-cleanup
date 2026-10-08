@@ -558,3 +558,75 @@ def test_api_bulk_ram_preview_submission_cancel_and_retry(manager, monkeypatch):
         retry = client.get("/api/batches/ram-api/retry").json()
         assert retry["kind"] == "estimate_ram"
         assert retry["candidates"] == ["500", "501"]
+
+
+def test_bulk_ram_rerun_completed_requires_review_and_still_skips_active(manager):
+    manager.config.pw = sys.executable
+    prepare_qe(manager, "500")
+    body = request(["500"], "estimate_ram")
+    batch = submit(manager, body)
+    manager.store.update(
+        batch["task_ids"][0],
+        status="succeeded",
+        ram_estimate={
+            "per_process": {"value": "2", "unit": "MB", "bytes": 2 * 1024**2},
+            "total": None,
+        },
+    )
+    previous = manager.batches.review(**body)
+    assert previous["entries"][0]["status"] == "completed"
+    rerun = {**body, "rerun_completed": True}
+    assert manager.batches.review(**rerun)["entries"][0]["status"] == "eligible"
+    rejected = manager.batches.submit({**rerun, "expected": previous["entries"]})
+    assert rejected["task_ids"] == []
+    assert "preview" in rejected["entries"][0]["reason"]
+    fresh = submit(manager, rerun)
+    assert fresh["rerun_completed"]
+    assert fresh["task_ids"][0] != batch["task_ids"][0]
+    assert manager.batches.review(**rerun)["entries"][0]["status"] == "active"
+
+
+def test_rerun_completed_flag_does_not_change_other_batch_actions(manager):
+    batch = submit(manager, request(["500"]))
+    task = manager.store.get(batch["task_ids"][0])
+    (manager.config.artifacts / task["id"] / "diagram.png").write_bytes(b"png")
+    manager.store.update(task["id"], status="succeeded")
+    assert (
+        manager.batches.review(**request(["500"], rerun_completed=True))["entries"][0][
+            "status"
+        ]
+        == "completed"
+    )
+
+
+def test_api_bulk_ram_rerun_checkbox(manager, monkeypatch):
+    manager.config.pw = sys.executable
+    prepare_qe(manager, "500")
+    body = request(["500"], "estimate_ram")
+    batch = submit(manager, body)
+    manager.store.update(
+        batch["task_ids"][0],
+        status="succeeded",
+        ram_estimate={
+            "per_process": {"value": "2", "unit": "MB", "bytes": 2 * 1024**2},
+            "total": None,
+        },
+    )
+    app = create_app(manager.config)
+    monkeypatch.setattr(app.state.manager, "start", lambda: None)
+    with TestClient(app) as client:
+        assert (
+            client.post("/api/batches/preview", json=body).json()["entries"][0][
+                "status"
+            ]
+            == "completed"
+        )
+        rerun = {**body, "rerun_completed": True}
+        preview = client.post("/api/batches/preview", json=rerun).json()
+        assert preview["entries"][0]["status"] == "eligible"
+        response = client.post(
+            "/api/batches",
+            json={**rerun, "expected": preview["entries"], "id": "rerun-api"},
+        )
+        assert response.status_code == 200
+        assert len(response.json()["task_ids"]) == 1

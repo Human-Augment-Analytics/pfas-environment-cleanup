@@ -18,6 +18,9 @@ export function BatchControls({
     initial?.runtime ||
       (runtimes?.apptainer.available ? "apptainer" : "native"),
   );
+  const [rerunCompleted, setRerunCompleted] = useState(
+    initial?.rerun_completed || false,
+  );
   const [processes, setProcesses] = useState(initial?.processes || 1);
   const [memory, setMemory] = useState(initial?.memory_gib || 4);
   const [timeout, setTimeout] = useState(
@@ -37,6 +40,7 @@ export function BatchControls({
     memory_gib: memory,
     timeout: timeout ? Number(timeout) : undefined,
     retry: initial?.retry || false,
+    rerun_completed: kind === "estimate_ram" && rerunCompleted,
   };
   const key = JSON.stringify(request);
   const current = key === reviewKey ? preview : null;
@@ -184,15 +188,24 @@ export function BatchControls({
             onChange={(e) => setTimeout(e.target.value)}
           />
         </label>
+        {kind === "estimate_ram" && (
+          <label className="rerun-option">
+            <input
+              type="checkbox"
+              checked={rerunCompleted}
+              onChange={(e) => setRerunCompleted(e.target.checked)}
+            />
+            Rerun existing estimates
+          </label>
+        )}
         <button disabled={busy || !ids.length} onClick={review}>
           Preview selected jobs
         </button>
       </div>
       {kind === "estimate_ram" && (
         <p>
-          Uses prepared inputs with nstep=0. Matching estimates for the same
-          input, runtime, and process count are skipped. Results appear in the
-          queue and task history.
+          Existing successful estimates are skipped unless you select Rerun
+          existing estimates. Results appear in the queue and task history.
         </p>
       )}
       {runtime === "native" && (

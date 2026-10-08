@@ -28,7 +28,7 @@ all original fields are retained in its detail view.
 The default tile view shows five diagrams across on wide screens and adapts to
 smaller screens. Click a tile to open its entry. Switch to Rows for descriptors
 and live action buttons. Both views share a quick filter for **cluster IDs only**,
-preparation and RAM filters, and sorting by CSV or RAM fields,
+a preparation filter, and sorting by CSV or RAM fields,
 with ascending/descending numerical sorting for numeric descriptors and IDs.
 The ID filter accepts exact IDs, inclusive ranges, and comma-separated unions:
 `20-50`, `1,3,5`, and `2-10, 15`. Invalid syntax is flagged beside the filter.
@@ -36,31 +36,40 @@ CSV order remains available. The Advanced search page combines numeric condition
 with AND, for example Avg MW < 500 and Avg XLogP >= 2. Applied conditions remain
 visible above the results and can be cleared. Missing values do not match.
 
-Rows show **Inputs** preparation status and separate **Candidate RAM / process**
-and **Complex RAM / process** columns in GiB. These use the latest successful
-QE estimate for each system; failed, queued, and canceled attempts do not replace
-a successful estimate. Each RAM cell includes its version, process count, and
-reported total when available. Totals are never inferred. These are historical
-estimates for the displayed input version, not measured process memory or a
-claim about the current edited input. Hover over a RAM cell for the estimate
-time, runtime, and original reported value/unit.
+The candidate browser fills the available window width with small margins.
+Its AG Grid Community table has centered headers, resizable columns, virtualized
+rows, compact action buttons, and larger
+representative diagrams. **Actions for selected molecules** appears only after
+selecting at least one molecule.
 
-Use **RAM field**, **Min RAM (GiB)**, and **Max RAM (GiB)** to filter either
-system's per-process maximum or total; bounds are inclusive. Missing values do
-not match RAM limits. RAM fields also appear in **Advanced search**, where they
-can be combined with descriptor conditions, and in **Sort by**.
-**Preparation** filters distinguish candidates with a successful preparation
-from those without one. **Prepared** means a preparation succeeded previously;
-a later retry's status is shown underneath. Otherwise the Inputs column shows
-Not run, Queued, Running, Failed, Canceled, or Interrupted. These fields work
-in exported snapshots too, without requiring exported raw input files.
+Rows have one **RAM estimate (GB)** column with Candidate and Complex values,
+rounded to the nearest whole GB. Each value uses that system's latest successful
+QE maximum per-process estimate, converted using QE's binary GB convention.
+Missing estimates display Unavailable. Version, process count, and reported total
+remain in task history; missing totals are never inferred. These are historical
+estimates, not measured memory or a claim about the current edited input.
 
-Rows have two header levels: Cluster (ID, Points, Avg MW, Avg XLogP) in green,
-Preparation and QE estimates in blue, and Representative (CID, diagram, actions)
-in purple. CIDs in rows, tiles, and entries
+Choose **RAM · Candidate** or **RAM · Complex** in Sort by, or click the RAM
+header to sort complex RAM initially and toggle the selected RAM sort direction.
+Click other numeric headers to sort their columns. Grid checkboxes share the
+same selection as tiles and the Select all matching toolbar; changing filters
+drops hidden selections. Bulk jobs retain the displayed sort order.
+Sorting uses full precision; missing and invalid values remain last in both
+directions. RAM filtering is available in **Advanced search**, including totals
+when reported, and combines with descriptor conditions. Missing values do not
+match numeric filters.
+
+Preparation status appears in Actions: green **Prepare again** means preparation
+previously succeeded, red **Prepare inputs** means it has not, and disabled
+**Preparing…** marks a queued or running preparation. Accessible text and
+tooltips identify the status without relying on color. Snapshots show a colored
+status label instead of an executable button. The preparation filter distinguishes
+previously successful preparations from candidates without one.
+
+Rows group Cluster descriptors, RAM, and Representative information. CIDs in rows, tiles, and entries
 open the PubChem compound's 3D Status section in a new tab. The table uses wrapping
-action buttons, a bounded scroll area, and sticky headers so its scrollbars remain
-accessible on narrow screens and at larger zoom levels. Row buttons prepare inputs or open inline QE controls
+action buttons and a bounded scroll area so its scrollbars remain
+accessible on narrow screens and at larger zoom levels. Row buttons prepare inputs or open QE controls below the grid
 for the isolated candidate (single) and candidate–TFA complex. Preparation must
 succeed before those run buttons become available; preview the command and input
 before submitting. Snapshot views include tiles, rows, search, and sorting, with
@@ -342,7 +351,10 @@ Select molecules, preview the selected jobs, and queue eligible estimates.
 Each estimate uses the selected process count and runtime, defaults to 120
 seconds, and captures its own initialization-only input. The review skips active
 estimates and successful estimates matching the source input, pseudopotentials,
-runtime/image, and process count. Missing prepared inputs are listed as
+runtime/image, and process count. Check **Rerun existing estimates** before
+previewing to queue fresh RAM estimates even when matching successful results
+exist. Active jobs are still skipped. Changing this checkbox requires a new
+preview. Missing prepared inputs are listed as
 unavailable. Results appear in the queue and individual task history.
 **Review unsuccessful jobs** requires a fresh preview before retrying.
 

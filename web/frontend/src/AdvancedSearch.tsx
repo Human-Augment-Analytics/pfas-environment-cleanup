@@ -32,7 +32,8 @@ export function AdvancedSearch({
         Combine numeric conditions. A cluster must match every condition.
         Average descriptors describe the cluster; CID identifies its
         representative molecule. RAM fields use the latest successful QE
-        estimate for each system, in GiB. Missing values do not match.
+        estimate for each system, in GB using QE’s binary units. Missing values
+        do not match.
       </p>
       <form
         onSubmit={(e) => {

@@ -23,6 +23,7 @@ class Batches:
         memory_gib=4,
         timeout=None,
         retry=False,
+        rerun_completed=False,
         target="local",
         issue_tokens=True,
         **_,
@@ -138,7 +139,9 @@ print(json.dumps(results))
                             issue_token=issue_tokens,
                         )
                         entry.update(preview)
-                        if not retry and any(
+                        if not (
+                            retry or (kind == "estimate_ram" and rerun_completed)
+                        ) and any(
                             t["status"] == "succeeded"
                             and t.get("input_hash") == preview["input_hash"]
                             and t.get("pseudopotentials") == preview["pseudopotentials"]
@@ -215,6 +218,9 @@ print(json.dumps(results))
                 "runtime": review["runtime"],
                 "resources": review["resources"],
                 "image_hash": review["image_hash"],
+                "rerun_completed": request.get("rerun_completed", False)
+                if request["kind"] == "estimate_ram"
+                else False,
                 "candidates": request["candidates"],
                 "entries": [],
                 "task_ids": [],

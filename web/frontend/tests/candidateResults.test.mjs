@@ -19,10 +19,15 @@ function sourceURL(name, replacements = {}) {
   return `data:text/javascript;base64,${Buffer.from(code).toString("base64")}`;
 }
 const resultsURL = sourceURL("candidateResults");
-const { withTaskFields, preparationLabel, matchesPreparation } = await import(
-  resultsURL
-);
-const { matchesFilters } = await import(
+const {
+  withTaskFields,
+  preparationLabel,
+  matchesPreparation,
+  ramDisplay,
+  compareGridNumbers,
+  numericValue,
+} = await import(resultsURL);
+const { matchesFilters, sortCandidates } = await import(
   sourceURL("filters", { '"./candidateResults"': JSON.stringify(resultsURL) })
 );
 const candidate = (id = "500") => ({ id, fields: { MolecularWeight: "100" } });
@@ -155,4 +160,72 @@ test("derived fields preserve the original candidates and reject invalid reports
   assert.equal(row.fields.candidate_ram_per_process_gib, "");
   assert.deepEqual(original.fields, { MolecularWeight: "100" });
   assert.equal(original.task_summary, undefined);
+});
+
+test("RAM sorting keeps missing and invalid values last in both directions", () => {
+  const rows = [
+    "",
+    "170.87",
+    "Unavailable",
+    "111.84",
+    "0",
+    "   ",
+    "NaN",
+    undefined,
+  ].map((value, index) => ({
+    id: String(index),
+    fields: { complex_ram_per_process_gib: value },
+  }));
+  assert.deepEqual(
+    sortCandidates(rows, "complex_ram_per_process_gib", "asc").map((r) => r.id),
+    ["4", "3", "1", "0", "2", "5", "6", "7"],
+  );
+  assert.deepEqual(
+    sortCandidates(rows, "complex_ram_per_process_gib", "desc").map(
+      (r) => r.id,
+    ),
+    ["1", "3", "4", "0", "2", "5", "6", "7"],
+  );
+  assert.equal(rows[0].id, "0");
+});
+
+test("RAM display rounds to whole GB without changing numeric sorting or filtering", () => {
+  const rows = [111.84, 111.6].map((value, index) => ({
+    id: String(index),
+    fields: { candidate_ram_per_process_gib: String(value) },
+  }));
+  assert.equal(ramDisplay(rows[0], "candidate"), "112 GB");
+  assert.equal(ramDisplay(rows[1], "candidate"), "112 GB");
+  assert.equal(ramDisplay(rows[0], "complex"), "Unavailable");
+  assert.deepEqual(
+    sortCandidates(rows, "candidate_ram_per_process_gib", "asc").map(
+      (r) => r.id,
+    ),
+    ["1", "0"],
+  );
+  assert.equal(
+    matchesFilters(rows[0], [
+      { field: "candidate_ram_per_process_gib", operator: "<", value: "111.7" },
+    ]),
+    false,
+  );
+});
+
+test("AG Grid comparator keeps unavailable values last despite descending inversion", () => {
+  for (const descending of [false, true]) {
+    const values = [null, 170.87, 111.84, 0, NaN];
+    const sorted = [...values].sort(
+      (a, b) => compareGridNumbers(a, b, descending) * (descending ? -1 : 1),
+    );
+    assert.deepEqual(
+      sorted.slice(0, 3),
+      descending ? [170.87, 111.84, 0] : [0, 111.84, 170.87],
+    );
+    assert.equal(sorted[3], null);
+    assert.ok(Number.isNaN(sorted[4]));
+  }
+  assert.equal(numericValue("   "), null);
+  assert.equal(numericValue("Unavailable"), null);
+  assert.equal(numericValue(undefined), null);
+  assert.equal(numericValue("0"), 0);
 });

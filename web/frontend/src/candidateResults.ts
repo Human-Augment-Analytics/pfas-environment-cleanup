@@ -1,10 +1,10 @@
 import type { Candidate, Task } from "./data";
 
 export const ramFields: Record<string, string> = {
-  candidate_ram_per_process_gib: "Candidate QE max RAM/process (GiB)",
-  complex_ram_per_process_gib: "Complex QE max RAM/process (GiB)",
-  candidate_ram_total_gib: "Candidate QE total RAM (GiB)",
-  complex_ram_total_gib: "Complex QE total RAM (GiB)",
+  candidate_ram_per_process_gib: "Candidate RAM (GB)",
+  complex_ram_per_process_gib: "Complex RAM (GB)",
+  candidate_ram_total_gib: "Candidate total RAM (GB, when reported)",
+  complex_ram_total_gib: "Complex total RAM (GB, when reported)",
 };
 
 export function withTaskFields(
@@ -75,4 +75,29 @@ export function matchesPreparation(
     selection === "all" ||
     Boolean(candidate.task_summary?.prepared) === (selection === "prepared")
   );
+}
+
+export function ramDisplay(candidate: Candidate, system: string): string {
+  const raw = candidate.fields[`${system}_ram_per_process_gib`]?.trim();
+  return raw && Number.isFinite(Number(raw))
+    ? `${Number(raw).toFixed(0)} GB`
+    : "Unavailable";
+}
+
+export function numericValue(raw: string | undefined): number | null {
+  return raw?.trim() && Number.isFinite(Number(raw)) ? Number(raw) : null;
+}
+
+// AG Grid reverses comparator results for descending sorts. Cancel that reversal
+// only for missing values, so they stay last in either direction.
+export function compareGridNumbers(
+  left: number | null,
+  right: number | null,
+  descending: boolean,
+): number {
+  const missingLeft = left === null || !Number.isFinite(left);
+  const missingRight = right === null || !Number.isFinite(right);
+  if (missingLeft || missingRight)
+    return (Number(missingLeft) - Number(missingRight)) * (descending ? -1 : 1);
+  return left! - right!;
 }
