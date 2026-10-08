@@ -131,6 +131,73 @@ one), preview the exact command and input, then submit. There are separate Run Q
 controls for TFA, candidate, and complex. Slurm and Slurm array return HTTP 501
 before creating a task. They do not submit anything.
 
+### Export a SLURM batch for PACE
+
+Select molecules in the candidate browser, then choose **Export SLURM batch ·
+candidate + complex** in Batch action. To select eight inexpensive molecules,
+sort **RAM · Complex / Ascending**, check that both estimates are available,
+and check those eight rows. Export preserves the selected order and includes
+both latest prepared inputs for every selection. It does not automatically
+select eight or regenerate inputs. External input versions are not selected
+by this batch action.
+
+Set **MPI processes per job** (default 8; for example, use 16), memory per job,
+walltime, partition, account, and QOS. Scheduling defaults are `ice-cpu`, `coc`,
+and `coc-ice`; verify these against your PACE allocation. Blank scheduling fields
+omit those flags. **Memory sizing** defaults to **Automatic · RAM estimate +
+headroom**, with 50% headroom. Each calculation gets its own reservation rounded
+up to whole GiB, with a minimum of 1 GiB. Only successful estimates matching the
+exact source input and pseudopotential hashes are eligible. A matching MPI count's
+total estimate is preferred; if absent, its per-process estimate is multiplied
+by the requested count. Otherwise, a one-process estimate is used directly as
+the total job baseline, without multiplying by the requested MPI count. Its total
+report is preferred; its per-process report is equivalent at one process and is
+used if the total is absent. Preview shows the estimate basis
+and final memory for each candidate, complex, and optional TFA reference.
+
+Missing or stale estimates block automatic export for those calculations; run a
+fresh estimate or choose **Manual · same memory for every job**. Manual memory
+uses the GiB value you enter. Changed estimates since preview require another
+preview, just like input/pseudopotential changes. Check actual usage after running.
+The dashboard's local queue resource budget does not constrain exports.
+
+Choose **Preview SLURM batch**, inspect the exact inputs and commands, then
+**Download SLURM batch ZIP**. Eight selections produce 16 calculations. Optionally
+include one shared isolated TFA reference for 17. All selected inputs and referenced
+pseudopotentials must exist; changes since preview require another preview.
+Existing local QE results do not remove calculations from the export.
+
+The ZIP contains `pfas-slurm-batch/`, with `manifest.json`, `README.txt`,
+`run.sbatch`, `submit.sh`, and separate `runs/<candidate>-<system>/` folders.
+Each run has its own exact `input.in`, copied `Pseudopotentials/`, and `Outputs/`.
+The SIF image is transferred separately, avoiding a large download on every export:
+
+```bash
+unzip pfas-slurm-batch.zip
+cp .container-build/chemistry.sif pfas-slurm-batch/
+scp -r pfas-slurm-batch GTUSER@login-ice.pace.gatech.edu:~/
+ssh GTUSER@login-ice.pace.gatech.edu
+cd ~/pfas-slurm-batch
+bash submit.sh
+```
+
+Load Apptainer on the cluster if needed before submitting. Alternatively, use
+`bash submit.sh /absolute/path/to/chemistry.sif` to reuse an image already there.
+Use course shared storage instead of home if required for quota or run size.
+
+Each calculation reserves one node with one launcher task and N CPUs, and
+runs the image's `mpirun -np N pw.x -in input.in` with one thread per rank.
+The generated Open MPI 4 launcher flags keep all ranks local to that node and
+avoid trying to invoke host Slurm/MPI libraries. This mode targets the image
+built by `containers/chemistry.def`; it is not a multi-node launcher.
+
+`submit.sh` records accepted IDs in `jobs.tsv` and refuses to repeat a batch
+that already has IDs. If submission fails partway, use those IDs and the individual
+commands in the script to submit only the remaining jobs. Monitor with
+`squeue -u "$USER"`; run directories contain `pw.out`, `pw.err`, and SLURM logs.
+Exporting queues no dashboard tasks and submits no remote jobs. Remote monitoring
+and result import into the dashboard are not implemented.
+
 Each run gets a new directory with an input captured when queued, immutable
 pseudopotential copies with matching links, and its own `Outputs` directory.
 Externally edited preparation inputs are accepted only with local

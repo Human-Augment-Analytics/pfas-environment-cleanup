@@ -4,7 +4,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, StrictInt
 
@@ -50,6 +50,20 @@ class QueueSettings(BaseModel):
     concurrency: StrictInt | None = None
     cpus: StrictInt | None = None
     memory_bytes: StrictInt | None = None
+
+
+class SlurmExport(BaseModel):
+    candidates: list[str]
+    include_tfa: bool = False
+    processes: StrictInt = 8
+    memory_gib: float = 16
+    memory_mode: str = "estimate"
+    headroom_percent: float = 50
+    walltime_hours: StrictInt = 18
+    partition: str = "ice-cpu"
+    account: str = "coc"
+    qos: str = "coc-ice"
+    expected: dict | None = None
 
 
 def create_app(config=None):
@@ -113,6 +127,27 @@ def create_app(config=None):
     @app.post("/api/batches")
     def batch_submit(action: BatchAction):
         return checked(lambda: manager.batches.submit(action.model_dump()))
+
+    @app.post("/api/slurm/preview")
+    def slurm_preview(action: SlurmExport):
+        from .slurm import review
+
+        return checked(
+            lambda: review(manager, **action.model_dump(exclude={"expected"}))
+        )
+
+    @app.post("/api/slurm/export")
+    def slurm_export(action: SlurmExport):
+        from .slurm import bundle
+
+        content = checked(lambda: bundle(manager, **action.model_dump()))
+        return Response(
+            content,
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": 'attachment; filename="pfas-slurm-batch.zip"'
+            },
+        )
 
     @app.get("/api/queue")
     def queue_view():

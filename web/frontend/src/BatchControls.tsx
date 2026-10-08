@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { post, BatchRequest, BatchPreview, RuntimeInfo } from "./data";
+import { SlurmExportControls } from "./SlurmExportControls";
 
 export function BatchControls({
   ids,
@@ -118,6 +119,43 @@ export function BatchControls({
     all[e.status] = (all[e.status] || 0) + 1;
     return all;
   }, {});
+  const actionSelector = (
+    <label>
+      Batch action{" "}
+      <select
+        aria-label="Batch action"
+        value={`${kind}/${system}`}
+        onChange={(e) => {
+          const [k, s] = e.target.value.split("/");
+          setKind(k);
+          setSystem(s);
+        }}
+      >
+        <option value="diagram/candidate">Generate missing diagrams</option>
+        <option value="prepare/candidate">Prepare missing inputs</option>
+        <option value="qe/candidate">Run QE · isolated candidate</option>
+        <option value="qe/complex">Run QE · TFA complex</option>
+        <option value="estimate_ram/candidate">
+          Estimate RAM · isolated candidate
+        </option>
+        <option value="estimate_ram/complex">Estimate RAM · TFA complex</option>
+        {!initial && (
+          <option value="slurm/both">
+            Export SLURM batch · candidate + complex
+          </option>
+        )}
+      </select>
+    </label>
+  );
+  if (kind === "slurm") {
+    return (
+      <section className="batch-controls">
+        <h3>Actions for selected molecules</h3>
+        {actionSelector}
+        <SlurmExportControls ids={ids} />
+      </section>
+    );
+  }
   return (
     <section className="batch-controls">
       <h3>
@@ -128,29 +166,7 @@ export function BatchControls({
         has its own attempt.
       </p>
       <div className="controls">
-        <label>
-          Batch action{" "}
-          <select
-            aria-label="Batch action"
-            value={`${kind}/${system}`}
-            onChange={(e) => {
-              const [k, s] = e.target.value.split("/");
-              setKind(k);
-              setSystem(s);
-            }}
-          >
-            <option value="diagram/candidate">Generate missing diagrams</option>
-            <option value="prepare/candidate">Prepare missing inputs</option>
-            <option value="qe/candidate">Run QE · isolated candidate</option>
-            <option value="qe/complex">Run QE · TFA complex</option>
-            <option value="estimate_ram/candidate">
-              Estimate RAM · isolated candidate
-            </option>
-            <option value="estimate_ram/complex">
-              Estimate RAM · TFA complex
-            </option>
-          </select>
-        </label>
+        {actionSelector}
         <label>
           Execution runtime{" "}
           <select
