@@ -183,6 +183,7 @@ summary {
   gap: 1rem;
 }
 .candidate-tile {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -286,10 +287,10 @@ summary {
   background: #e8def5;
   color: #493466;
 }
-.cluster-cell {
+.candidate-grid-table .ag-row:not(.ag-row-selected) .cluster-cell {
   background: #f3faf7;
 }
-.representative-cell {
+.candidate-grid-table .ag-row:not(.ag-row-selected) .representative-cell {
   background: #faf7fd;
 }
 .group-headings th {
@@ -378,11 +379,24 @@ summary {
   outline: 3px solid #397b91;
 }
 .tile-selection {
-  padding: 8px;
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  z-index: 1;
+  padding: 5px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   background: #edf4f8;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px #153c4620;
+  cursor: pointer;
+}
+.tile-selection input {
+  margin: 0;
+}
+.tile-selection + .tile-entry .tile-cluster {
+  padding-right: 2rem;
 }
 input[type="checkbox"] {
   width: 18px;

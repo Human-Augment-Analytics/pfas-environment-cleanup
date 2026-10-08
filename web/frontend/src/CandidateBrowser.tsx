@@ -276,14 +276,16 @@ export function CandidateBrowser({
               key={c.id}
             >
               {live && (
-                <label className="tile-selection">
+                <label
+                  className="tile-selection"
+                  title={`Select cluster ${c.id}`}
+                >
                   <input
                     type="checkbox"
                     aria-label={`Select cluster ${c.id}`}
                     checked={selected.has(c.id)}
                     onChange={() => toggle(c.id)}
-                  />{" "}
-                  Select
+                  />
                 </label>
               )}
               <a

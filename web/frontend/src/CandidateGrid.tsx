@@ -5,6 +5,7 @@ import {
   RowSelectionModule,
   RowApiModule,
   ColumnApiModule,
+  CellStyleModule,
   ModuleRegistry,
   themeQuartz,
   type ColDef,
@@ -26,6 +27,7 @@ ModuleRegistry.registerModules([
   RowSelectionModule,
   RowApiModule,
   ColumnApiModule,
+  CellStyleModule,
 ]);
 const theme = themeQuartz.withParams({
   fontFamily: "system-ui, sans-serif",
@@ -134,6 +136,10 @@ export function CandidateGrid({
       return {
         colId: field,
         headerName: label,
+        headerClass:
+          field === "medoid_CID" ? "representative-heading" : "cluster-heading",
+        cellClass:
+          field === "medoid_CID" ? "representative-cell" : "cluster-cell",
         valueGetter: (p) => numericValue(p.data?.fields[field]),
         comparator,
         sort: sort === field ? (direction as "asc" | "desc") : null,
@@ -143,6 +149,7 @@ export function CandidateGrid({
     return [
       {
         headerName: "Cluster",
+        headerClass: "cluster-heading",
         children: [
           numeric("cluster", "ID", {
             valueGetter: (p) => numericValue(p.data?.id),
@@ -161,27 +168,8 @@ export function CandidateGrid({
         ],
       },
       {
-        colId: "ram",
-        headerName: `RAM estimate (GB) · ${ramField.startsWith("candidate") ? "Candidate" : "Complex"}`,
-        minWidth: 200,
-        flex: 2,
-        valueGetter: (p) => numericValue(p.data?.fields[ramField]),
-        comparator,
-        sort: sort === ramField ? (direction as "asc" | "desc") : null,
-        cellRenderer: (p: ICellRendererParams<Candidate>) =>
-          p.data && (
-            <div className="grid-ram">
-              <div>
-                Candidate: <strong>{ramDisplay(p.data, "candidate")}</strong>
-              </div>
-              <div>
-                Complex: <strong>{ramDisplay(p.data, "complex")}</strong>
-              </div>
-            </div>
-          ),
-      },
-      {
         headerName: "Representative",
+        headerClass: "representative-heading",
         children: [
           numeric("medoid_CID", "CID", {
             minWidth: 95,
@@ -190,6 +178,8 @@ export function CandidateGrid({
           }),
           {
             colId: "diagram",
+            headerClass: "representative-heading",
+            cellClass: "representative-cell",
             headerName: "Diagram",
             sortable: false,
             minWidth: 210,
@@ -219,7 +209,32 @@ export function CandidateGrid({
             },
           },
           {
+            colId: "ram",
+            headerClass: "representative-heading",
+            cellClass: "representative-cell",
+            headerName: "Est RAM",
+            minWidth: 200,
+            flex: 2,
+            valueGetter: (p) => numericValue(p.data?.fields[ramField]),
+            comparator,
+            sort: sort === ramField ? (direction as "asc" | "desc") : null,
+            cellRenderer: (p: ICellRendererParams<Candidate>) =>
+              p.data && (
+                <div className="grid-ram">
+                  <div>
+                    Candidate:{" "}
+                    <strong>{ramDisplay(p.data, "candidate")}</strong>
+                  </div>
+                  <div>
+                    Complex: <strong>{ramDisplay(p.data, "complex")}</strong>
+                  </div>
+                </div>
+              ),
+          },
+          {
             colId: "actions",
+            headerClass: "representative-heading",
+            cellClass: "representative-cell",
             headerName: "Actions",
             sortable: false,
             minWidth: 185,
