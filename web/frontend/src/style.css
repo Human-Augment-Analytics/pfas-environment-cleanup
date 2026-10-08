@@ -330,21 +330,63 @@ summary {
   border-left: 4px solid #80609f;
   background: #faf7fd;
 }
-.candidate-overview {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 25rem), 1fr));
-  gap: 1.5rem;
-  margin: 1.5rem 0;
-  align-items: start;
+main.candidate-detail-page {
+  max-width: none;
+  padding: 1rem clamp(0.75rem, 1.5vw, 1.75rem);
+}
+.candidate-detail {
+  container-type: inline-size;
+}
+.candidate-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.candidate-work-column {
+  display: contents;
+}
+.candidate-layout .cluster-summary {
+  order: 1;
+}
+.candidate-layout .representative-summary {
+  order: 2;
+}
+.candidate-layout .run-task-section {
+  order: 3;
+}
+@container (min-width: 52rem) {
+  .candidate-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+  .candidate-work-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+  }
 }
 .candidate-detail .detail-section {
   margin: 0;
   min-width: 0;
-  padding: 1.25rem;
+  padding: 1rem;
   border-radius: 8px;
 }
 .candidate-detail > .detail-section {
-  margin-top: 1.5rem;
+  margin-top: 1rem;
+}
+.candidate-detail .controls {
+  gap: 0.625rem;
+}
+.candidate-detail input,
+.candidate-detail select {
+  max-width: 100%;
+  min-width: 0;
+}
+.candidate-detail .geometry-canvas {
+  height: clamp(280px, 30vw, 440px);
 }
 .candidate-detail .detail-section > h3,
 .candidate-detail .task-history-section > section > h2 {

@@ -180,6 +180,7 @@ export type Batch = BatchRequest & {
   task_ids: string[];
 };
 export type QueueData = {
+  cpu_capacity: number;
   settings: QueueSettings;
   runtimes: RuntimeInfo;
   batches: Batch[];

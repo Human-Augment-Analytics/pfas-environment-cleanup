@@ -43,23 +43,160 @@ export function CandidateDetail({
           ? "Shared neutral TFA reference"
           : `Cluster ${candidate.id}`}
       </h2>
-      <div className="candidate-overview">
-        <section className="cluster-summary detail-section">
-          <h3>{candidate.id === "tfa" ? "Reference identity" : "Cluster"}</h3>
-          {candidate.id !== "tfa" && (
-            <p>Descriptors are averages across the cluster.</p>
-          )}
-          <dl>
-            {Object.entries(candidate.fields)
-              .filter(([key]) => !key.startsWith("medoid_"))
-              .map(([key, value]) => (
-                <div key={key}>
-                  <dt>{key}</dt>
-                  <dd>{value}</dd>
-                </div>
-              ))}
-          </dl>
-        </section>
+      <div className="candidate-layout">
+        <div className="candidate-work-column">
+          <section className="cluster-summary detail-section">
+            <h3>{candidate.id === "tfa" ? "Reference identity" : "Cluster"}</h3>
+            {candidate.id !== "tfa" && (
+              <p>Descriptors are averages across the cluster.</p>
+            )}
+            <dl>
+              {Object.entries(candidate.fields)
+                .filter(([key]) => !key.startsWith("medoid_"))
+                .map(([key, value]) => (
+                  <div key={key}>
+                    <dt>{key}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
+            </dl>
+          </section>
+          <section className="run-task-section detail-section">
+            <h3>Run Task</h3>
+            {live && (
+              <div className="controls">
+                <label>
+                  Preparation/diagram runtime{" "}
+                  <select
+                    value={runtime}
+                    onChange={(e) => setRuntime(e.target.value)}
+                  >
+                    <option value="native">
+                      Native · serial, no hard memory cap
+                    </option>
+                    <option
+                      disabled={!runtimes?.apptainer.available}
+                      value="apptainer"
+                    >
+                      Apptainer · hard memory cap
+                    </option>
+                  </select>
+                </label>
+                {runtime === "apptainer" && (
+                  <label>
+                    Memory per job (GiB){" "}
+                    <input
+                      type="number"
+                      min="0.125"
+                      step="0.125"
+                      value={memory}
+                      onChange={(e) => setMemory(e.target.value)}
+                    />
+                  </label>
+                )}
+                <button
+                  disabled={Number(memory) <= 0}
+                  onClick={() =>
+                    action("tasks", {
+                      kind: "diagram",
+                      candidate: candidate.id,
+                      runtime,
+                      memory_gib: Number(memory),
+                    })
+                  }
+                >
+                  Generate diagram
+                </button>
+                <button
+                  disabled={Number(memory) <= 0}
+                  onClick={() =>
+                    action("tasks", {
+                      kind: "prepare",
+                      candidate: candidate.id,
+                      runtime,
+                      memory_gib: Number(memory),
+                    })
+                  }
+                >
+                  Prepare inputs
+                </button>
+              </div>
+            )}
+            {live &&
+              [latestDiagram, latestPreparation]
+                .filter((t): t is Task => Boolean(t))
+                .map((t) => (
+                  <div
+                    key={t.id}
+                    role="status"
+                    className={t.status === "failed" ? "error" : "banner"}
+                  >
+                    <strong>
+                      {t.kind === "diagram" ? "Diagram" : "Preparation"}:{" "}
+                      {t.status}
+                    </strong>
+                    {["queued", "running"].includes(t.status) && (
+                      <span> · Use Refresh to update progress.</span>
+                    )}
+                    {["failed", "interrupted", "canceled"].includes(
+                      t.status,
+                    ) && (
+                      <pre>
+                        {t.error ||
+                          t.stderr_tail ||
+                          "See task history below for details."}
+                      </pre>
+                    )}
+                  </div>
+                ))}
+            {prepared && (
+              <section>
+                <h3>Prepared inputs</h3>
+                {Object.entries(prepared.artifacts)
+                  .filter(
+                    ([n]) =>
+                      n.endsWith(".in") &&
+                      (candidate.id !== "tfa" || n === "tfa.in"),
+                  )
+                  .map(([name, url]) => (
+                    <div key={name}>
+                      <a href={url} download>
+                        {name}
+                      </a>{" "}
+                      <button
+                        onClick={async () => {
+                          try {
+                            const r = await fetch(url);
+                            if (!r.ok) throw Error("Input unavailable");
+                            setInput(await r.text());
+                          } catch (e) {
+                            setError(String(e));
+                          }
+                        }}
+                      >
+                        View input
+                      </button>
+                    </div>
+                  ))}
+                {error && <p className="error">{error}</p>}
+                {input && <pre>{input}</pre>}
+              </section>
+            )}
+            {live &&
+              (candidate.id === "tfa" ? ["tfa"] : ["candidate", "complex"]).map(
+                (system) => (
+                  <RunControls
+                    key={candidate.id + system}
+                    candidate={candidate.id}
+                    system={system}
+                    runtimes={runtimes}
+                    versions={versions}
+                    action={action}
+                  />
+                ),
+              )}
+          </section>
+        </div>
         <section className="representative-summary detail-section">
           <h3>Representative</h3>
           {prepared?.geometries && (
@@ -100,138 +237,6 @@ export function CandidateDetail({
           )}
         </section>
       </div>
-      <section className="run-task-section detail-section">
-        <h3>Run Task</h3>
-        {live && (
-          <div className="controls">
-            <label>
-              Preparation/diagram runtime{" "}
-              <select
-                value={runtime}
-                onChange={(e) => setRuntime(e.target.value)}
-              >
-                <option value="native">
-                  Native · serial, no hard memory cap
-                </option>
-                <option
-                  disabled={!runtimes?.apptainer.available}
-                  value="apptainer"
-                >
-                  Apptainer · hard memory cap
-                </option>
-              </select>
-            </label>
-            {runtime === "apptainer" && (
-              <label>
-                Memory per job (GiB){" "}
-                <input
-                  type="number"
-                  min="0.125"
-                  step="0.125"
-                  value={memory}
-                  onChange={(e) => setMemory(e.target.value)}
-                />
-              </label>
-            )}
-            <button
-              disabled={Number(memory) <= 0}
-              onClick={() =>
-                action("tasks", {
-                  kind: "diagram",
-                  candidate: candidate.id,
-                  runtime,
-                  memory_gib: Number(memory),
-                })
-              }
-            >
-              Generate diagram
-            </button>
-            <button
-              disabled={Number(memory) <= 0}
-              onClick={() =>
-                action("tasks", {
-                  kind: "prepare",
-                  candidate: candidate.id,
-                  runtime,
-                  memory_gib: Number(memory),
-                })
-              }
-            >
-              Prepare inputs
-            </button>
-          </div>
-        )}
-        {live &&
-          [latestDiagram, latestPreparation]
-            .filter((t): t is Task => Boolean(t))
-            .map((t) => (
-              <div
-                key={t.id}
-                role="status"
-                className={t.status === "failed" ? "error" : "banner"}
-              >
-                <strong>
-                  {t.kind === "diagram" ? "Diagram" : "Preparation"}: {t.status}
-                </strong>
-                {["queued", "running"].includes(t.status) && (
-                  <span> · Use Refresh to update progress.</span>
-                )}
-                {["failed", "interrupted", "canceled"].includes(t.status) && (
-                  <pre>
-                    {t.error ||
-                      t.stderr_tail ||
-                      "See task history below for details."}
-                  </pre>
-                )}
-              </div>
-            ))}
-        {prepared && (
-          <section>
-            <h3>Prepared inputs</h3>
-            {Object.entries(prepared.artifacts)
-              .filter(
-                ([n]) =>
-                  n.endsWith(".in") &&
-                  (candidate.id !== "tfa" || n === "tfa.in"),
-              )
-              .map(([name, url]) => (
-                <div key={name}>
-                  <a href={url} download>
-                    {name}
-                  </a>{" "}
-                  <button
-                    onClick={async () => {
-                      try {
-                        const r = await fetch(url);
-                        if (!r.ok) throw Error("Input unavailable");
-                        setInput(await r.text());
-                      } catch (e) {
-                        setError(String(e));
-                      }
-                    }}
-                  >
-                    View input
-                  </button>
-                </div>
-              ))}
-            {error && <p className="error">{error}</p>}
-            {input && <pre>{input}</pre>}
-          </section>
-        )}
-        {live &&
-          (candidate.id === "tfa" ? ["tfa"] : ["candidate", "complex"]).map(
-            (system) => (
-              <RunControls
-                key={candidate.id + system}
-                candidate={candidate.id}
-                system={system}
-                runtimes={runtimes}
-                versions={versions}
-                action={action}
-              />
-            ),
-          )}
-      </section>
       <div className="task-history-section detail-section">
         <TaskHistory tasks={tasks} live={live} action={action} />
       </div>
