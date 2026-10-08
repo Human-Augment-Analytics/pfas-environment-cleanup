@@ -17,6 +17,16 @@ const CandidateGrid = lazy(() =>
   })),
 );
 import { RunControls } from "./RunControls";
+import { readView, saveView } from "./viewStorage";
+
+const browserViewKey = "pfas.candidate-browser.v1";
+type BrowserView = {
+  view: string;
+  search: string;
+  sort: string;
+  direction: string;
+  preparationFilter: string;
+};
 
 function taskIndex(tasks: Task[]) {
   const diagrams = new Map<string, Task>();
@@ -60,11 +70,33 @@ export function CandidateBrowser({
   busy: boolean;
   action: (path: string, body?: Action) => Promise<void>;
 }) {
-  const [view, setView] = useState("tiles"),
-    [search, setSearch] = useState("");
-  const [sort, setSort] = useState(""),
-    [direction, setDirection] = useState("asc");
-  const [preparationFilter, setPreparationFilter] = useState("all");
+  const [savedView] = useState(() => readView<BrowserView>(browserViewKey));
+  const [view, setView] = useState(
+      savedView.view === "rows" ? "rows" : "tiles",
+    ),
+    [search, setSearch] = useState(
+      typeof savedView.search === "string" ? savedView.search : "",
+    );
+  const [sort, setSort] = useState(
+      typeof savedView.sort === "string" ? savedView.sort : "",
+    ),
+    [direction, setDirection] = useState(
+      savedView.direction === "desc" ? "desc" : "asc",
+    );
+  const [preparationFilter, setPreparationFilter] = useState(
+    ["prepared", "not_prepared"].includes(savedView.preparationFilter || "")
+      ? savedView.preparationFilter!
+      : "all",
+  );
+  useEffect(() => {
+    saveView(browserViewKey, {
+      view,
+      search,
+      sort,
+      direction,
+      preparationFilter,
+    });
+  }, [view, search, sort, direction, preparationFilter]);
   const [run, setRun] = useState<{ candidate: string; system: string } | null>(
     null,
   );

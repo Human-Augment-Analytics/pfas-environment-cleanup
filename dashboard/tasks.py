@@ -74,8 +74,13 @@ class Manager:
         if self.thread.is_alive():
             self.thread.join()
         for task in self.store.tasks():
-            if task["status"] in ("queued", "running"):
-                self.store.update(task["id"], status="interrupted", ended=now())
+            if task["status"] == "running":
+                self.store.update(
+                    task["id"],
+                    status="interrupted",
+                    ended=now(),
+                    error="Server stopped; retry explicitly",
+                )
 
     def executable(self, name):
         path = shutil.which(name)

@@ -6,11 +6,13 @@ import {
   RowApiModule,
   ColumnApiModule,
   CellStyleModule,
+  GridStateModule,
   ModuleRegistry,
   themeQuartz,
   type ColDef,
   type ColGroupDef,
   type GridApi,
+  type GridState,
   type ICellRendererParams,
 } from "ag-grid-community";
 import type { Action, Candidate, Data, Task } from "./data";
@@ -21,6 +23,28 @@ import {
   ramDisplay,
 } from "./candidateResults";
 import { PubChemLink } from "./PubChemLink";
+import { readView, saveView } from "./viewStorage";
+
+const gridViewKey = "pfas.candidate-grid.v1";
+function saveGridView(state: GridState) {
+  const {
+    version,
+    columnOrder,
+    columnSizing,
+    columnPinning,
+    columnVisibility,
+    scroll,
+  } = state;
+  saveView(gridViewKey, {
+    version,
+    columnOrder,
+    columnSizing,
+    columnPinning,
+    columnVisibility,
+    scroll,
+    partialColumnState: true,
+  });
+}
 
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,
@@ -28,6 +52,7 @@ ModuleRegistry.registerModules([
   RowApiModule,
   ColumnApiModule,
   CellStyleModule,
+  GridStateModule,
 ]);
 const theme = themeQuartz.withParams({
   fontFamily: "system-ui, sans-serif",
@@ -39,7 +64,7 @@ const theme = themeQuartz.withParams({
 const defaultColDef: ColDef<Candidate> = {
   sortable: true,
   resizable: true,
-  flex: 1,
+  initialFlex: 1,
   minWidth: 70,
   wrapHeaderText: true,
   autoHeaderHeight: true,
@@ -87,6 +112,7 @@ export function CandidateGrid({
   onRun: (candidate: string, system: string) => void;
 }) {
   const grid = useRef<AgGridReact<Candidate>>(null);
+  const initialState = useMemo(() => readView<GridState>(gridViewKey), []);
   const live = data.mode === "live";
   const ramField =
     sort === "candidate_ram_per_process_gib"
@@ -183,7 +209,7 @@ export function CandidateGrid({
             headerName: "Diagram",
             sortable: false,
             minWidth: 210,
-            flex: 2.5,
+            initialFlex: 2.5,
             cellRenderer: (p: ICellRendererParams<Candidate>) => {
               if (!p.data) return null;
               const diagram = diagrams.get(p.data.id),
@@ -214,7 +240,7 @@ export function CandidateGrid({
             cellClass: "representative-cell",
             headerName: "Est RAM",
             minWidth: 200,
-            flex: 2,
+            initialFlex: 2,
             valueGetter: (p) => numericValue(p.data?.fields[ramField]),
             comparator,
             sort: sort === ramField ? (direction as "asc" | "desc") : null,
@@ -238,7 +264,7 @@ export function CandidateGrid({
             headerName: "Actions",
             sortable: false,
             minWidth: 185,
-            flex: 2,
+            initialFlex: 2,
             cellRenderer: (p: ICellRendererParams<Candidate>) => {
               const c = p.data;
               if (!c) return null;
@@ -326,8 +352,12 @@ export function CandidateGrid({
       <AgGridReact<Candidate>
         ref={grid}
         theme={theme}
+        initialState={initialState}
+        onStateUpdated={(e) => saveGridView(e.state)}
+        onGridPreDestroyed={(e) => saveGridView(e.state)}
         rowData={candidates}
         columnDefs={columns}
+        maintainColumnOrder={true}
         defaultColDef={defaultColDef}
         getRowId={(p) => p.data.id}
         rowHeight={160}

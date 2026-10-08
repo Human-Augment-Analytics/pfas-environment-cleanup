@@ -109,7 +109,7 @@ def test_queue_failures_retries_restart(manager):
     manager.close()
     manager.store.update(retry["id"], status="queued")
     restarted = Manager(manager.config, manager.candidates)
-    assert restarted.store.get(retry["id"])["status"] == "interrupted"
+    assert restarted.store.get(retry["id"])["status"] == "queued"
 
 
 def test_process_timeout_cancel_and_tail(tmp_path):
@@ -278,7 +278,7 @@ def test_shutdown_active_and_queued(manager, tmp_path):
         time.sleep(0.01)
     manager.close()
     assert manager.store.get(active["id"])["status"] == "interrupted"
-    assert manager.store.get(queued["id"])["status"] == "interrupted"
+    assert manager.store.get(queued["id"])["status"] == "queued"
     assert tail(manager.config.artifacts / active["id"] / "stdout.log").strip() == "1"
     assert manager.store.get(active["id"])["artifacts"]["stderr.log"]
 
@@ -358,3 +358,95 @@ def test_export_builds_snapshot_without_replacing_live_frontend(tmp_path, monkey
     assert live.read_text() == "live build"
     assert (output / "index.html").read_text() == "snapshot build"
     assert (output / "snapshot/data.json").is_file()
+
+
+def test_restart_preserves_queue_order_and_pause(manager, monkeypatch):
+    manager.configure({"paused": True})
+    first = manager.queue("diagram", "500")
+    second = manager.queue("diagram", "501")
+    canceled = manager.queue("diagram", "502")
+    manager.cancel_task(canceled["id"])
+    # Updating an older row must not move it behind newer accepted work.
+    manager.store.update(first["id"], error="")
+    manager.close()
+    restarted = Manager(manager.config, manager.candidates)
+    assert [t["id"] for t in restarted.store.queued()] == [first["id"], second["id"]]
+    assert restarted.store.get(canceled["id"])["status"] == "canceled"
+    observed = []
+
+    def fake(command, directory, cancel, timeout, **kwargs):
+        observed.append(directory.name)
+        return 0, "succeeded", ""
+
+    monkeypatch.setattr("dashboard.tasks.execute", fake)
+    restarted.start()
+    try:
+        assert restarted.settings["paused"]
+        assert restarted.store.get(first["id"])["started"] is None
+        restarted.configure({"paused": False})
+        assert wait(restarted, second["id"])["status"] == "succeeded"
+        assert observed == [first["id"], second["id"]]
+    finally:
+        restarted.close()
+
+
+def test_crash_recovery_preserves_waiting_jobs(tmp_path):
+    import subprocess
+
+    from dashboard.persistence import Store
+
+    path = tmp_path / "tasks.sqlite"
+    # A separate process commits jobs and exits without cleanup, as with a kill.
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "from dashboard.persistence import Store; import os,sys; "
+                "s=Store(sys.argv[1]); "
+                "s.put({'id':'active','status':'running'}); "
+                "s.put({'id':'waiting','status':'queued'}); os._exit(0)"
+            ),
+            str(path),
+        ],
+        check=True,
+    )
+    recovered = Store(path)
+    assert recovered.get("active")["status"] == "interrupted"
+    assert "retry explicitly" in recovered.get("active")["error"]
+    assert recovered.get("waiting") == {"id": "waiting", "status": "queued"}
+    assert [t["id"] for t in recovered.queued()] == ["waiting"]
+
+
+def test_restart_runs_captured_ram_input(manager, monkeypatch):
+    source = prepared(manager)
+    preview = manager.preview("500", "candidate", 1, "local", kind="estimate_ram")
+    task = manager.queue(
+        "estimate_ram",
+        "500",
+        expected_hash=preview["input_hash"],
+        preview_id=preview["preview_id"],
+    )
+    manager.close()
+    source.unlink()
+    (manager.config.pseudos / "H.UPF").unlink()
+    restarted = Manager(manager.config, manager.candidates)
+    assert restarted.store.get(task["id"]) == task
+
+    def fake(command, directory, cancel, timeout, **kwargs):
+        assert (directory / "input.in").read_text() == preview["input"]
+        assert (directory / "Pseudopotentials/H.UPF").read_text() == "pseudo"
+        (directory / "stdout.log").write_text(
+            "Estimated max dynamical RAM per process > 1.00 GB\n"
+        )
+        return 255, "failed", ""
+
+    monkeypatch.setattr("dashboard.tasks.execute", fake)
+    restarted.start()
+    try:
+        result = wait(restarted, task["id"])
+        assert result["status"] == "succeeded"
+        assert result["source_hash"] == task["source_hash"]
+        assert result["ram_estimate"]["per_process"]["bytes"] == 1024**3
+    finally:
+        restarted.close()

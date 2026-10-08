@@ -29,7 +29,7 @@ class Store:
         )
         self.db.commit()
         for task in self.tasks():
-            if task["status"] in ("queued", "running"):
+            if task["status"] == "running":
                 self.update(
                     task["id"],
                     status="interrupted",
@@ -38,7 +38,7 @@ class Store:
                 )
 
         # Recover a crash during batch acceptance, including tasks persisted before
-        # their batch entry was saved. No work is automatically requeued.
+        # their batch entry was saved. Accepted queued work remains eligible to run.
         recovered_tasks = self.tasks()
         for batch in self.batches():
             entries = {entry["candidate"]: entry for entry in batch["entries"]}
@@ -101,7 +101,7 @@ class Store:
     def put(self, task):
         with self.lock, self.db:
             self.db.execute(
-                "INSERT OR REPLACE INTO tasks VALUES (?, ?)",
+                "INSERT INTO tasks VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data",
                 (task["id"], json.dumps(task)),
             )
         return task

@@ -140,12 +140,21 @@ MPI children. Full stdout/stderr downloads become available when the attempt
 finishes. The UI separately reports process exit, JOB DONE, SCF convergence,
 relaxation completion, and provisional/confirmed last energies.
 
+The candidate browser remembers Rows/Tiles, sorting, cluster ID and preparation
+filters in this browser. The row table also restores column widths, order, and
+scroll position after refresh or navigation. These preferences use local browser
+storage; clearing site data resets them.
+
 ## Persistence and development
 
 `PFAS_ARTIFACTS` selects persistent local storage (default `.dashboard/`). Keep the
 SQLite database on local disk. Attempts and logs are preserved on retry. Graceful
-shutdown stops active children; startup marks unfinished attempts interrupted.
-Retry explicitly. The server terminal logs queued/started/finished attempts,
+shutdown stops active children and leaves waiting jobs queued. On startup,
+queued jobs resume automatically in their original order, unless the queue is
+paused. Attempts that were running are marked interrupted and require an explicit
+retry; a stopped QE calculation is not resumed midway. A forced kill may leave
+child processes alive, so check those before retrying an interrupted attempt.
+The server terminal logs queued/started/finished attempts,
 preparation rejections, failures, and each attempt's full log paths. Preparation
 Python output is unbuffered so it is available while the task runs. Follow an
 attempt in another terminal using the paths printed by the server:
@@ -262,8 +271,10 @@ batches, attempts, current/peak memory, and separate log-tail/full-log controls.
 Pause prevents new jobs from starting while active jobs finish. Stop cancels one
 job; Cancel batch stops its active jobs and cancels pending jobs. **Review
 unsuccessful jobs** creates a fresh preview, including incomplete QE results;
-submission creates new attempts. Shutdown/restart keeps unfinished work
-interrupted until explicitly retried. Queue settings and batches live in the
+submission creates new attempts. Shutdown/restart preserves waiting jobs and
+resumes them automatically, respecting
+the saved pause setting and resource budgets. Running attempts become interrupted
+and require an explicit retry. Queue settings and batches live in the
 existing local SQLite database; existing history remains readable.
 
 ### Native and Apptainer execution

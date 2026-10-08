@@ -213,7 +213,7 @@ def test_cancel_batch_restart_and_persisted_pause(manager):
     task = manager.queue("diagram", "502")
     restarted = Manager(manager.config, manager.candidates)
     assert restarted.settings["paused"]
-    assert restarted.store.get(task["id"])["status"] == "interrupted"
+    assert restarted.store.get(task["id"])["status"] == "queued"
     assert restarted.store.batch(batch["id"]) == batch
 
 
@@ -314,7 +314,7 @@ def test_recover_partial_batch_acceptance(manager):
     batch = recovered.store.batch(batch["id"])
     assert len(batch["task_ids"]) == 2
     assert batch["entries"][-1]["status"] == "unavailable"
-    assert recovered.batches.retry(batch["id"])["candidates"] == ["500", "501", "502"]
+    assert recovered.batches.retry(batch["id"])["candidates"] == ["502"]
 
 
 def test_smiles_and_pseudo_preflight_does_not_block_other_entries(manager, monkeypatch):
