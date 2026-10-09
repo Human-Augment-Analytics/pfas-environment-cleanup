@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shlex
 import subprocess
@@ -69,19 +70,28 @@ def make_control_path(user: str, host: str) -> str:
 
 
 def ssh_opts_control(c: Cluster) -> list[str]:
-    return [
-        "-o",
-        "ControlMaster=auto",
-        "-o",
-        "ControlPersist=10m",
-        "-o",
-        f"ControlPath={c.control_path}",
+    opts = [
         "-o",
         "ServerAliveInterval=30",
         "-o",
         "LogLevel=ERROR",
         "-q",
     ]
+    # ControlMaster multiplexing is POSIX-OpenSSH only. Win32-OpenSSH ignores
+    # it at best, and a ControlPath under a home directory containing spaces
+    # (e.g. C:\Users\hay info\...) makes ssh abort with
+    # "keyword controlpath extra arguments at end of line". Use plain
+    # per-command ssh on Windows instead.
+    if os.name != "nt":
+        opts = [
+            "-o",
+            "ControlMaster=auto",
+            "-o",
+            "ControlPersist=10m",
+            "-o",
+            f"ControlPath={c.control_path}",
+        ] + opts
+    return opts
 
 
 def ssh_cmd_interactive(c: Cluster, remote_cmd: str) -> str:

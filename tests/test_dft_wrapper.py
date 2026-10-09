@@ -1,6 +1,7 @@
 """Fast smoke test for the dependency-free DFT submission CLI."""
 
 import importlib.util
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -33,6 +34,29 @@ def test_dft_wrapper_help() -> None:
 
     assert result.returncode == 0, result.stderr
     assert "DFT wrapper: submit-if-missing and fetch results." in result.stdout
+
+
+def test_ssh_opts_control_windows_space_safe() -> None:
+    """Windows: no Control* options (spaces in %USERPROFILE% would break
+    Win32-OpenSSH's -o parsing); POSIX: full multiplexing options present."""
+    c = WRAPPER.Cluster(
+        ssh_target="user@host",
+        control_path="/home/spaced user/.ssh/cm_sockets/cm-user@host",
+    )
+    opts = WRAPPER.ssh_opts_control(c)
+    joined = " ".join(opts)
+    if sys.platform == "win32" or os.name == "nt":
+        assert "ControlMaster" not in joined
+        assert "ControlPersist" not in joined
+        assert "ControlPath" not in joined
+    else:
+        assert "ControlMaster=auto" in joined
+        assert "ControlPersist=10m" in joined
+        assert "ControlPath=/home/spaced user/.ssh/cm_sockets/cm-user@host" in joined
+    # Both platforms keep the keepalive + quiet options.
+    assert "ServerAliveInterval=30" in joined
+    assert "LogLevel=ERROR" in joined
+    assert "-q" in opts
 
 
 def test_heavy_atom_count() -> None:
