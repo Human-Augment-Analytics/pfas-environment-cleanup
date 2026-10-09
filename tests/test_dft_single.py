@@ -1,4 +1,5 @@
 """Fast offline tests for the single-case DFT runner (no SSH, no network)."""
+
 from __future__ import annotations
 
 import importlib.util
@@ -19,9 +20,9 @@ def _load_single(name: str = "dft_single_under_test"):
     return mod
 
 
-TFA = "OC(=O)C(F)(F)F"          # 7 heavy atoms
-A17 = "CCCCCCCCCCCCCCCCN"       # 17 heavy atoms
-A21 = "CCCCCCCCCCCCCCCCCCCCC"   # 21 heavy atoms
+TFA = "OC(=O)C(F)(F)F"  # 7 heavy atoms
+A17 = "CCCCCCCCCCCCCCCCN"  # 17 heavy atoms
+A21 = "CCCCCCCCCCCCCCCCCCCCC"  # 21 heavy atoms
 P25 = "CCCCCCCCCCCCCCCCCCCCCCCCC"  # 25 heavy atoms
 
 
@@ -61,10 +62,10 @@ def test_default_case_name() -> None:
 
 def test_suggest_mem_gb_bands() -> None:
     single = _load_single()
-    assert single.suggest_mem_gb(TFA, TFA) == 32    # pair total 14
-    assert single.suggest_mem_gb(A21, TFA) == 96    # 28 -> medium band
-    assert single.suggest_mem_gb(A17, P25) == 128   # 42 -> large band
-    assert single.suggest_mem_gb(A17, TFA) == 96    # 24 -> medium band
+    assert single.suggest_mem_gb(TFA, TFA) == 32  # pair total 14
+    assert single.suggest_mem_gb(A21, TFA) == 96  # 28 -> medium band
+    assert single.suggest_mem_gb(A17, P25) == 128  # 42 -> large band
+    assert single.suggest_mem_gb(A17, TFA) == 96  # 24 -> medium band
 
 
 def test_classify_e_ads_rubric() -> None:

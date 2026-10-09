@@ -27,6 +27,7 @@ Exit codes: 0 finished (any verdict), 1 completed but no results,
 Works from Windows cmd.exe as well as POSIX shells: every ssh/scp/tar
 call below is a list-form subprocess argv, never a shell string.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -79,19 +80,25 @@ EV_TO_KJ_MOL = 96.485
 
 # Memory bands (README table, one notch above the floor: the CTAB pilot
 # measured 77 GB where the table suggested 64 GB and OOM'd there).
-SMALL_BAND_GB = 32   # pair total <= 14 heavy atoms
+SMALL_BAND_GB = 32  # pair total <= 14 heavy atoms
 MEDIUM_BAND_GB = 96  # <= 28 heavy atoms
 LARGE_BAND_GB = 128  # anything larger
 ESCALATION_CAP_GB = 256
 MAX_ESCALATIONS = 2
 
 ACTIVE_STATES = {
-    "PENDING", "RUNNING", "CONFIGURING", "COMPLETING",
-    "SUSPENDED", "REQUEUED", "REQUEUE_HOLD",
+    "PENDING",
+    "RUNNING",
+    "CONFIGURING",
+    "COMPLETING",
+    "SUSPENDED",
+    "REQUEUED",
+    "REQUEUE_HOLD",
 }
 
 
 # ---------------------------------------------------------- pure helpers
+
 
 def sanitize_name(name: str) -> str:
     """Match run_batch_screening.sh: keep [A-Za-z0-9._-], else '_'."""
@@ -104,9 +111,7 @@ def default_case_name(adsorbent_name: str, pfas_name: str) -> str:
     return f"{sanitize_name(adsorbent_name)}_{sanitize_name(pfas_name)}"
 
 
-def suggest_mem_gb(
-    adsorbent_smiles: str | None, pfas_smiles: str | None
-) -> int:
+def suggest_mem_gb(adsorbent_smiles: str | None, pfas_smiles: str | None) -> int:
     """Pick the memory band from the largest system the job will build.
 
     The complex contains both molecules, so its heavy-atom count is the
@@ -134,10 +139,7 @@ def classify_e_ads(ev: float | None) -> tuple[str, str]:
     if ev >= 0:
         return (
             "NOT BINDING",
-            (
-                "E_ads >= 0: the complex is higher-energy than the "
-                "separated molecules"
-            ),
+            ("E_ads >= 0: the complex is higher-energy than the separated molecules"),
         )
     if ev > -1:
         return "PLAUSIBLE (weak)", "-1 < E_ads < 0 eV: weak physisorption"
@@ -169,10 +171,7 @@ def format_results_report(data: dict[str, Any]) -> str:
             f"pfas: {data.get('pfas_name', '?')} "
             f"(reference: {data.get('pfas_energy_source', '?')})"
         ),
-        (
-            f"mode: {data.get('mode', '?')} "
-            f"({data.get('system_type', '?')})"
-        ),
+        (f"mode: {data.get('mode', '?')} ({data.get('system_type', '?')})"),
         f"E(adsorbent) = {ry.get('adsorbent', float('nan')):.6f} Ry",
         f"E(pfas)      = {ry.get('pfas', float('nan')):.6f} Ry",
         f"E(complex)   = {ry.get('complex', float('nan')):.6f} Ry",
@@ -218,9 +217,7 @@ def parse_sacct_output(text: str) -> list[dict[str, str]]:
     return rows
 
 
-def sacct_main_row(
-    rows: list[dict[str, str]], job_id: int
-) -> dict[str, str] | None:
+def sacct_main_row(rows: list[dict[str, str]], job_id: int) -> dict[str, str] | None:
     """The allocation row (no '.batch'/'.extern' suffix) for a job id."""
     for r in rows:
         if r["jobid"] == str(job_id):
@@ -239,13 +236,11 @@ def parse_squeue_line(text: str) -> tuple[int, str] | None:
 
 
 def is_oom_row(row: dict[str, str]) -> bool:
-    return (
-        "OUT_OF_MEMORY" in row["state"]
-        or row["exit_code"].split(":")[0] == "137"
-    )
+    return "OUT_OF_MEMORY" in row["state"] or row["exit_code"].split(":")[0] == "137"
 
 
 # ------------------------------------------------- remote plumbing (cmd.exe-safe)
+
 
 def make_cluster(user: str, host: str, root: str, runs_subdir: str):
     return wrapper.Cluster(
@@ -256,8 +251,9 @@ def make_cluster(user: str, host: str, root: str, runs_subdir: str):
     )
 
 
-def _ssh(c, remote_cmd: str, *, tty: bool = False, check: bool = True,
-         capture: bool = False) -> subprocess.CompletedProcess:
+def _ssh(
+    c, remote_cmd: str, *, tty: bool = False, check: bool = True, capture: bool = False
+) -> subprocess.CompletedProcess:
     """Run one remote command via list-form argv (no local shell)."""
     argv = ["ssh"] + wrapper.ssh_opts_control(c)
     argv += ["-tt" if tty else "-T", c.ssh_target, remote_cmd]
@@ -272,9 +268,7 @@ def _ssh(c, remote_cmd: str, *, tty: bool = False, check: bool = True,
         detail = ""
         if capture:
             detail = f"\nstdout:\n{p.stdout}\nstderr:\n{p.stderr}"
-        raise RuntimeError(
-            f"ssh command failed ({p.returncode}): {remote_cmd}{detail}"
-        )
+        raise RuntimeError(f"ssh command failed ({p.returncode}): {remote_cmd}{detail}")
     return p
 
 
@@ -300,8 +294,10 @@ def _read_remote_json(c, remote_path: str) -> dict[str, Any] | None:
 
 def live_job(c, case_name: str) -> tuple[int, str] | None:
     p = _ssh(
-        c, f"squeue -h -n dft_{case_name} -o '%A %T'",
-        check=False, capture=True,
+        c,
+        f"squeue -h -n dft_{case_name} -o '%A %T'",
+        check=False,
+        capture=True,
     )
     return parse_squeue_line(p.stdout)
 
@@ -310,9 +306,7 @@ def case_results_path(root: str, case_name: str) -> str:
     return f"{root.rstrip('/')}/dft_cases/{case_name}/results.json"
 
 
-def read_remote_results(
-    c, root: str, case_name: str
-) -> dict[str, Any] | None:
+def read_remote_results(c, root: str, case_name: str) -> dict[str, Any] | None:
     return _read_remote_json(c, case_results_path(root, case_name))
 
 
@@ -354,7 +348,8 @@ def fetch_case(c, case_name: str, local_cache: str) -> Path:
     for remote_tgz, required in ((t_run, True), (t_case, False)):
         local_tgz = dst / remote_tgz.rsplit("/", 1)[-1]
         p = subprocess.run(
-            ["scp"] + wrapper.ssh_opts_control(c)
+            ["scp"]
+            + wrapper.ssh_opts_control(c)
             + [f"{c.ssh_target}:{remote_tgz}", str(local_tgz)],
             check=False,
         )
@@ -371,6 +366,7 @@ def fetch_case(c, case_name: str, local_cache: str) -> Path:
 
 
 # ------------------------------------------------------------- submit path
+
 
 def submit_job(
     c,
@@ -394,23 +390,50 @@ def submit_job(
     workflow_script: str,
 ) -> int:
     """Create run dirs, job.sbatch (wrapper template), submit, return id."""
+    run_dir = wrapper.rdir(c, case_name)
+    # Three explicit dirs (no brace expansion: the previous
+    # '"/{{inputs,outputs,results}}"' literal leaked unexpanded braces
+    # through Python concatenation and bash created '{inputs}'-style dirs).
     _ssh(
         c,
-        f"mkdir -p {shlex.quote(wrapper.rdir(c, case_name))}"
-        "/{{inputs,outputs,results}}",
+        f"mkdir -p {shlex.quote(run_dir)}/inputs"
+        f" {shlex.quote(run_dir)}/outputs"
+        f" {shlex.quote(run_dir)}/results",
     )
-    jobfile = f"{wrapper.rdir(c, case_name)}/job.sbatch"
+    jobfile = f"{run_dir}/job.sbatch"
     body = wrapper.render_job_sbatch(
-        c, case_name, workflow_script, partition, account, qos,
-        time_limit, cpus, mem_gb,
-        False, False, False,  # skip_ads, skip_pfas, skip_complex
-        adsorbent_name, pfas_name, adsorbent_smiles, pfas_smiles,
-        pfas_energy_ry, adsorbent_source, adsorbent_cif,
-        system_type, mode,
+        c,
+        case_name,
+        workflow_script,
+        partition,
+        account,
+        qos,
+        time_limit,
+        cpus,
+        mem_gb,
+        False,
+        False,
+        False,  # skip_ads, skip_pfas, skip_complex
+        adsorbent_name,
+        pfas_name,
+        adsorbent_smiles,
+        pfas_smiles,
+        pfas_energy_ry,
+        adsorbent_source,
+        adsorbent_cif,
+        system_type,
+        mode,
     )
     _write_remote_file(c, jobfile, body)
 
-    p = _ssh(c, f"sbatch {shlex.quote(jobfile)}", check=True, capture=True)
+    # sbatch resolves relative #SBATCH --output/--error paths against the
+    # submit cwd (ssh lands in $HOME), so cd into the run dir first.
+    p = _ssh(
+        c,
+        f"cd {shlex.quote(run_dir)} && sbatch {shlex.quote(jobfile)}",
+        check=True,
+        capture=True,
+    )
     job_id = parse_sbatch_submission(f"{p.stdout}\n{p.stderr}")
     if job_id is None:
         # sbatch succeeded but the id scrolled past; fall back to the
@@ -436,18 +459,18 @@ def write_meta(c, case_name: str, meta: dict[str, Any]) -> None:
 
 # ------------------------------------------------------------ monitoring
 
+
 def sacct_rows_for(c, job_id: int) -> list[dict[str, str]]:
     p = _ssh(
         c,
         f"sacct -n -P -j {job_id} -o JobID,State,ExitCode,MaxRSS,Elapsed",
-        check=False, capture=True,
+        check=False,
+        capture=True,
     )
     return parse_sacct_output(p.stdout)
 
 
-def _heartbeat(
-    rows: list[dict[str, str]], job_id: int
-) -> dict[str, str] | None:
+def _heartbeat(rows: list[dict[str, str]], job_id: int) -> dict[str, str] | None:
     row = sacct_main_row(rows, job_id)
     if row is None:
         return None
@@ -457,8 +480,7 @@ def _heartbeat(
     )
     note = f" rss {rss}" if rss else ""
     print(
-        f"[single] job {job_id}: {row['state']} "
-        f"elapsed {row['elapsed'] or '?'}{note}",
+        f"[single] job {job_id}: {row['state']} elapsed {row['elapsed'] or '?'}{note}",
         flush=True,
     )
     return row
@@ -476,6 +498,7 @@ def wait_for_job(c, job_id: int, poll_seconds: int) -> dict[str, str]:
 
 # ------------------------------------------------------------ commands
 
+
 def resume_hint(args, case_name: str) -> str:
     return (
         f"python scripts/dft_single.py run --user {args.user} "
@@ -488,7 +511,9 @@ def cmd_run(args: argparse.Namespace) -> int:
     root = c.root.rstrip("/")
 
     if not args.case and not args.name:
-        print("[single] provide --name (new case) or --case (existing)", file=sys.stderr)
+        print(
+            "[single] provide --name (new case) or --case (existing)", file=sys.stderr
+        )
         return 2
     case_name = args.case or default_case_name(args.name, args.pfas_name)
     run_dir = wrapper.rdir(c, case_name)
@@ -625,8 +650,11 @@ def cmd_run(args: argparse.Namespace) -> int:
         if is_oom_row(row):
             current = args.mem_gb or suggest_mem_gb(args.smiles, args.pfas_smiles)
             rss = next(
-                (r["maxrss"] for r in sacct_rows_for(c, job_id)
-                 if r["jobid"] == f"{job_id}.batch" and r["maxrss"]),
+                (
+                    r["maxrss"]
+                    for r in sacct_rows_for(c, job_id)
+                    if r["jobid"] == f"{job_id}.batch" and r["maxrss"]
+                ),
                 "unknown",
             )
             new_mem = min(current * 2, ESCALATION_CAP_GB)
@@ -678,7 +706,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         # TIMEOUT / FAILED / CANCELLED / NODE_FAIL / ...
         hint = {
             "TIMEOUT": "walltime exceeded - rerun with a larger --time; "
-                       "finished legs are reused automatically",
+            "finished legs are reused automatically",
         }.get(state, "check the fetched slurm logs (out and err)")
         fetch_case(c, case_name, args.local_cache)
         print(
@@ -745,7 +773,8 @@ def cmd_status(args: argparse.Namespace) -> int:
         c,
         f"sacct -n -P -S $(date -d '7 days ago' +%F) "
         f"--name=dft_{args.case} -o JobID,State,ExitCode,MaxRSS,Elapsed",
-        check=False, capture=True,
+        check=False,
+        capture=True,
     )
     if p.stdout.strip():
         print("recent sacct rows:")
@@ -754,6 +783,7 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 
 # ------------------------------------------------------------------ CLI
+
 
 def add_cluster_args(sp: argparse.ArgumentParser) -> None:
     sp.add_argument("--user", required=True, help="Cluster username.")
@@ -776,27 +806,29 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--smiles", help="Adsorbent SMILES.")
     run.add_argument(
         "--adsorbent-cif",
-        help="Path to an adsorbent CIF on the cluster (with "
-        "--adsorbent-source cif).",
+        help="Path to an adsorbent CIF on the cluster (with --adsorbent-source cif).",
     )
-    run.add_argument(
-        "--adsorbent-source", choices=["smiles", "cif"], default="smiles"
-    )
+    run.add_argument("--adsorbent-source", choices=["smiles", "cif"], default="smiles")
     run.add_argument("--pfas-name", default=DEFAULT_PFAS_NAME)
     run.add_argument("--pfas-smiles", default=DEFAULT_PFAS_SMILES)
     run.add_argument(
-        "--pfas-energy-ry", type=float, default=None,
+        "--pfas-energy-ry",
+        type=float,
+        default=None,
         help="Skip the PFAS reference calc with a known energy (Ry).",
     )
     run.add_argument(
-        "--mode", choices=["lowmem", "cluster", "production"],
+        "--mode",
+        choices=["lowmem", "cluster", "production"],
         default="production",
     )
     run.add_argument(
         "--system-type", choices=["molecule", "periodic"], default="molecule"
     )
     run.add_argument(
-        "--mem-gb", type=int, default=None,
+        "--mem-gb",
+        type=int,
+        default=None,
         help="Override the automatic 32/96/128 GB sizing.",
     )
     run.add_argument("--time", default=DEFAULT_TIME)
@@ -806,12 +838,14 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--qos", default=DEFAULT_QOS)
     run.add_argument("--poll-interval", type=int, default=DEFAULT_POLL_SECONDS)
     run.add_argument(
-        "--no-wait", action="store_true",
+        "--no-wait",
+        action="store_true",
         help="Submit and exit; resume later with the printed command.",
     )
     run.add_argument("--local-cache", default=wrapper.DEFAULT_LOCAL_CACHE)
     run.add_argument(
-        "--workflow-script", default=None,
+        "--workflow-script",
+        default=None,
         help="Path to run_dft_workflow.sh on the cluster "
         "(default: <cluster-root>/scripts/run_dft_workflow.sh).",
     )
