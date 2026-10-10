@@ -157,8 +157,16 @@ def classify_e_ads(ev: float | None) -> tuple[str, str]:
     )
 
 
-def format_results_report(data: dict[str, Any]) -> str:
-    """Human-readable summary + verdict from a results.json dict."""
+def format_results_report(data: dict[str, Any] | list[Any]) -> str:
+    """Human-readable summary + verdict from a results.json dict.
+
+    The workflow writes results.json as a JSON array (one dict per case,
+    batch format); for a single-case run dir the last entry is the case.
+    """
+    if isinstance(data, list):
+        if not data:
+            raise ValueError("results.json array is empty")
+        data = data[-1]
     ry = data.get("energies_ry", {})
     ev = data.get("energies_ev", {}).get("adsorption")
     verdict, why = classify_e_ads(ev)

@@ -140,3 +140,37 @@ def test_format_results_report_verdict_and_warnings() -> None:
     data["energies_ry"]["adsorbent"] = 0.0
     report = single.format_results_report(data)
     assert "adsorbent energy is 0.0" in report
+
+
+def test_format_results_report_accepts_batch_array() -> None:
+    # The workflow writes results.json as a JSON array (batch format);
+    # a single-case run dir contains one entry, which must render the same.
+    single = _load_single()
+    data = {
+        "case_name": "TFA_dimer_selfcheck_TFA",
+        "adsorbent_name": "TFA_dimer_selfcheck",
+        "pfas_name": "TFA",
+        "pfas_energy_source": "parsed",
+        "mode": "production",
+        "system_type": "molecule",
+        "energies_ry": {
+            "adsorbent": -299.48344051,
+            "pfas": -299.48344053,
+            "complex": -598.96793458,
+            "adsorption": -0.00105354,
+        },
+        "energies_ev": {"adsorption": -0.014334},
+    }
+    from_dict = single.format_results_report(dict(data))
+    from_array = single.format_results_report([dict(data)])
+    assert from_dict == from_array
+    assert "TFA_dimer_selfcheck_TFA" in from_array
+    assert "-0.014 eV" in from_array
+    assert "PLAUSIBLE" in from_array  # weak H-bond dimer without dispersion
+
+    try:
+        single.format_results_report([])
+    except ValueError as exc:
+        assert "empty" in str(exc)
+    else:  # pragma: no cover - should not happen
+        raise AssertionError("empty array must raise ValueError")
