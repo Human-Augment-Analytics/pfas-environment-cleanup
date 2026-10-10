@@ -327,10 +327,17 @@ def _extract_tgz(tgz: Path, dst: Path) -> None:
 
 
 def fetch_case(c, case_name: str, local_cache: str) -> Path:
-    """Pull the run bundle + the dft_cases/<case> tree into the cache.
+    """Pull the run bundle + the compounds/<leg> references into the cache.
 
-    Two remote tars -> scp (list argv) -> local stdlib tarfile extract,
-    so no shell pipes are needed on the submitting machine.
+    Layout on the cluster (run_dft_workflow.sh):
+      dft_cases/<case>/        results.json meta.json DONE job.sbatch
+                              outputs/ (slurm log) complex/ (QE in/out/cif)
+      compounds/adsorbents/<a>/  adsorbent.{mol,cif,in,err,out}
+      compounds/pfas/<p>/        pfas.{cif,in,err,out}
+    The QE scratch dirs (Outputs/, wavefunctions, hundreds of MB) and the
+    shared Pseudopotentials symlink are excluded; only what reproduces the
+    numbers is fetched. Two remote tars -> scp (list argv) -> local stdlib
+    tarfile extract, so no shell pipes run on the submitting machine.
     """
     dst = Path(local_cache).resolve() / case_name
     dst.mkdir(parents=True, exist_ok=True)
@@ -338,22 +345,29 @@ def fetch_case(c, case_name: str, local_cache: str) -> Path:
     root = c.root.rstrip("/")
     ts = int(time.time())
     t_run = f"/tmp/dft_single_{case_name}_{ts}_run.tgz"
-    t_case = f"/tmp/dft_single_{case_name}_{ts}_case.tgz"
+    t_legs = f"/tmp/dft_single_{case_name}_{ts}_legs.tgz"
 
     _ssh(
         c,
         f"cd {shlex.quote(run_dir)} && tar -czf {shlex.quote(t_run)} "
-        "results meta.json DONE outputs/slurm-*.out outputs/slurm-*.err "
-        "2>/dev/null",
+        "--exclude Outputs --exclude Pseudopotentials . 2>/dev/null",
         check=False,
     )
-    _ssh(
-        c,
-        f"cd {shlex.quote(root)} && tar -czf {shlex.quote(t_case)} "
-        f"dft_cases/{case_name} 2>/dev/null",
-        check=False,
-    )
-    for remote_tgz, required in ((t_run, True), (t_case, False)):
+    # Reference-leg names come from the run's own meta.json.
+    meta = _read_remote_json(c, f"{run_dir}/meta.json") or {}
+    ads = meta.get("adsorbent_name")
+    pfas = meta.get("pfas_name")
+    if ads and pfas:
+        _ssh(
+            c,
+            f"cd {shlex.quote(root)} && tar -czf {shlex.quote(t_legs)} "
+            f"--exclude Outputs --exclude Pseudopotentials "
+            f"compounds/adsorbents/{shlex.quote(str(ads))} "
+            f"compounds/pfas/{shlex.quote(str(pfas))} 2>/dev/null",
+            check=False,
+        )
+
+    for remote_tgz, required in ((t_run, True), (t_legs, False)):
         local_tgz = dst / remote_tgz.rsplit("/", 1)[-1]
         p = subprocess.run(
             ["scp"]
@@ -367,9 +381,12 @@ def fetch_case(c, case_name: str, local_cache: str) -> Path:
                 f"(does the run directory {run_dir} exist on the cluster?)"
             )
         if local_tgz.exists():
-            _extract_tgz(local_tgz, dst)
-            local_tgz.unlink()
-    _ssh(c, f"rm -f {shlex.quote(t_run)} {shlex.quote(t_case)}", check=False)
+            if local_tgz.stat().st_size == 0:
+                local_tgz.unlink()
+            else:
+                _extract_tgz(local_tgz, dst)
+                local_tgz.unlink()
+    _ssh(c, f"rm -f {shlex.quote(t_run)} {shlex.quote(t_legs)}", check=False)
     return dst
 
 
@@ -790,6 +807,17 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_fetch(args: argparse.Namespace) -> int:
+    c = make_cluster(args.user, args.cluster, args.cluster_root, args.runs_subdir)
+    _open_master(c)
+    dst = fetch_case(c, args.case, args.local_cache)
+    print(f"[single] fetched to {dst}")
+    data = read_remote_results(c, c.root.rstrip("/"), args.case)
+    if data is not None:
+        print(format_results_report(data))
+    return 0
+
+
 # ------------------------------------------------------------------ CLI
 
 
@@ -863,6 +891,14 @@ def build_parser() -> argparse.ArgumentParser:
     add_cluster_args(status)
     status.add_argument("--case", required=True)
     status.set_defaults(func=cmd_status)
+
+    fetch = sub.add_parser(
+        "fetch", help="Download results + slurm logs + dft_cases/<case> tree."
+    )
+    add_cluster_args(fetch)
+    fetch.add_argument("--case", required=True)
+    fetch.add_argument("--local-cache", default=wrapper.DEFAULT_LOCAL_CACHE)
+    fetch.set_defaults(func=cmd_fetch)
     return ap
 
 
