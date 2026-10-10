@@ -11,12 +11,16 @@ Accuracy is preserved by construction — no shortcut settings are used:
 - every case runs the full production workflow (same ecutwfc/conv_thr the
   anchors validated);
 - the PFAS reference leg is skipped only by passing the *actual computed*
-  TFA energy parsed from this workflow's own case legs
-  (dft_cases/*/compounds/pfas/TFA/pfas.out — the identical number the leg
-  would recompute; run_adsorption_case.py then records
-  pfas_energy_source="provided"). A root-level compounds/ cache from other
-  tooling is deliberately ignored: its value can differ (0.0075 Ry ~ 0.1 eV
-  observed on PACE-ICE), which would silently shift every E_ads;
+  TFA energy read from completed cases' results.json on the cluster
+  (energies_ry.pfas where pfas_energy_source="parsed" - the identical
+  number the leg would recompute; run_adsorption_case.py then records
+  pfas_energy_source="provided"). The shared compounds/pfas/ tree is
+  deliberately not probed: it is written concurrently by running jobs (a
+  race source) and its stale value can differ (0.0075 Ry ~ 0.1 eV observed
+  on PACE-ICE), which would silently shift every E_ads. When no reusable
+  energy exists, submit bootstraps ONE case at a time - the workflow
+  builds the PFAS leg in a shared directory, and concurrent bootstraps
+  race on pfas.mol (observed FAILED job 6140109 on PACE-ICE);
 - every harvested case gets the same verdict rubric as dft_single.py
   (NOT BINDING / PLAUSIBLE weak / PLAUSIBLE / SUSPECT / INCONCLUSIVE).
 
@@ -228,30 +232,33 @@ def results_present_map(c, root: str, case_names: list[str]) -> dict[str, bool]:
 
 
 def probe_pfas_energy(c, root: str, pfas_name: str) -> float | None:
-    """Parse the PFAS reference energy from this workflow's own case legs.
+    """Read the PFAS reference energy from completed cases' results.json.
 
-    Only <root>/dft_cases/*/compounds/pfas/<name>/pfas.out files count: they
-    are outputs of the exact same SCF the leg would recompute. The root-level
-    compounds/ cache is deliberately ignored - it belongs to other tooling
-    and its value can differ (0.0075 Ry ~ 0.1 eV observed on PACE-ICE),
-    which would silently shift every E_ads. If existing legs disagree with
-    each other, reuse is disabled (each case computes its own).
+    Each finished case records the exact PFAS energy its E_ads used under
+    energies_ry.pfas; pfas_energy_source="parsed" marks values this
+    workflow computed itself (same SCF settings every case uses), so they
+    are safe to reuse. The shared compounds/pfas/ tree is deliberately not
+    probed: it is written concurrently by running jobs (race source) and
+    its stale value can differ (0.0075 Ry ~ 0.1 eV observed on PACE-ICE),
+    which would silently shift every E_ads. If parsed values disagree,
+    reuse is disabled (each case computes its own).
     """
     runs = f"{root.rstrip('/')}/dft_cases"
-    pattern = f"*/compounds/pfas/{pfas_name}/pfas.out"
+    src = '"pfas_energy_source": "parsed"'
+    val = '"pfas": [-0-9.eE+]*'
     cmd = (
-        f"find {shlex.quote(runs)} -maxdepth 5 -type f "
-        f"-path {shlex.quote(pattern)} -print0 "
-        "| xargs -0 -r grep -h '^!' | sort -u"
+        f"find {shlex.quote(runs)} -maxdepth 2 -name results.json -print0 "
+        f"| xargs -0 -r grep -l {shlex.quote(src)} "
+        f"| xargs -r grep -h -o {shlex.quote(val)} | sort -u"
     )
     p = single._ssh(c, cmd, check=False, capture=True)
     values: list[float] = []
     for line in p.stdout.splitlines():
-        if "=" not in line:
+        if ":" not in line:
             continue
         try:
-            values.append(float(line.split("=")[1].split()[0]))
-        except (IndexError, ValueError):
+            values.append(float(line.split(":", 1)[1]))
+        except ValueError:
             continue
     unique = set(values)
     if len(unique) == 1:
@@ -259,8 +266,8 @@ def probe_pfas_energy(c, root: str, pfas_name: str) -> float | None:
     if len(unique) > 1:
         shown = ", ".join(f"{v:.8f}" for v in sorted(unique))
         print(
-            f"[seed] WARNING: PFAS reference legs disagree ({shown} Ry) - "
-            "not reusing; each case will compute its own"
+            f"[seed] WARNING: parsed {pfas_name} energies disagree "
+            f"({shown} Ry) - not reusing; each case will compute its own"
         )
     return None
 
@@ -343,8 +350,8 @@ def cmd_submit(args: argparse.Namespace) -> int:
         if pfas_energy is not None:
             print(
                 f"[seed] reusing computed {args.pfas_name} reference energy "
-                f"{pfas_energy:.8f} Ry (parsed from this workflow's own "
-                "case legs in dft_cases/)"
+                f"{pfas_energy:.8f} Ry (energies_ry.pfas from completed "
+                "cases' results.json)"
             )
         else:
             print(
@@ -355,6 +362,25 @@ def cmd_submit(args: argparse.Namespace) -> int:
     live = live_jobs_map(c)
     done = results_present_map(c, root, [x.case_name for x in cases])
     workflow_script = args.workflow_script or f"{root}/scripts/run_dft_workflow.sh"
+
+    effective_limit = args.limit
+    if pfas_energy is None:
+        # Without a reusable PFAS energy every submitted job builds the
+        # PFAS leg in the SHARED compounds/pfas/<name>/ directory; two
+        # concurrent builders race on pfas.mol (observed: FAILED 6140109
+        # while 6140108 ran, PACE-ICE 2026-10-10). Bootstrap serially.
+        effective_limit = min(args.limit, 1)
+        if live:
+            print(
+                "[seed] a live job is already computing the shared PFAS "
+                "reference leg - parking the rest; rerun submit after it "
+                "completes to reuse its parsed energy"
+            )
+        else:
+            print(
+                "[seed] no reusable PFAS energy yet - bootstrapping one "
+                "case; rerun submit after it completes to parallelize"
+            )
 
     submitted = skipped_done = skipped_live = parked = 0
     for case in cases:
@@ -367,6 +393,9 @@ def cmd_submit(args: argparse.Namespace) -> int:
             state.update(case, status="running", job_id=job_id, state=slurm_state)
             skipped_live += 1
             continue
+        if pfas_energy is None and live:
+            parked += 1
+            continue  # shared PFAS leg is being built by a live job
 
         entry = state.cases.get(case.case_name, {})
         status = entry.get("status", "")
@@ -412,7 +441,7 @@ def cmd_submit(args: argparse.Namespace) -> int:
                     continue
                 # otherwise: treat like a fresh attempt and resubmit below
 
-        if submitted >= args.limit:
+        if submitted >= effective_limit:
             parked += len(cases) - (skipped_done + skipped_live + parked + submitted)
             break
         if sum(
@@ -616,8 +645,9 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=None,
         help=(
-            "Known PFAS energy (Ry); default: probe this workflow's own "
-            "case legs in dft_cases/ on the cluster."
+            "Known PFAS energy (Ry); default: read energies_ry.pfas "
+            '(pfas_energy_source="parsed") from completed case '
+            "results.json on the cluster."
         ),
     )
     submit.add_argument("--retry-timeout", action="store_true")

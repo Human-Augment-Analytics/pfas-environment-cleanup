@@ -219,10 +219,13 @@ def test_render_summary_flags_suspect() -> None:
 
 
 def test_probe_pfas_energy_parses_pw_line() -> None:
+    # The probe greps '"pfas": <float>' lines out of completed cases'
+    # results.json (pfas_energy_source="parsed") and sorts -u, so a single
+    # agreeing value arrives as exactly one line.
     seed = _load_seed()
 
     class FakeProc:
-        stdout = "!    total energy              =     -299.48344053 Ry\n"
+        stdout = '"pfas": -299.48344053\n'
 
     class FakeSingle:
         def _ssh(self, c, cmd, check=False, capture=False):
@@ -239,16 +242,13 @@ def test_probe_pfas_energy_parses_pw_line() -> None:
 
 
 def test_probe_pfas_energy_disagreement_disables_reuse() -> None:
-    # Observed on PACE-ICE: case legs (-299.48344053) vs the foreign
-    # root-level compounds/ cache (-299.47595132) differ by ~0.1 eV.
-    # If legs themselves ever disagree, reuse must be disabled.
+    # The stale shared compounds/ cache value (-299.47595132) differs from
+    # this workflow's parsed value (-299.48344053) by ~0.1 eV; if parsed
+    # values themselves ever disagree, reuse must be disabled.
     seed = _load_seed()
 
     class FakeProc:
-        stdout = (
-            "!    total energy              =     -299.48344053 Ry\n"
-            "!    total energy              =     -299.47595132 Ry\n"
-        )
+        stdout = '"pfas": -299.48344053\n"pfas": -299.47595132\n'
 
     class FakeSingle:
         def _ssh(self, c, cmd, check=False, capture=False):
@@ -268,8 +268,8 @@ def test_probe_pfas_energy_disagreement_disables_reuse() -> None:
 
 
 def test_probe_pfas_energy_no_legs_returns_none() -> None:
-    # First case of a campaign bootstraps: no legs exist yet, so the
-    # probe returns None and the case computes all three legs itself.
+    # First case of a campaign bootstraps: no completed cases exist yet,
+    # so the probe returns None and the case computes all three legs.
     seed = _load_seed()
 
     class FakeProc:
