@@ -11,9 +11,12 @@ Accuracy is preserved by construction — no shortcut settings are used:
 - every case runs the full production workflow (same ecutwfc/conv_thr the
   anchors validated);
 - the PFAS reference leg is skipped only by passing the *actual computed*
-  TFA energy parsed from compounds/pfas/TFA/pfas.out on the cluster
-  (identical number the leg would recompute; run_adsorption_case.py then
-  records pfas_energy_source="provided");
+  TFA energy parsed from this workflow's own case legs
+  (dft_cases/*/compounds/pfas/TFA/pfas.out — the identical number the leg
+  would recompute; run_adsorption_case.py then records
+  pfas_energy_source="provided"). A root-level compounds/ cache from other
+  tooling is deliberately ignored: its value can differ (0.0075 Ry ~ 0.1 eV
+  observed on PACE-ICE), which would silently shift every E_ads;
 - every harvested case gets the same verdict rubric as dft_single.py
   (NOT BINDING / PLAUSIBLE weak / PLAUSIBLE / SUSPECT / INCONCLUSIVE).
 
@@ -225,24 +228,41 @@ def results_present_map(c, root: str, case_names: list[str]) -> dict[str, bool]:
 
 
 def probe_pfas_energy(c, root: str, pfas_name: str) -> float | None:
-    """Parse the cached PFAS reference energy from compounds/ (Ry), if any.
+    """Parse the PFAS reference energy from this workflow's own case legs.
 
-    This is the number the PFAS leg would recompute (same input settings);
-    passing it via PFAS_ENERGY_RY skips a redundant identical calculation.
+    Only <root>/dft_cases/*/compounds/pfas/<name>/pfas.out files count: they
+    are outputs of the exact same SCF the leg would recompute. The root-level
+    compounds/ cache is deliberately ignored - it belongs to other tooling
+    and its value can differ (0.0075 Ry ~ 0.1 eV observed on PACE-ICE),
+    which would silently shift every E_ads. If existing legs disagree with
+    each other, reuse is disabled (each case computes its own).
     """
-    p = single._ssh(
-        c,
-        f"grep -m1 '^!' {shlex.quote(f'{root}/compounds/pfas/{pfas_name}/pfas.out')}",
-        check=False,
-        capture=True,
+    runs = f"{root.rstrip('/')}/dft_cases"
+    pattern = f"*/compounds/pfas/{pfas_name}/pfas.out"
+    cmd = (
+        f"find {shlex.quote(runs)} -maxdepth 5 -type f "
+        f"-path {shlex.quote(pattern)} -print0 "
+        "| xargs -0 -r grep -h '^!' | sort -u"
     )
-    line = p.stdout.strip()
-    if "=" not in line:
-        return None
-    try:
-        return float(line.split("=")[1].split()[0])
-    except (IndexError, ValueError):
-        return None
+    p = single._ssh(c, cmd, check=False, capture=True)
+    values: list[float] = []
+    for line in p.stdout.splitlines():
+        if "=" not in line:
+            continue
+        try:
+            values.append(float(line.split("=")[1].split()[0]))
+        except (IndexError, ValueError):
+            continue
+    unique = set(values)
+    if len(unique) == 1:
+        return values[0]
+    if len(unique) > 1:
+        shown = ", ".join(f"{v:.8f}" for v in sorted(unique))
+        print(
+            f"[seed] WARNING: PFAS reference legs disagree ({shown} Ry) - "
+            "not reusing; each case will compute its own"
+        )
+    return None
 
 
 def final_state_for(c, job_id: str) -> str:
@@ -323,7 +343,8 @@ def cmd_submit(args: argparse.Namespace) -> int:
         if pfas_energy is not None:
             print(
                 f"[seed] reusing computed {args.pfas_name} reference energy "
-                f"{pfas_energy:.8f} Ry (parsed from compounds/ on the cluster)"
+                f"{pfas_energy:.8f} Ry (parsed from this workflow's own "
+                "case legs in dft_cases/)"
             )
         else:
             print(
@@ -594,7 +615,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--pfas-energy-ry",
         type=float,
         default=None,
-        help="Known PFAS energy (Ry); default: probe compounds/ on the cluster.",
+        help=(
+            "Known PFAS energy (Ry); default: probe this workflow's own "
+            "case legs in dft_cases/ on the cluster."
+        ),
     )
     submit.add_argument("--retry-timeout", action="store_true")
     submit.add_argument(

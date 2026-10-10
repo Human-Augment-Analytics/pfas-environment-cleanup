@@ -1,7 +1,9 @@
 """Fast offline tests for the seed-campaign driver (no SSH, no network)."""
 
+import contextlib
 import csv
 import importlib.util
+import io
 import json
 import math
 import subprocess
@@ -234,6 +236,57 @@ def test_probe_pfas_energy_parses_pw_line() -> None:
     finally:
         seed.single._ssh = orig
     assert math.isclose(val, -299.48344053)
+
+
+def test_probe_pfas_energy_disagreement_disables_reuse() -> None:
+    # Observed on PACE-ICE: case legs (-299.48344053) vs the foreign
+    # root-level compounds/ cache (-299.47595132) differ by ~0.1 eV.
+    # If legs themselves ever disagree, reuse must be disabled.
+    seed = _load_seed()
+
+    class FakeProc:
+        stdout = (
+            "!    total energy              =     -299.48344053 Ry\n"
+            "!    total energy              =     -299.47595132 Ry\n"
+        )
+
+    class FakeSingle:
+        def _ssh(self, c, cmd, check=False, capture=False):
+            return FakeProc()
+
+    fake = FakeSingle()
+    orig = seed.single._ssh
+    seed.single._ssh = fake._ssh
+    buf = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(buf):
+            val = seed.probe_pfas_energy(None, "/root", "TFA")
+    finally:
+        seed.single._ssh = orig
+    assert val is None
+    assert "WARNING" in buf.getvalue()
+
+
+def test_probe_pfas_energy_no_legs_returns_none() -> None:
+    # First case of a campaign bootstraps: no legs exist yet, so the
+    # probe returns None and the case computes all three legs itself.
+    seed = _load_seed()
+
+    class FakeProc:
+        stdout = ""
+
+    class FakeSingle:
+        def _ssh(self, c, cmd, check=False, capture=False):
+            return FakeProc()
+
+    fake = FakeSingle()
+    orig = seed.single._ssh
+    seed.single._ssh = fake._ssh
+    try:
+        val = seed.probe_pfas_energy(None, "/root", "TFA")
+    finally:
+        seed.single._ssh = orig
+    assert val is None
 
 
 def test_harvest_cli_wiring() -> None:
