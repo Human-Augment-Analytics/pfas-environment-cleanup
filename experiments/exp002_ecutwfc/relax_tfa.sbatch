@@ -5,6 +5,7 @@
 # `conda env update --prune` on the shared env other experiments use.
 #SBATCH --job-name=exp02_tfa_relax
 #SBATCH --partition=ice-cpu
+#SBATCH --nodes=1
 #SBATCH --ntasks=8
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=32G
@@ -17,8 +18,10 @@ ROOT="${HOME}/pfas-exp02"
 cd "$ROOT"
 
 module load anaconda3
+# QE 7.3 on PACE-ICE requires its compiler/MPI prerequisites loaded first.
+module load gcc/12.3.0
+module load openmpi/4.1.5
 module load quantum-espresso/7.3
-module load openmpi
 eval "$(conda shell.bash hook)"
 
 export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
