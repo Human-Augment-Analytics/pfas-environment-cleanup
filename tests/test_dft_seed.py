@@ -289,6 +289,54 @@ def test_probe_pfas_energy_no_legs_returns_none() -> None:
     assert val is None
 
 
+def test_final_state_for_parses_pipe_delimited_sacct() -> None:
+    # sacct -P is pipe-delimited: the row is "FAILED|1:0", so the state is
+    # split("|")[0]. A whitespace split() used to return the whole token,
+    # which matched no branch in cmd_submit and parked the case as "running"
+    # forever (observed live on PACE-ICE 2026-10-10, job 6140109).
+    seed = _load_seed()
+
+    class FakeProc:
+        stdout = "FAILED|1:0\nFAILED|1:0\nCOMPLETED|0:0\n"
+
+    class FakeSingle:
+        def _ssh(self, c, cmd, check=False, capture=False):
+            return FakeProc()
+
+    fake = FakeSingle()
+    orig = seed.single._ssh
+    seed.single._ssh = fake._ssh
+    try:
+        state = seed.final_state_for(None, "6140109")
+    finally:
+        seed.single._ssh = orig
+    assert state == "FAILED"
+
+
+def test_final_state_for_normalizes_cancelled_by_and_empty() -> None:
+    # "CANCELLED by <uid>" must normalize to CANCELLED (suffix stripped);
+    # an empty sacct (job purged / not visible) must return UNKNOWN.
+    seed = _load_seed()
+    outputs = iter(["CANCELLED by 1000056|0:0\n", ""])
+
+    class FakeProc:
+        def __init__(self, stdout):
+            self.stdout = stdout
+
+    class FakeSingle:
+        def _ssh(self, c, cmd, check=False, capture=False):
+            return FakeProc(next(outputs))
+
+    fake = FakeSingle()
+    orig = seed.single._ssh
+    seed.single._ssh = fake._ssh
+    try:
+        assert seed.final_state_for(None, "1") == "CANCELLED"
+        assert seed.final_state_for(None, "2") == "UNKNOWN"
+    finally:
+        seed.single._ssh = orig
+
+
 def test_harvest_cli_wiring() -> None:
     # harvest itself needs the cluster; the local CSV write path is covered
     # by the verdict_row/render_summary tests, so here we only check the

@@ -273,15 +273,22 @@ def probe_pfas_energy(c, root: str, pfas_name: str) -> float | None:
 
 
 def final_state_for(c, job_id: str) -> str:
-    """sacct end-state for a job that left the queue (PENDING/RUNNING gone)."""
+    """sacct end-state for a job that left the queue (PENDING/RUNNING gone).
+
+    -P makes sacct pipe-delimited ("FAILED|1:0") and -X drops .batch/.extern
+    step rows (whose states can differ from the job's - .extern reports
+    COMPLETED even when the job failed). The state field itself may carry a
+    suffix ("CANCELLED by <uid>"), so take its first whitespace token.
+    """
     p = single._ssh(
         c,
-        f"sacct -n -P -j {shlex.quote(job_id)} -o State,ExitCode "
-        "| grep -v ' \\.' | head -1",
+        f"sacct -n -P -X -j {shlex.quote(job_id)} -o State,ExitCode | head -1",
         check=False,
         capture=True,
     )
-    return p.stdout.strip().split()[0] if p.stdout.strip() else "UNKNOWN"
+    first = p.stdout.strip().splitlines()[0] if p.stdout.strip() else ""
+    state = first.split("|")[0].split()[0] if first else ""
+    return state or "UNKNOWN"
 
 
 # --------------------------------------------------------------- reporting
