@@ -128,6 +128,8 @@ charge from its SMILES and emits the screening manifest plus a defer audit.
 
 ## DFT Calculation Process
 
+For automated multi-case campaigns on PACE-ICE (submit/status/harvest from a CSV), see [docs/automated_dft.md](docs/automated_dft.md).
+
 ### Quantum Espresso Input Production
 An automated pipeline for automatically converting a compound of interest into a Quantum Espresso input is in development, but this is the manual process for the time being. 
 1. Using [PubChem](https://pubchem.ncbi.nlm.nih.gov/), find the SMILES format of the compound of interest.
