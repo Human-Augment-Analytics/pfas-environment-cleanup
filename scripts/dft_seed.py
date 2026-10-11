@@ -294,8 +294,15 @@ def final_state_for(c, job_id: str) -> str:
 # --------------------------------------------------------------- reporting
 
 
-def verdict_row(case: SeedCase, data: dict[str, Any]) -> dict[str, Any]:
-    """Flatten one results.json entry into a CSV row with its verdict."""
+def verdict_row(case: SeedCase, data: dict[str, Any] | list[Any]) -> dict[str, Any]:
+    """Flatten one results.json entry into a CSV row with its verdict.
+
+    results.json is a list (dft_single writes one summary dict per case,
+    batch arrays write more); pick the entry carrying the energy summary.
+    """
+    if isinstance(data, list):
+        summaries = [d for d in data if isinstance(d, dict) and "energies_ry" in d]
+        data = summaries[-1] if summaries else {}
     ry = data.get("energies_ry", {})
     ev = (data.get("energies_ev") or {}).get("adsorption")
     verdict, _ = single.classify_e_ads(ev)

@@ -201,8 +201,45 @@ def test_verdict_row_flattens_results() -> None:
     assert row["ID"] == "s0001"
     assert row["case_name"] == "med_TFA"
     assert math.isclose(row["E_ads_eV"], -0.178537)
-    assert row["verdict"] == "PLAUSIBLE (weak)"
+
+
+def test_verdict_row_accepts_list_shaped_results() -> None:
+    # results.json on disk is a list of summary dicts (dft_single writes one
+    # entry per case; batch arrays write more). A dict-only verdict_row
+    # crashed the live harvest on PACE-ICE 2026-10-11 with
+    # AttributeError: 'list' object has no attribute 'get'.
+    seed = _load_seed()
+    case = seed.SeedCase("s0129", "med", "CCO", "seed_c147_CID3900439", "seed_c147_TFA")
+    data = [
+        {
+            "case_name": "seed_c147_TFA",
+            "pfas_energy_source": "provided",
+            "mode": "production",
+            "energies_ry": {
+                "adsorbent": -169.01747392,
+                "pfas": -299.48344053,
+                "complex": -468.50666852,
+                "adsorption": -0.005754070000023148,
+            },
+            "energies_ev": {"adsorption": -0.07828810997261157},
+        }
+    ]
+    row = seed.verdict_row(case, data)
+    assert row["ID"] == "s0129"
     assert row["pfas_energy_source"] == "provided"
+    assert math.isclose(row["E_ads_Ry"], -0.005754070000023148)
+    assert math.isclose(row["E_ads_eV"], -0.07828810997261157)
+    assert row["verdict"] == "PLAUSIBLE (weak)"
+
+
+def test_verdict_row_empty_list_yields_missing_values() -> None:
+    seed = _load_seed()
+    case = seed.SeedCase("s0002", "med", "CCO", "seed_x", "seed_x_TFA")
+    row = seed.verdict_row(case, [])
+    assert row["E_ads_eV"] is None
+    assert row["E_ads_Ry"] is None
+    assert row["verdict"] == "INCONCLUSIVE"
+    assert row["pfas_energy_source"] == ""
 
 
 def test_render_summary_flags_suspect() -> None:
