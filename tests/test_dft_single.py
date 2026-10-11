@@ -14,6 +14,7 @@ SCRIPT = ROOT / "scripts" / "dft_single.py"
 
 def _load_single(name: str = "dft_single_under_test"):
     spec = importlib.util.spec_from_file_location(name, SCRIPT)
+    assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
     sys.modules[name] = mod
     spec.loader.exec_module(mod)

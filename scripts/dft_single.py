@@ -321,7 +321,7 @@ def read_remote_results(c, root: str, case_name: str) -> dict[str, Any] | None:
 def _extract_tgz(tgz: Path, dst: Path) -> None:
     with (
         tarfile.open(tgz, "r:gz") as tf,
-        contextlib.suppress((tarfile.TarError, OSError)),
+        contextlib.suppress(tarfile.TarError, OSError),
     ):
         tf.extractall(dst, filter="data")
 
