@@ -108,6 +108,24 @@ failed and intermediate ones — together with their input config files, so
 the exact inputs behind any energy number in `scripts/master_results.txt`
 can always be recovered.
 
+#### Screening a different manifest (`CSV_FILE`)
+
+Both drivers accept any CSV with the same `ID,Name,SMILES,Category` header
+through the `CSV_FILE` environment variable (defaults above apply when
+unset), with one task per data line:
+
+    sbatch --export=ALL,CSV_FILE=path/to/manifest.csv --array=2-N \
+        scripts/run_batch_screening.sh
+    CSV_FILE="$PWD/path/to/manifest.csv" bash scripts/run_local_screening.sh
+
+For the PubChem seed set (`shivani_ml_models/cluster_centers.csv`, see
+`docs/seed_set_data_dictionary.md`), don't build the manifest by hand: its
+`Charge` column is a cluster average that reconstructs to a tiny nonzero
+remainder instead of an exact `0`, so an exact `Charge != 0` filter wrongly
+flags ~800 neutral molecules as charged. Run
+`python scripts/make_seed_campaign.py` instead — it reads each medoid's true
+charge from its SMILES and emits the screening manifest plus a defer audit.
+
 ## DFT Calculation Process
 
 ### Quantum Espresso Input Production

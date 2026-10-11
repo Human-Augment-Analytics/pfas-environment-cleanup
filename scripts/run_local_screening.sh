@@ -17,7 +17,10 @@ if [[ ! -f "$PROJECT_ROOT/qe_environment.yaml" ]]; then
     exit 1
 fi
 
-CSV_FILE="$PROJECT_ROOT/scripts/molecular_adsorbents_smiles.csv"
+# Adsorbent manifest (header ID,Name,SMILES,Category). Override to screen a
+# different manifest, e.g. the seed-campaign one:
+#   CSV_FILE="$PWD/scripts/seed_campaign_v1.csv" bash scripts/run_local_screening.sh
+CSV_FILE="${CSV_FILE:-$PROJECT_ROOT/scripts/molecular_adsorbents_smiles.csv}"
 WORKFLOW_SCRIPT="$PROJECT_ROOT/scripts/run_dft_workflow.sh"
 MASTER_RESULTS="$PROJECT_ROOT/scripts/master_results.txt"
 PFAS_SMILES_TARGET="FC(F)(F)C(=O)O"
@@ -46,6 +49,12 @@ if not out:
     sys.exit("no data rows found in CSV")
 sys.stdout.write("\n".join(out))
 ' "$CSV_FILE") || exit 1
+
+# Windows Python's text-mode stdout translates the embedded \n row separators
+# above to \r\n, and bash $( ) keeps the \r, gluing it onto each row's last
+# field (the SMILES). Neither Names nor SMILES legitimately contain CR, so
+# strip it; on Linux this is a no-op.
+PARSED="${PARSED//$'\r'/}"
 
 while IFS=$'\t' read -r ADS_NAME ADS_SMILES; do
 

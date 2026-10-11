@@ -16,7 +16,27 @@
 #SBATCH --account=coc
 #SBATCH --qos=coc-ice
 
-CSV_FILE="molecular_adsorbents_smiles.csv"
+# Work from the repo root so the relative paths below (logs/, the manifest,
+# run_dft_workflow.sh) resolve. Under Slurm the batch script executes from a
+# spool copy, so BASH_SOURCE points into the spool, not the repo — anchor on
+# the submit directory instead (the same anchor sbatch uses to resolve a
+# relative --output). Direct non-Slurm invocation (local sweep, e2e tests)
+# falls back to the script's own location.
+if [ -n "${SLURM_SUBMIT_DIR:-}" ] && [ -f "${SLURM_SUBMIT_DIR}/scripts/run_dft_workflow.sh" ]; then
+    cd "$SLURM_SUBMIT_DIR"
+else
+    SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+    cd "$SCRIPT_DIR/.."
+fi
+
+# Adsorbent manifest (header ID,Name,SMILES,Category; task id = 1-based CSV
+# line). Override to screen a different manifest, e.g. the seed-campaign one:
+#   sbatch --export=ALL,CSV_FILE=scripts/seed_campaign_v1.csv --array=2-895 \
+#       scripts/run_batch_screening.sh
+# Resolve the default relative to the repo root (the manifest lives in
+# scripts/; an unqualified filename would only work if the submit directory
+# happened to be the repo root).
+CSV_FILE="${CSV_FILE:-scripts/molecular_adsorbents_smiles.csv}"
 
 # CSV header: ID,Name,SMILES,Category. Parse with python's csv module because
 # several fields are quoted and contain commas (e.g. row 045's Name), which
@@ -53,4 +73,4 @@ export MODE="production"
 export SYSTEM_TYPE="molecule"
 export MPI_TASKS=$SLURM_NTASKS
 
-bash run_dft_workflow.sh
+bash scripts/run_dft_workflow.sh
