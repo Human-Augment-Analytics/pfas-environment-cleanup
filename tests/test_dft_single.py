@@ -175,3 +175,65 @@ def test_format_results_report_accepts_batch_array() -> None:
         assert "empty" in str(exc)
     else:  # pragma: no cover - should not happen
         raise AssertionError("empty array must raise ValueError")
+
+
+def test_run_parser_backend_flags() -> None:
+    single = _load_single()
+    parser = single.build_parser()
+    # Defaults: cpu backend, no gres (legacy CPU submissions unchanged).
+    args = parser.parse_args(
+        ["run", "--user", "u", "--name", "X", "--smiles", "CCO"]
+    )
+    assert args.backend == "cpu"
+    assert args.gres is None
+    # Explicit GPU track survives parsing.
+    args = parser.parse_args(
+        [
+            "run", "--user", "u", "--name", "X", "--smiles", "CCO",
+            "--backend", "gpu", "--gres", "gpu:h100:1",
+        ]
+    )
+    assert args.backend == "gpu"
+    assert args.gres == "gpu:h100:1"
+
+
+def test_apply_backend_defaults_gpu_flips_cpu_defaults() -> None:
+    # --backend gpu without explicit scheduling flags must never render an
+    # ice-cpu 18h job (it would either never schedule with a gres request
+    # or hit the ice-gpu 16h MaxTime rejection).
+    single = _load_single()
+    args = single.build_parser().parse_args(
+        ["run", "--user", "u", "--name", "X", "--smiles", "CCO", "--backend", "gpu"]
+    )
+    single.apply_backend_defaults(args)
+    assert args.partition == single.DEFAULT_GPU_PARTITION
+    assert args.time == single.DEFAULT_GPU_TIME
+    assert args.gres == single.DEFAULT_GPU_GRES
+
+
+def test_apply_backend_defaults_explicit_flags_win() -> None:
+    # Explicit user scheduling flags are never overridden by the GPU defaults.
+    single = _load_single()
+    args = single.build_parser().parse_args(
+        [
+            "run", "--user", "u", "--name", "X", "--smiles", "CCO",
+            "--backend", "gpu",
+            "--partition", "ice-gpu-2",
+            "--time", "4:00:00",
+            "--gres", "gpu:v100:1",
+        ]
+    )
+    single.apply_backend_defaults(args)
+    assert args.partition == "ice-gpu-2"
+    assert args.time == "4:00:00"
+    assert args.gres == "gpu:v100:1"
+
+
+def test_apply_backend_defaults_cpu_is_noop() -> None:
+    single = _load_single()
+    args = single.build_parser().parse_args(
+        ["run", "--user", "u", "--name", "X", "--smiles", "CCO"]
+    )
+    before = (args.partition, args.time, args.gres)
+    single.apply_backend_defaults(args)
+    assert (args.partition, args.time, args.gres) == before

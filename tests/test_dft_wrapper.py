@@ -122,3 +122,59 @@ def test_memory_warnings_respects_skip_and_energy_flags() -> None:
     assert (
         WRAPPER.memory_warnings(adsorbent_smiles=None, pfas_smiles=TFA, mem_gb=32) == []
     )
+
+
+def _render(**backend_kwargs):
+    """Render a job.sbatch with production-shaped positionals plus the
+    keyword-only GPU knobs (backend/gres/ntasks/cpus_per_task)."""
+    c = WRAPPER.Cluster(ssh_target="user@host", root="/remote/root")
+    return WRAPPER.render_job_sbatch(
+        c,
+        "case_TFA",
+        "/remote/root/scripts/run_dft_workflow.sh",
+        "ice-cpu",
+        "coc",
+        "coc-ice",
+        "18:00:00",
+        8,
+        96,
+        False,
+        False,
+        False,
+        "ads",
+        "TFA",
+        "C",
+        TFA,
+        None,
+        "smiles",
+        None,
+        "molecule",
+        "production",
+        **backend_kwargs,
+    )
+
+
+def test_render_job_sbatch_gpu_shape() -> None:
+    # GPU track: 1 task x N threads on 1 GPU (ntasks=cpus with srun would
+    # launch N container copies on one GPU), a type-pinned gres line, and
+    # the PFAS_DFT_BACKEND export consumed by run_dft_workflow.sh.
+    text = _render(
+        backend="gpu",
+        gres="gpu:h100:1",
+        ntasks=1,
+        cpus_per_task=8,
+    )
+    assert "#SBATCH --ntasks=1" in text
+    assert "#SBATCH --cpus-per-task=8" in text
+    assert "#SBATCH --gres=gpu:h100:1" in text
+    assert "export PFAS_DFT_BACKEND=gpu" in text
+
+
+def test_render_job_sbatch_cpu_default_unchanged() -> None:
+    # CPU default (no backend kwargs): byte-for-byte legacy shape - no
+    # gres line, no backend export, ntasks=cpus / cpus-per-task=1.
+    text = _render()
+    assert "#SBATCH --ntasks=8" in text
+    assert "#SBATCH --cpus-per-task=1" in text
+    assert "--gres" not in text
+    assert "PFAS_DFT_BACKEND" not in text

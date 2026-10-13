@@ -170,6 +170,11 @@ def render_job_sbatch(
     adsorbent_cif: Optional[str],
     system_type: str,
     mode: str,
+    *,
+    backend: str = "cpu",
+    gres: Optional[str] = None,
+    ntasks: Optional[int] = None,
+    cpus_per_task: Optional[int] = None,
 ) -> str:
     """Render the job.sbatch script for a case (pure, no SSH side effects).
 
@@ -182,8 +187,10 @@ def render_job_sbatch(
     lines = [
         "#!/bin/bash",
         f"#SBATCH --job-name=dft_{case_name}",
-        f"#SBATCH --ntasks={cpus}",
-        "#SBATCH --cpus-per-task=1",
+        # GPU jobs override the shape (1 task x N threads on 1 GPU);
+        # ntasks=cpus with srun would launch N container copies on one GPU.
+        f"#SBATCH --ntasks={ntasks if ntasks is not None else cpus}",
+        f"#SBATCH --cpus-per-task={cpus_per_task if cpus_per_task is not None else 1}",
         f"#SBATCH --mem={mem_gb}G",
         f"#SBATCH --time={time_limit}",
         "#SBATCH --output=outputs/slurm-%j.out",
@@ -195,6 +202,8 @@ def render_job_sbatch(
         lines.append(f"#SBATCH --account={account}")
     if qos:
         lines.append(f"#SBATCH --qos={qos}")
+    if gres:
+        lines.append(f"#SBATCH --gres={gres}")
 
     lines += [
         "set -euo pipefail",
@@ -224,6 +233,10 @@ def render_job_sbatch(
         f"export SYSTEM_TYPE={shlex.quote(system_type)}",
         f"export MODE={shlex.quote(mode)}",
     ]
+    if backend != "cpu":
+        # Consumed by scripts/run_dft_workflow.sh to select the GPU module
+        # chain + PW_COMMAND; absent for the default cpu track.
+        lines.append(f"export PFAS_DFT_BACKEND={shlex.quote(backend)}")
     if adsorbent_cif:
         lines.append(f"export ADSORBENT_CIF={shlex.quote(adsorbent_cif)}")
 
@@ -261,6 +274,11 @@ def submit_slurm_job(
     adsorbent_cif: Optional[str],
     system_type: str,
     mode: str,
+    *,
+    backend: str = "cpu",
+    gres: Optional[str] = None,
+    ntasks: Optional[int] = None,
+    cpus_per_task: Optional[int] = None,
 ) -> None:
     """Write job.sbatch (via render_job_sbatch) and submit it with sbatch."""
     jobfile = f"{rdir(c, case_name)}/job.sbatch"
@@ -289,6 +307,10 @@ def submit_slurm_job(
             adsorbent_cif,
             system_type,
             mode,
+            backend=backend,
+            gres=gres,
+            ntasks=ntasks,
+            cpus_per_task=cpus_per_task,
         ),
     )
     run(ssh_cmd_quiet(c, f"sbatch {shlex.quote(jobfile)}"), check=True, capture=False)

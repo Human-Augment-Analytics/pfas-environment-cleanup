@@ -75,6 +75,13 @@ DEFAULT_TIME = "18:00:00"  # ice-cpu walltime cap
 DEFAULT_CPUS = 8
 DEFAULT_POLL_SECONDS = 120
 
+# GPU track (canary job 6239784): ice-gpu MaxTime is 16h (18h requests are
+# rejected), and --gres must name an NVIDIA type (generic gpu:1 can land on
+# an MI210, where the ROCm container aborts on libcuda.so.1).
+DEFAULT_GPU_PARTITION = "ice-gpu"
+DEFAULT_GPU_TIME = "16:00:00"
+DEFAULT_GPU_GRES = "gpu:a100:1"
+
 RY_TO_EV = 13.605693009
 EV_TO_KJ_MOL = 96.485
 
@@ -125,6 +132,25 @@ def suggest_mem_gb(adsorbent_smiles: str | None, pfas_smiles: str | None) -> int
     if largest <= wrapper._LARGE_SYSTEM_HEAVY_ATOMS:
         return MEDIUM_BAND_GB
     return LARGE_BAND_GB
+
+
+def apply_backend_defaults(args: argparse.Namespace) -> None:
+    """Apply GPU defaults in place for --backend gpu, preserving explicit
+    user overrides.
+
+    Rule: a scheduling knob is flipped to its GPU default only when the
+    user left it at the CPU default (i.e. did not pass --partition/--time/
+    --gres themselves). Explicit values are never overwritten. Idempotent
+    for --backend cpu (no-op).
+    """
+    if getattr(args, "backend", "cpu") != "gpu":
+        return
+    if args.partition == DEFAULT_PARTITION:
+        args.partition = DEFAULT_GPU_PARTITION
+    if args.time == DEFAULT_TIME:
+        args.time = DEFAULT_GPU_TIME
+    if getattr(args, "gres", None) is None:
+        args.gres = DEFAULT_GPU_GRES
 
 
 def classify_e_ads(ev: float | None) -> tuple[str, str]:
@@ -413,6 +439,8 @@ def submit_job(
     cpus: int,
     mem_gb: int,
     workflow_script: str,
+    backend: str = "cpu",
+    gres: str | None = None,
 ) -> int:
     """Create run dirs, job.sbatch (wrapper template), submit, return id."""
     run_dir = wrapper.rdir(c, case_name)
@@ -448,6 +476,13 @@ def submit_job(
         adsorbent_cif,
         system_type,
         mode,
+        backend=backend,
+        gres=gres,
+        # GPU shape: exactly one task holding the GPU; cpus threads feed
+        # the container's OpenMP/MKL pools. CPU track: ntasks=cpus,
+        # cpus-per-task=1 (unchanged legacy shape).
+        ntasks=1 if backend == "gpu" else None,
+        cpus_per_task=cpus if backend == "gpu" else None,
     )
     _write_remote_file(c, jobfile, body)
 
@@ -535,6 +570,12 @@ def cmd_run(args: argparse.Namespace) -> int:
     c = make_cluster(args.user, args.cluster, args.cluster_root, args.runs_subdir)
     root = c.root.rstrip("/")
 
+    # Flip scheduling knobs to the GPU track *before* any submit path runs:
+    # --backend gpu without an explicit --partition/--time/--gres must never
+    # render an ice-cpu 18h job with a GPU gres request (it would never
+    # schedule). No-op for cpu; explicit user flags win.
+    apply_backend_defaults(args)
+
     if not args.case and not args.name:
         print(
             "[single] provide --name (new case) or --case (existing)", file=sys.stderr
@@ -586,6 +627,19 @@ def cmd_run(args: argparse.Namespace) -> int:
                 args.pfas_smiles = meta["pfas_smiles"]
             if meta.get("adsorbent_source"):
                 args.adsorbent_source = meta["adsorbent_source"]
+            # Backend provenance: attach (or a later resume of a job
+            # submitted with --backend gpu) must keep scheduling and any
+            # OOM resubmission on the GPU track, not fall back to cpu
+            # defaults. An explicit CLI --gres still wins.
+            if meta.get("backend") and args.backend == "cpu":
+                args.backend = meta["backend"]
+            if getattr(args, "gres", None) is None and meta.get("gres"):
+                args.gres = meta["gres"]
+        # Re-run the defaults pass after the meta restore: attaching to a
+        # GPU job entered cmd_run with backend=cpu (the top-of-function
+        # call was a no-op), so partition/time may still be CPU defaults
+        # when an OOM escalation resubmits.
+        apply_backend_defaults(args)
     else:
         if attach_only:
             print(
@@ -622,6 +676,8 @@ def cmd_run(args: argparse.Namespace) -> int:
             cpus=args.cpus,
             mem_gb=mem_gb,
             workflow_script=workflow_script,
+            backend=args.backend,
+            gres=args.gres,
         )
         write_meta(
             c,
@@ -643,6 +699,8 @@ def cmd_run(args: argparse.Namespace) -> int:
                 "partition": args.partition,
                 "account": args.account,
                 "qos": args.qos,
+                "backend": args.backend,
+                "gres": args.gres,
                 "workflow_script": workflow_script,
                 "job_id": job_id,
                 "submitted_via": "scripts/dft_single.py",
@@ -764,6 +822,8 @@ def resubmit_with_mem(c, args: argparse.Namespace, case_name: str, new_mem: int)
         cpus=args.cpus,
         mem_gb=new_mem,
         workflow_script=workflow_script,
+        backend=getattr(args, "backend", "cpu"),
+        gres=getattr(args, "gres", None),
     )
     print(f"[single] resubmitted as job {job_id}")
     return job_id
@@ -869,6 +929,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run.add_argument("--time", default=DEFAULT_TIME)
     run.add_argument("--cpus", type=int, default=DEFAULT_CPUS)
+    run.add_argument(
+        "--backend",
+        choices=["cpu", "gpu"],
+        default="cpu",
+        help="Compute backend: cpu (default) or gpu (ice-gpu, QE 7.1-cuda "
+        "in apptainer; flips partition/time/gres defaults unless given).",
+    )
+    run.add_argument(
+        "--gres",
+        default=None,
+        help="Slurm GRES for --backend gpu (default gpu:a100:1); must name "
+        "an NVIDIA type - generic gpu:1 can land on an MI210 where the "
+        "ROCm container aborts.",
+    )
     run.add_argument("--partition", default=DEFAULT_PARTITION)
     run.add_argument("--account", default=DEFAULT_ACCOUNT)
     run.add_argument("--qos", default=DEFAULT_QOS)
