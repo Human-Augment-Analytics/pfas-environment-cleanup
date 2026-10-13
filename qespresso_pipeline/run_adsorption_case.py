@@ -92,19 +92,47 @@ def link_pseudos(case_subdir: Path, pseudo_source: Path):
         pseudos_dir.symlink_to(pseudo_source.resolve(), target_is_directory=True)
 
 
+def _pwx_completed(output_path: Path) -> bool:
+    """True if pw.x wrote its own success marker ("JOB DONE.").
+
+    The NGC quantum-espresso GPU container links a Fortran runtime that can
+    encode benign IEEE exception flags into the process exit status
+    (e.g. inexact=1 + underflow=2 -> exit code 3) after a fully successful
+    run, so the completion marker in the output, not the exit code, is the
+    authoritative success signal.
+    """
+    try:
+        with open(output_path, "r", errors="ignore") as fh:
+            return "JOB DONE." in fh.read()
+    except OSError:
+        return False
+
+
 def run_pwscf(input_path: Path, pw_command="mpirun -np 1 pw.x"):
     output_path = input_path.with_suffix(".out")
     stderr_path = input_path.with_suffix(".err")
     workdir = input_path.parent
     cmd = shlex.split(pw_command) + ["-in", input_path.name]
 
+    # Resume support: a leg whose output already reports completion is not
+    # re-run (Slurm retries / campaign reruns over a populated run directory).
+    if output_path.exists() and _pwx_completed(output_path):
+        print(f"[skip] {output_path.name} already reports 'JOB DONE.' - not re-running")
+        return output_path
+
     print(f"[run] {' '.join(cmd)} (cwd={workdir})")
     with open(output_path, "w") as f_out, open(stderr_path, "w") as f_err:
         result = subprocess.run(cmd, cwd=workdir, stdout=f_out, stderr=f_err)
 
-    if result.returncode != 0:
+    completed = _pwx_completed(output_path)
+    if result.returncode != 0 and not completed:
         raise RuntimeError(
             f"pw.x failed. Return code: {result.returncode}\nSee {stderr_path}"
+        )
+    if result.returncode != 0:
+        print(
+            f"[warn] pw.x exited {result.returncode} but output reports 'JOB DONE.' "
+            "(benign GPU-container runtime exit status); continuing"
         )
     return output_path
 
