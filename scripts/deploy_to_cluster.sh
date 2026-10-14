@@ -12,7 +12,9 @@
 #   2. Runs scripts/check_cluster_drift.sh first: if the cluster copy differs
 #      from this checkout, it refuses, because --delete would silently
 #      overwrite whatever was changed over there. --force overrides this
-#      (and redeploys this checkout as the source of truth).
+#      (and redeploys this checkout as the source of truth). On a first
+#      deploy (no cluster copy at --cluster-root yet) the comparison is
+#      skipped - there is no prior copy to protect.
 #   3. rsyncs the repository to the cluster root, excluding the bulk data /
 #      run / cache directories that live only on the cluster (same list
 #      check_cluster_drift.sh uses, plus .git and tool caches).
@@ -133,29 +135,42 @@ note "pre-flight 1/2: scripts/*.sh all use Unix (LF) line endings"
 
 # Pre-flight 2: if the cluster copy has drifted from this checkout, refuse
 # unless --force - rsync --delete would silently overwrite those changes.
+# First deploy: when nothing exists at the cluster root yet, the drift check
+# cannot run (check_cluster_drift.sh exits 2 trying to cd into a missing
+# directory, and its remote half exits 2 on a non-repository copy), so probe
+# for a prior copy first and skip the comparison on a fresh root. The
+# post-deploy drift check below still verifies the deployed result.
 set +e
-bash "$DRIFT_SCRIPT" --user "$USER_NAME" --cluster "$CLUSTER" --cluster-root "$CLUSTER_ROOT"
-DRIFT_RC=$?
+REMOTE_HAS_COPY="$(ssh "$SSH_TARGET" "test -d '${CLUSTER_ROOT}/qespresso_pipeline' && echo yes" 2>/dev/null)"
 set -e
 
-case "$DRIFT_RC" in
-  0)
-    note "pre-flight 2/2: cluster copy already matches this checkout"
-    ;;
-  1)
-    if [[ "$FORCE" -eq 1 ]]; then
-      note "--force given: redeploying this checkout over the drifted cluster copy (its hand-edits, if any, are lost)"
-    else
-      echo "error: the cluster copy differs from this checkout (diff above) - rsync --delete would overwrite that." >&2
-      echo "  Inspect the diff, reconcile by hand, or rerun with --force to make this checkout the source of truth." >&2
-      exit 1
-    fi
-    ;;
-  *)
-    echo "error: the drift pre-flight itself failed (exit $DRIFT_RC) - fix that before deploying" >&2
-    exit 2
-    ;;
-esac
+if [[ "$REMOTE_HAS_COPY" != "yes" ]]; then
+  note "pre-flight 2/2 skipped: no cluster copy at ${CLUSTER_ROOT} yet (first deploy - rsync will create it)"
+else
+  set +e
+  bash "$DRIFT_SCRIPT" --user "$USER_NAME" --cluster "$CLUSTER" --cluster-root "$CLUSTER_ROOT"
+  DRIFT_RC=$?
+  set -e
+
+  case "$DRIFT_RC" in
+    0)
+      note "pre-flight 2/2: cluster copy already matches this checkout"
+      ;;
+    1)
+      if [[ "$FORCE" -eq 1 ]]; then
+        note "--force given: redeploying this checkout over the drifted cluster copy (its hand-edits, if any, are lost)"
+      else
+        echo "error: the cluster copy differs from this checkout (diff above) - rsync --delete would overwrite that." >&2
+        echo "  Inspect the diff, reconcile by hand, or rerun with --force to make this checkout the source of truth." >&2
+        exit 1
+      fi
+      ;;
+    *)
+      echo "error: the drift pre-flight itself failed (exit $DRIFT_RC) - fix that before deploying" >&2
+      exit 2
+      ;;
+  esac
+fi
 
 note "deploying ${SSH_TARGET}:${CLUSTER_ROOT} ..."
 # Excludes mirror check_cluster_drift.sh, plus .git and tool caches: the
