@@ -441,6 +441,14 @@ def main():
         )
         pfas_in = run_cif2cell(pfas_cif, str(pfas_base))
         patch_qe_input(pfas_in, get_mode_settings(args.mode, "molecule"), 1, 0.0)
+    elif not args.skip_complex and not pfas_base.with_suffix(".mol").exists():
+        # A known PFAS energy only skips the pw.x reference leg - the complex
+        # still needs the 3-D PFAS geometry. Deployed roots usually have
+        # compounds/pfas/<name>/pfas.mol cached from earlier runs (which
+        # masked this); a fresh clone does not, so build the MOL here or
+        # build_molecular_complex_cif dies with FileNotFoundError
+        # (dry-run jobs 6252238/6252239, 2026-10-13).
+        run_obabel(args.pfas_smiles, str(pfas_base))
 
     if not args.skip_complex:
         if args.system_type == "molecule":

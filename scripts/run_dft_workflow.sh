@@ -69,12 +69,17 @@ if [[ ! -f "$ENV_YAML" ]]; then
     exit 1
 fi
 
+# Serialize the env op across simultaneously starting jobs: two jobs that
+# begin in the same second race on the shared prefix/pkgs cache and the
+# loser's repodata collection crashes (dry-run job 6252238, 2026-10-13).
+ENV_LOCK="$HOME/.conda/qe_pfas.env.lock"
+mkdir -p "$HOME/.conda/envs"
 if [[ ! -d "$ENV_PREFIX" ]]; then
     echo "[env] creating env at $ENV_PREFIX from $ENV_YAML"
-    conda env create -p "$ENV_PREFIX" -f "$ENV_YAML"
+    flock "$ENV_LOCK" conda env create -p "$ENV_PREFIX" -f "$ENV_YAML"
 else
     echo "[env] updating env at $ENV_PREFIX from $ENV_YAML"
-    conda env update -p "$ENV_PREFIX" -f "$ENV_YAML" --prune
+    flock "$ENV_LOCK" conda env update -p "$ENV_PREFIX" -f "$ENV_YAML" --prune
 fi
 
 echo "[env] python:"
