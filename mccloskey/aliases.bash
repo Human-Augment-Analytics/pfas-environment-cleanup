@@ -147,3 +147,5 @@ pf_md_to_pptx() {
         "$node_bin" "$cli" export "$input" --format pptx --output "$output" \
         --wait-until domcontentloaded --wait 1000 "${browser_args[@]}" "$@"
 }
+
+alias pf_dashboard_run="uv run --no-default-groups --group web python -m dashboard"
