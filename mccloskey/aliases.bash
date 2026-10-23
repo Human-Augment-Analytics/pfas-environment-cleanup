@@ -149,3 +149,5 @@ pf_md_to_pptx() {
 }
 
 alias pf_dashboard_run="uv run --no-default-groups --group web python -m dashboard"
+alias pf_dashboard_run_pace="PFAS_APPTAINER_IMAGE=/home/hice1/jmccloskey30/chemistry.sif uv run --no-default-groups --group web python -m dashboard"
+# echo "ssh -N -J `whoami`@login-ice.pace.gatech.edu -L 8000:localhost:8000 `whoami`@$host"
