@@ -18,10 +18,10 @@ jobs:
           cache-dependency-path: web/frontend/package-lock.json
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --locked --no-default-groups --group web --group dev
-      - run: uv run --locked --no-default-groups --group web --group dev pytest web/tests -m 'not slow'
-      - run: uv run --locked --no-default-groups --group web --group dev ty check dashboard web/tests
-      - run: uv run --locked --no-default-groups --group web --group dev ruff check dashboard web/tests
-      - run: uv run --locked --no-default-groups --group web --group dev ruff format --check dashboard web/tests
+      - run: uv run --locked --no-default-groups --group web --group dev pytest dashboard/test -m 'not slow'
+      - run: uv run --locked --no-default-groups --group web --group dev ty check dashboard
+      - run: uv run --locked --no-default-groups --group web --group dev ruff check dashboard
+      - run: uv run --locked --no-default-groups --group web --group dev ruff format --check dashboard
       - run: npm ci --prefix web/frontend
       - run: npm run format:check --prefix web/frontend
       - run: PFAS_DATA_MODE=snapshot npm run build --prefix web/frontend

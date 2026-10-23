@@ -197,24 +197,27 @@ than constructing a task manager, whose initialization performs recovery.
 
 ## Source map
 
-| Files | Responsibility |
+| Location | Responsibility |
 | --- | --- |
-| `__main__.py`, `server.py`, `config.py` | Launcher, API/static serving, and configuration. |
-| `candidates.py` | CSV candidates and the neutral TFA reference. |
-| `tasks.py`, `batches.py`, `persistence.py` | Task lifecycle, batch review/acceptance, and SQLite state. |
-| `inputs.py`, `preparation.py`, `geometry.py` | Input discovery/validation, preparation, RAM parsing, and geometry extraction. |
-| `runtimes.py`, `container_runner.py`, `processes.py`, `cpu.py` | Local launch commands, memory enforcement/accounting, cancellation, and CPU allocation. |
-| `slurm.py` | Reviewed portable SLURM ZIP generation and memory sizing. |
-| `scheduler.py`, `slurm_worker.py`, `calculation.py` | Independent submissions, reconciliation, and shared calculation execution/validation. |
-| `diagram.py`, `export.py` | Diagram generation and static snapshot export. |
-| `../web/frontend/src/` | React UI; `SlurmExportControls.tsx` implements export review/download. |
-| `../web/tests/`, `../web/frontend/tests/` | Backend regressions and frontend tests. |
+| `app/` | HTTP application and CLI adapters. Parsers live in `get_parser()` and pass keyword arguments to core entry points. |
+| `core/main.py`, `core/config.py`, `core/execution.py`, `core/models.py` | Startup, configuration, namespaced constants, and record types. |
+| `core/chemistry/` | Adapter to existing pipeline preparation functions, input validation, geometry, and reading QE output. |
+| `core/jobs/` | Existing local queue, batch review, SQLite history, and local process control. |
+| `core/runtimes/` | Native/Apptainer commands and workstation CPU/memory isolation. |
+| `core/slurm/` | Existing ZIP exporter, direct job scripts, and scheduler monitoring. |
+| `test/` | Dashboard regression tests and opt-in chemistry/container smoke checks. |
+| `../web/frontend/` | React UI and frontend tests. |
 
-Important export endpoints are `POST /api/slurm/preview` and
-`POST /api/slurm/export`. The latter downloads the ZIP; neither endpoint submits
-to a scheduler. The `slurm` task target submits independent jobs when scheduler support is enabled;
-`slurm-array` remains unsupported. See the [PACE guide](../docs/pace-dashboard.md)
-for grouped 16/4/1 RAM estimation, cancellation, and restart recovery.
+New Slurm jobs execute `apptainer exec ... mpirun ... pw.x` directly. They do
+not invoke a Python compute worker or pass a dashboard manifest to the compute
+node. The tiny top-level `slurm_worker.py` entry point is only compatibility for
+scripts submitted by the previous version; see the
+[architecture writeup](../docs/dashboard-architecture.md) for removal criteria.
+
+The `slurm` task target submits independent jobs when scheduler support is
+enabled; `slurm-array` remains unsupported. The ZIP preview/export endpoints
+remain available and never submit jobs. See the [PACE guide](../docs/pace-dashboard.md)
+for grouped RAM estimation, cancellation, and restart recovery.
 
 ## Validation and remaining work
 
@@ -227,9 +230,9 @@ These are historical results, not checks rerun for this documentation update.
 Relevant checks from the repository root:
 
 ```bash
-.venv/bin/python -m pytest web/tests/test_slurm_export.py -q
-.venv/bin/python -m pytest web/tests -q
-.venv/bin/ruff check dashboard web/tests/test_slurm_export.py
+.venv/bin/python -m pytest dashboard/test/test_slurm_export.py -q
+.venv/bin/python -m pytest dashboard/test -q
+.venv/bin/ruff check dashboard dashboard/test/test_slurm_export.py
 npm --prefix web/frontend run build
 npm --prefix web/frontend test
 ```

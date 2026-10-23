@@ -66,7 +66,7 @@ exclude = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "web/tests"]
+testpaths = ["tests", "dashboard/test"]
 pythonpath = ["."]
 timeout = 2
 session_timeout = 60

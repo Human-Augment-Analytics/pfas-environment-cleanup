@@ -15,7 +15,7 @@ if [[ -z ${SLURM_JOB_ID:-} ]]; then
     exit 1
 fi
 cd "${SLURM_SUBMIT_DIR:?Missing Slurm submission directory}"
-if [[ ! -f dashboard/server.py ]]; then
+if [[ ! -f dashboard/app/server.py ]]; then
     echo "Submit this job from the PFAS repository root." >&2
     exit 1
 fi
@@ -55,5 +55,5 @@ echo "Stop with: scancel $SLURM_JOB_ID"
 
 # Use one worker: each app instance owns a persistent task manager.
 # Dependencies and the live frontend must be prepared before submission.
-exec "$dashboard_python" -m uvicorn dashboard.server:create_app --factory \
+exec "$dashboard_python" -m uvicorn dashboard.app.server:create_app --factory \
     --host 127.0.0.1 --port "$dashboard_port" --workers 1

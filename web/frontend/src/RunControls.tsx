@@ -1,9 +1,5 @@
 import type { ReactElement } from "react";
-import {
-  SLURM_MODE,
-  DEFAULT_SLURM_PROCESSES,
-  DEFAULT_LOCAL_PROCESSES,
-} from "./execution";
+import * as execution from "./execution";
 import { useState } from "react";
 import {
   Action,
@@ -28,11 +24,15 @@ export function RunControls({
   system: string;
   action: (path: string, body?: Action) => Promise<void>;
 }): ReactElement {
-  const slurm = runtimes?.execution?.mode === SLURM_MODE;
+  const slurm = runtimes?.execution?.mode === execution.SLURM_MODE;
   const [scheduler, setScheduler] = useState<SchedulerSettings>({});
   const [reservation, setReservation] = useState("");
   const [processes, setProcesses] = useState(
-      String(slurm ? DEFAULT_SLURM_PROCESSES : DEFAULT_LOCAL_PROCESSES),
+      String(
+        slurm
+          ? execution.DEFAULT_SLURM_PROCESSES
+          : execution.DEFAULT_LOCAL_PROCESSES,
+      ),
     ),
     [target, setTarget] = useState(slurm ? "slurm" : "local"),
     [timeout, setTimeout] = useState("");
@@ -45,7 +45,7 @@ export function RunControls({
   const [preview, setPreview] = useState<Preview | null>(null),
     [error, setError] = useState("");
   const automaticMemory =
-    target === SLURM_MODE &&
+    target === execution.SLURM_MODE &&
     kind === "qe" &&
     scheduler.memory_mode === "estimate";
   const body: Action = {
@@ -54,7 +54,10 @@ export function RunControls({
     runtime,
     memory_gib:
       target === "slurm"
-        ? Number(reservation || (automaticMemory ? DEFAULT_LOCAL_PROCESSES : 0))
+        ? Number(
+            reservation ||
+              (automaticMemory ? execution.DEFAULT_LOCAL_PROCESSES : 0),
+          )
         : Number(memory),
     scheduler:
       target === "slurm"
@@ -141,7 +144,7 @@ export function RunControls({
             </option>
           </select>
         </label>
-        {(runtime === "apptainer" || target === SLURM_MODE) &&
+        {(runtime === "apptainer" || target === execution.SLURM_MODE) &&
           !automaticMemory && (
             <label>
               Memory {target === "slurm" ? "reservation" : "per job"} (GiB){" "}

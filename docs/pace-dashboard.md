@@ -217,8 +217,11 @@ scancel DASHBOARD_JOB_ID
 ```
 
 Restart with the same `PFAS_ARTIFACTS` directory to reconnect to submitted jobs
-and import their results. Compute workers write logs and atomic result files on
-shared storage; they never write the dashboard SQLite database. Do not start
+and import their results. Slurm scripts launch Apptainer and `pw.x` directly,
+writing logs, start timestamps, and atomic exit-code files on shared storage.
+The dashboard parses the QE output; no dashboard Python worker or virtual
+environment is needed on the compute node for container calculations. Only the
+dashboard writes SQLite. Do not start
 two dashboards against the same artifact directory. Use the new dashboard job's
 hostname when recreating the tunnel.
 
@@ -236,5 +239,10 @@ After installing these changes, validate the workflow in your own allocation:
 4. Cancel a test job and confirm Slurm cancellation appears in the queue.
 
 Actual PACE startup, runtime compatibility, and QE execution still require this
-cluster validation. Local automated tests simulate Slurm and exercise workers
-with test executables; they do not establish successful PACE calculations.
+cluster validation. Local automated tests simulate Slurm and execute the actual
+generated shell scripts with test executables; they do not establish successful
+PACE calculations.
+
+
+The code layout and the reasons for the remaining components are documented in
+[Dashboard architecture and simplification](dashboard-architecture.md).

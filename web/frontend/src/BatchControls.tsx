@@ -1,10 +1,5 @@
 import type { ReactElement } from "react";
-import {
-  SLURM_MODE,
-  DEFAULT_SLURM_PROCESSES,
-  DEFAULT_LOCAL_PROCESSES,
-  ESTIMATION_PROCESS_COUNTS,
-} from "./execution";
+import * as execution from "./execution";
 import { useEffect, useState } from "react";
 import {
   post,
@@ -27,7 +22,7 @@ export function BatchControls({
   onQueued: () => void;
   initial?: BatchRequest;
 }): ReactElement {
-  const slurm = runtimes?.execution?.mode === SLURM_MODE;
+  const slurm = runtimes?.execution?.mode === execution.SLURM_MODE;
   const [scheduler, setScheduler] = useState<SchedulerSettings>(
     initial?.scheduler || {},
   );
@@ -54,7 +49,9 @@ export function BatchControls({
   const [processes, setProcesses] = useState(
     String(
       initial?.processes ||
-        (slurm ? DEFAULT_SLURM_PROCESSES : DEFAULT_LOCAL_PROCESSES),
+        (slurm
+          ? execution.DEFAULT_SLURM_PROCESSES
+          : execution.DEFAULT_LOCAL_PROCESSES),
     ),
   );
   const [memory, setMemory] = useState(String(initial?.memory_gib || 4));
@@ -80,11 +77,11 @@ export function BatchControls({
   const [reviewKey, setReviewKey] = useState("");
   const [submissionID, setSubmissionID] = useState("");
   const remote =
-    ["qe", "estimate_ram"].includes(kind) && location === SLURM_MODE;
+    ["qe", "estimate_ram"].includes(kind) && location === execution.SLURM_MODE;
   const automaticMemory =
     remote && kind === "qe" && scheduler.memory_mode === "estimate";
   const estimationProcesses =
-    initial?.estimate_processes || ESTIMATION_PROCESS_COUNTS;
+    initial?.estimate_processes || execution.ESTIMATION_PROCESS_COUNTS;
   const groupedEstimation = remote && kind === "estimate_ram" && rankGroup;
   const requestedProcesses = groupedEstimation
     ? Math.max(...estimationProcesses)
@@ -96,9 +93,12 @@ export function BatchControls({
     runtime,
     processes: ["qe", "estimate_ram"].includes(kind)
       ? requestedProcesses
-      : DEFAULT_LOCAL_PROCESSES,
+      : execution.DEFAULT_LOCAL_PROCESSES,
     memory_gib: remote
-      ? Number(reservation || (automaticMemory ? DEFAULT_LOCAL_PROCESSES : 0))
+      ? Number(
+          reservation ||
+            (automaticMemory ? execution.DEFAULT_LOCAL_PROCESSES : 0),
+        )
       : Number(memory),
     target: remote ? "slurm" : "local",
     scheduler: remote
@@ -122,7 +122,7 @@ export function BatchControls({
       : Number(memory) > 0) &&
     (!["qe", "estimate_ram"].includes(kind) ||
       (Number.isInteger(requestedProcesses) &&
-        requestedProcesses >= DEFAULT_LOCAL_PROCESSES)) &&
+        requestedProcesses >= execution.DEFAULT_LOCAL_PROCESSES)) &&
     (!timeout || Number(timeout) > 0);
   const current = key === reviewKey ? preview : null;
   async function review() {

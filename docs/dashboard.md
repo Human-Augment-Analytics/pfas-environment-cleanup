@@ -101,7 +101,7 @@ Missing chemistry tools or element pseudopotentials reject preparation before
 it enters the queue; browsing still works. Select `--group preparation` to install the chemistry dependencies via uv.
 Diagrams work with `--group web` alone;
 if `PFAS_CHEM_PYTHON` is set, that interpreter must also provide RDKit. The preparation child entry point is
-`dashboard/preparation.py`; it reuses conversion, molecular-complex, and
+`dashboard/core/chemistry/preparation.py`; it reuses conversion, molecular-complex, and
 patching helpers and never executes QE.
 
 Inputs use the molecular `cluster` preset: PBE, D3, 60/600 Ry cutoffs, Gamma
@@ -282,9 +282,9 @@ links use hashes and work under `/pfas-environment-cleanup/` without server rout
 ## Validation
 
 ```bash
-uv run --locked --no-default-groups --group web --group dev pytest web/tests -m 'not slow'
+uv run --locked --no-default-groups --group web --group dev pytest dashboard/test -m 'not slow'
 uv run --locked ty check
-uv run --locked ruff check dashboard web/tests
+uv run --locked ruff check dashboard dashboard/test
 npm run build --prefix web/frontend
 npm run format:check --prefix web/frontend
 ```
@@ -296,7 +296,7 @@ accuracy or convergence of the candidates:
 
 ```bash
 PFAS_SMOKE=1 uv run --locked --no-default-groups --group web --group preparation --group dev \
-  pytest web/tests/test_smoke.py -q
+  pytest dashboard/test/test_smoke.py -q
 ```
 
 Deferred: relaxed-geometry viewing, automatic workflows, adsorption aggregation,
@@ -440,8 +440,8 @@ in your PACE allocation before scaling up.
 
 ```bash
 uv run --locked --no-default-groups --group web --group dev pytest -m 'not slow'
-PFAS_SMOKE=1 uv run --locked --no-default-groups --group web --group preparation --group dev pytest web/tests/test_smoke.py -q
-PFAS_CONTAINER_SMOKE=1 uv run --locked --no-default-groups --group web --group dev pytest web/tests/test_container_smoke.py -q
+PFAS_SMOKE=1 uv run --locked --no-default-groups --group web --group preparation --group dev pytest dashboard/test/test_smoke.py -q
+PFAS_CONTAINER_SMOKE=1 uv run --locked --no-default-groups --group web --group dev pytest dashboard/test/test_container_smoke.py -q
 ```
 
 Container checks require a configured built image and exercise real preparation,
@@ -504,7 +504,7 @@ or canceled attempts. Snapshot exports retain version labels, hashes, and
 estimates while omitting local paths and raw inputs.
 
 Run the opt-in native estimate smoke check with
-`PFAS_RAM_SMOKE=1 .venv/bin/python -m pytest web/tests/test_ram_smoke.py -o session_timeout=180`.
+`PFAS_RAM_SMOKE=1 .venv/bin/python -m pytest dashboard/test/test_ram_smoke.py -o session_timeout=180`.
 It needs an installed `pw.x` (or `PFAS_PW`) and `H.UPF` under `PFAS_PSEUDOS`.
 
 

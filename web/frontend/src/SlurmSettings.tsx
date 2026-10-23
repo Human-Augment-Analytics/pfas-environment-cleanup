@@ -1,20 +1,15 @@
 import type { ReactElement } from "react";
-import {
-  DEFAULT_PARTITION,
-  DEFAULT_ACCOUNT,
-  DEFAULT_QOS,
-  DEFAULT_ESTIMATION_HOURS,
-  DEFAULT_QE_HOURS,
-  MAX_SLURM_HOURS,
-  DEFAULT_HEADROOM_PERCENT,
-  MAX_HEADROOM_PERCENT,
-} from "./execution";
+import * as execution from "./execution";
 import { SchedulerSettings } from "./data";
 
 const SCHEDULING_FIELDS = [
-  { key: "partition", label: "Partition", defaultValue: DEFAULT_PARTITION },
-  { key: "account", label: "Account", defaultValue: DEFAULT_ACCOUNT },
-  { key: "qos", label: "QOS", defaultValue: DEFAULT_QOS },
+  {
+    key: "partition",
+    label: "Partition",
+    defaultValue: execution.DEFAULT_PARTITION,
+  },
+  { key: "account", label: "Account", defaultValue: execution.DEFAULT_ACCOUNT },
+  { key: "qos", label: "QOS", defaultValue: execution.DEFAULT_QOS },
 ] as const;
 
 export function SlurmSettings({
@@ -44,12 +39,12 @@ export function SlurmSettings({
         <input
           type="number"
           min="1"
-          max={MAX_SLURM_HOURS}
+          max={execution.MAX_SLURM_HOURS}
           value={
             value.walltime_hours ??
             (kind === "estimate_ram"
-              ? DEFAULT_ESTIMATION_HOURS
-              : DEFAULT_QE_HOURS)
+              ? execution.DEFAULT_ESTIMATION_HOURS
+              : execution.DEFAULT_QE_HOURS)
           }
           onChange={(e) =>
             onChange({ ...value, walltime_hours: Number(e.target.value) })
@@ -79,8 +74,8 @@ export function SlurmSettings({
           <input
             type="number"
             min="0"
-            max={MAX_HEADROOM_PERCENT}
-            value={value.headroom_percent ?? DEFAULT_HEADROOM_PERCENT}
+            max={execution.MAX_HEADROOM_PERCENT}
+            value={value.headroom_percent ?? execution.DEFAULT_HEADROOM_PERCENT}
             onChange={(event) =>
               onChange({
                 ...value,
