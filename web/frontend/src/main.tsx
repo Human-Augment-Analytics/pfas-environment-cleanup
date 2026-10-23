@@ -1,3 +1,10 @@
+import type { ReactElement } from "react";
+import {
+  SLURM_MODE,
+  DEFAULT_SLURM_PROCESSES,
+  DEFAULT_LOCAL_PROCESSES,
+  ESTIMATION_PROCESS_COUNTS,
+} from "./execution";
 import React, { useState, useEffect, useMemo } from "react";
 import { createRoot } from "react-dom/client";
 import { read, post, Data, Action, Task } from "./data";
@@ -9,7 +16,8 @@ import { CandidateDetail } from "./CandidateDetail";
 import { QueueView } from "./QueueView";
 import { TaskHistory } from "./TaskHistory";
 import "./style.css";
-function App() {
+function App(): ReactElement {
+  const [ramProcesses, setRamProcesses] = useState<number | null>(null);
   const [data, setData] = useState<Data | null>(null),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
@@ -56,9 +64,20 @@ function App() {
   const browsingData = useMemo(
     () =>
       data
-        ? { ...data, candidates: withTaskFields(data.candidates, data.tasks) }
+        ? {
+            ...data,
+            candidates: withTaskFields(
+              data.candidates,
+              data.tasks,
+              ramProcesses ??
+                (data.queue?.runtimes.execution?.mode === SLURM_MODE
+                  ? DEFAULT_SLURM_PROCESSES
+                  : DEFAULT_LOCAL_PROCESSES),
+              data.queue?.runtimes.execution?.mode === SLURM_MODE,
+            ),
+          }
         : null,
-    [data],
+    [data, ramProcesses],
   );
   const candidate =
     data &&
@@ -106,9 +125,35 @@ function App() {
           <>
             <p className="banner">
               {data.mode === "live"
-                ? "Local live dashboard · Native jobs serial; container jobs follow queue limits"
+                ? data.queue?.runtimes.execution?.mode === SLURM_MODE
+                  ? "PACE / Slurm · Preparation uses this allocation; QE uses separate jobs"
+                  : "Local live dashboard · Native jobs serial; container jobs follow queue limits"
                 : `Read-only snapshot · Exported ${data.timestamp}`}
             </p>
+            <label>
+              RAM display ·{" "}
+              {data.queue?.runtimes.execution?.mode === SLURM_MODE
+                ? "total job estimate"
+                : "maximum per process"}{" "}
+              <select
+                aria-label="RAM process count"
+                value={
+                  ramProcesses ??
+                  (data.queue?.runtimes.execution?.mode === SLURM_MODE
+                    ? DEFAULT_SLURM_PROCESSES
+                    : DEFAULT_LOCAL_PROCESSES)
+                }
+                onChange={(e) => setRamProcesses(Number(e.target.value))}
+              >
+                {ESTIMATION_PROCESS_COUNTS.map((n) => (
+                  <option key={n} value={n}>
+                    {n} MPI processes
+                  </option>
+                ))}
+              </select>
+              {data.queue?.runtimes.execution?.mode === SLURM_MODE &&
+                " · ≤ marks a bound derived from maximum per-process RAM × process count"}
+            </label>
             {data.mode === "snapshot" && (
               <p>
                 To generate diagrams, prepare inputs, or run QE locally:{" "}

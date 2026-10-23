@@ -75,7 +75,12 @@ export function QueueView() {
     ["running", "queued"].includes(t.status),
   );
   const reserved = data.tasks
-    .filter((t) => t.status === "running" && t.runtime === "apptainer")
+    .filter(
+      (t) =>
+        t.status === "running" &&
+        t.runtime === "apptainer" &&
+        t.target !== "slurm",
+    )
     .reduce((total, t) => total + (t.resources?.memory_bytes || 0), 0);
   const attempts = data.tasks.filter(
     (t) => t.batch_id || ["running", "queued"].includes(t.status),
@@ -315,8 +320,8 @@ export function QueueView() {
             {t.ram_estimate && (
               <p>
                 Est RAM:{" "}
-                {t.processes === 1 && t.ram_estimate.per_process
-                  ? `${t.ram_estimate.per_process.value} ${t.ram_estimate.per_process.unit}`
+                {t.ram_estimate.per_process
+                  ? `${t.ram_estimate.per_process.value} ${t.ram_estimate.per_process.unit} max per process (${t.processes} processes)${t.ram_estimate.total ? ` · ${t.ram_estimate.total.value} ${t.ram_estimate.total.unit} total` : " · total unavailable"}`
                   : "unavailable"}
               </p>
             )}
@@ -326,6 +331,19 @@ export function QueueView() {
                 {t.evidence.confirmed ? "confirmed" : "not confirmed"} · Energy{" "}
                 {t.evidence.energy_ry ?? "unavailable"} Ry (
                 {t.evidence.provisional ? "provisional" : "confirmed"})
+              </p>
+            )}
+            {t.scheduler && (
+              <p>
+                Slurm {t.scheduler.job_id || "submission unresolved"} ·{" "}
+                {t.stop_requested
+                  ? "Canceling"
+                  : t.scheduler.state === "PENDING"
+                    ? "Waiting for resources"
+                    : t.scheduler.state}{" "}
+                · {t.scheduler.reason}
+                {t.scheduler.state === "SUBMISSION_UNKNOWN" &&
+                  ". Check Slurm for this job name before marking rejected; a delayed reply can mean the job was accepted."}
               </p>
             )}
             {t.error && <p className="error">{t.error}</p>}
@@ -338,6 +356,15 @@ export function QueueView() {
                   {t.stop_requested ? "Stopping…" : "Stop job"}
                 </button>
               )}
+              {t.scheduler?.state === "SUBMISSION_UNKNOWN" &&
+                ["queued", "running"].includes(t.status) && (
+                  <button
+                    disabled={pending !== null}
+                    onClick={() => mutate(`tasks/${t.id}/mark-rejected`)}
+                  >
+                    I confirmed Slurm rejected this submission
+                  </button>
+                )}
               <button
                 onClick={async () => {
                   try {
@@ -434,8 +461,8 @@ function BatchEntries({
           />
           <ol start={page * 50 + 1}>
             {batch.entries.slice(page * 50, (page + 1) * 50).map((e) => (
-              <li key={e.candidate}>
-                Cluster {e.candidate} ·{" "}
+              <li key={`${e.candidate}-${e.processes}`}>
+                Cluster {e.candidate} · {e.processes || 1} processes ·{" "}
                 {statuses.get(e.task_id || "") || e.status}
                 {e.reason && ` · ${e.reason}`}
               </li>

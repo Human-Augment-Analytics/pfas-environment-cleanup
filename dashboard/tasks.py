@@ -2,7 +2,6 @@ import hashlib
 import json
 import logging
 import os
-import re
 import shlex
 import shutil
 import subprocess
@@ -11,19 +10,37 @@ import uuid
 from pathlib import Path
 
 from .batches import Batches, validate_positive
+from .calculation import run_calculation
+from .config import Config
 from .cpu import compute_cpus
-from .inputs import discover, dry_input, ram_reports, validate_references
+from .execution import (
+    APPLICATION_LOGGER_NAME,
+    CALCULATION_KINDS,
+    MAX_PREVIEWS,
+    MAX_SLURM_MEMORY_GIB,
+    MAX_SLURM_PROCESSES,
+    SRUN_COMMAND,
+    ExecutionMode,
+    TaskStatus,
+)
+from .execution_models import CandidateRecord, Resources, SchedulerOverrides, TaskRecord
+from .inputs import discover, dry_input, validate_references
 from .persistence import Store, now
 from .preparation import digest, pseudo_names
-from .processes import evidence, execute, tail
+from .processes import execute, tail
 from .runtimes import GIB, Runtimes, memory_ceiling
-
-logger = logging.getLogger("uvicorn.error")
+from .scheduler import Scheduler
+from .scheduler import settings as scheduler_settings
 
 
 class Manager:
-    def __init__(self, config, candidates):
+    @property
+    def logger(self) -> logging.Logger:
+        return logging.getLogger(APPLICATION_LOGGER_NAME)
+
+    def __init__(self, config: Config, candidates: dict[str, CandidateRecord]) -> None:
         self.config = config
+        self.scheduler_enabled = config.scheduler_enabled
         config.artifacts.mkdir(parents=True, exist_ok=True)
         self.store = Store(config.artifacts / "tasks.sqlite")
         self.candidates = candidates
@@ -40,6 +57,7 @@ class Manager:
         self.previews = {}
         self.runtimes = Runtimes(config)
         self.batches = Batches(self)
+        self.scheduler = Scheduler(self)
         self.settings = self.store.settings(
             {
                 "paused": False,
@@ -54,11 +72,16 @@ class Manager:
         available_cpus = len(compute_cpus())
         self.settings["cpus"] = min(self.settings["cpus"], available_cpus)
         self.thread = threading.Thread(target=self.worker, daemon=True)
+        self.scheduler_thread = threading.Thread(
+            target=self.scheduler.work, daemon=True
+        )
 
-    def start(self):
+    def start(self) -> None:
         self.thread.start()
+        if self.scheduler_enabled:
+            self.scheduler_thread.start()
 
-    def close(self):
+    def close(self) -> None:
         with self.guard:
             self.stop.set()
             for _, cancel, _ in self.running.values():
@@ -66,8 +89,10 @@ class Manager:
             self.wake.set()
         if self.thread.is_alive():
             self.thread.join()
+        if self.scheduler_thread.is_alive():
+            self.scheduler_thread.join()
         for task in self.store.tasks():
-            if task["status"] == "running":
+            if task["status"] == "running" and task.get("target") != "slurm":
                 self.store.update(
                     task["id"],
                     status="interrupted",
@@ -75,13 +100,13 @@ class Manager:
                     error="Server stopped; retry explicitly",
                 )
 
-    def executable(self, name):
+    def executable(self, name: str) -> str:
         path = shutil.which(name)
         if not path:
             raise ValueError(f"Executable unavailable: {name}")
         return path
 
-    def preflight(self, candidate):
+    def preflight(self, candidate: CandidateRecord) -> None:
         probe = subprocess.run(
             [
                 self.config.prepare_python,
@@ -124,7 +149,9 @@ class Manager:
         if missing:
             raise ValueError("Missing pseudopotentials: " + ", ".join(missing))
 
-    def input(self, candidate, system, tasks=None):
+    def input(
+        self, candidate: str, system: str, tasks: list[TaskRecord] | None = None
+    ) -> Path:
         owner = "tfa" if system == "tfa" else candidate
         for task in self.store.prepared(candidate, system) if tasks is None else tasks:
             if (
@@ -137,7 +164,7 @@ class Manager:
                     return path
         raise ValueError("Prepare inputs first")
 
-    def versions(self):
+    def versions(self) -> list[dict[str, str]]:
         return [
             {
                 "input_id": identifier,
@@ -152,23 +179,23 @@ class Manager:
 
     def preview(
         self,
-        candidate,
-        system,
-        processes,
-        target,
-        runtime="native",
-        input_id=None,
-        kind="qe",
-        issue_token=True,
-        _tasks=None,
-        _pseudo_hashes=None,
-    ):
+        candidate: str,
+        system: str,
+        processes: int,
+        target: str,
+        runtime: str = "native",
+        input_id: str | None = None,
+        kind: str = "qe",
+        issue_token: bool = True,
+        _tasks: list[TaskRecord] | None = None,
+        _pseudo_hashes: dict | None = None,
+        scheduler: SchedulerOverrides | None = None,
+        memory_gib: float = 4,
+        timeout: float | None = None,
+    ) -> dict:
         if runtime not in ("native", "apptainer"):
             raise ValueError("Unknown runtime")
-        if target != "local":
-            raise NotImplementedError(
-                "Slurm and Slurm array execution are not implemented"
-            )
+        self.validate_target(target, kind)
         if type(processes) is not int or processes < 1:
             raise ValueError("Process count must be a positive integer")
         if system not in ("tfa", "candidate", "complex"):
@@ -212,20 +239,33 @@ class Manager:
                     _pseudo_hashes[key] = digest(path)
                 hashes[name] = _pseudo_hashes[key]
         pw = "pw.x" if runtime == "apptainer" else self.executable(self.config.pw)
-        command = (
-            [pw, "-in", "input.in"]
-            if processes == 1
-            else [
-                "mpirun"
-                if runtime == "apptainer"
-                else self.executable(self.config.mpi),
-                "-np",
-                str(processes),
+        if runtime == "apptainer" and (
+            target == ExecutionMode.SLURM or self.config.allocation
+        ):
+            from .slurm import mpi_command
+
+            command = [*mpi_command(processes), pw, "-in", "input.in"]
+        elif target == ExecutionMode.SLURM and processes > 1:
+            # Host MPI ranks belong to a Slurm step. The container branch above
+            # uses its own MPI and must never receive this second launcher.
+            command = [
+                self.executable(SRUN_COMMAND),
+                f"--ntasks={processes}",
+                "--cpus-per-task=1",
+                "--exact",
+                "--cpu-bind=cores",
+                "--",
                 pw,
                 "-in",
                 "input.in",
             ]
-        )
+        elif processes == 1:
+            command = [pw, "-in", "input.in"]
+        else:
+            mpi = (
+                "mpirun" if runtime == "apptainer" else self.executable(self.config.mpi)
+            )
+            command = [mpi, "-np", str(processes), pw, "-in", "input.in"]
         from .geometry import geometry
 
         try:
@@ -247,10 +287,43 @@ class Manager:
             "pseudopotentials": hashes,
         }
 
+        if target == "slurm":
+            timeout = (
+                timeout
+                if timeout is not None
+                else 120
+                if kind == "estimate_ram"
+                else None
+            )
+            opts = scheduler_settings(scheduler, kind)
+            resource = self.resources(runtime, processes, memory_gib, timeout, target)
+            if opts["memory_mode"] == "estimate":
+                from .slurm import estimate_memory
+
+                matching = [
+                    t
+                    for t in self.store.tasks()
+                    if t.get("runtime", "native") == runtime
+                    and t.get("image_hash") == result["image_hash"]
+                ]
+                sizing = estimate_memory(
+                    matching,
+                    {
+                        "candidate": candidate,
+                        "system": system,
+                        "input_hash": source_hash,
+                        "pseudopotentials": hashes,
+                    },
+                    processes,
+                    opts["headroom_percent"],
+                )
+                resource["memory_bytes"] = sizing["memory_mib"] * 1024**2
+                result["memory_estimate"] = sizing["memory_estimate"]
+            result.update(scheduler_settings=opts, resources=resource, target=target)
         if issue_token:
             token = uuid.uuid4().hex
             with self.guard:
-                if len(self.previews) >= 2048:
+                if len(self.previews) >= MAX_PREVIEWS:
                     self.previews.pop(next(iter(self.previews)))
                 self.previews[token] = (
                     (candidate, system, processes, target, runtime, input_id, kind),
@@ -261,26 +334,24 @@ class Manager:
 
     def queue(
         self,
-        kind,
-        candidate,
-        system="candidate",
-        processes=1,
-        target="local",
-        timeout=None,
-        expected_hash=None,
-        runtime="native",
-        memory_gib=4,
-        batch_id=None,
-        position=None,
-        checked_preflight=False,
-        expected_pseudos=None,
-        input_id=None,
-        preview_id=None,
-    ):
-        if target != "local":
-            raise NotImplementedError(
-                "Slurm and Slurm array execution are not implemented"
-            )
+        kind: str,
+        candidate: str,
+        system: str = "candidate",
+        processes: int = 1,
+        target: str = ExecutionMode.LOCAL,
+        timeout: float | None = None,
+        expected_hash: str | None = None,
+        runtime: str = "native",
+        memory_gib: float = 4,
+        batch_id: str | None = None,
+        position: int | None = None,
+        checked_preflight: bool = False,
+        expected_pseudos: dict[str, str] | None = None,
+        input_id: str | None = None,
+        preview_id: str | None = None,
+        scheduler: SchedulerOverrides | None = None,
+    ) -> dict:
+        self.validate_target(target, kind)
         if candidate not in self.candidates:
             raise ValueError("Unknown candidate")
         if kind not in ("diagram", "prepare", "qe", "estimate_ram"):
@@ -308,8 +379,17 @@ class Manager:
             processes if kind in ("qe", "estimate_ram") else 1,
             memory_gib,
             timeout,
+            target,
         )
-        image_hash = self.runtimes.verify() if runtime == "apptainer" else None
+        image_hash = (
+            (
+                self.runtimes.image_identity()
+                if target == "slurm"
+                else self.runtimes.verify()
+            )
+            if runtime == "apptainer"
+            else None
+        )
         with self.guard:
             existing = self.store.active(kind, candidate, system)
             if (
@@ -335,7 +415,7 @@ class Manager:
                                 + report.stderr[-1000:]
                             )
                 except (ValueError, OSError, subprocess.SubprocessError) as error:
-                    logger.warning(
+                    self.logger.warning(
                         "Preparation rejected for cluster %s: %s", candidate, error
                     )
                     raise
@@ -349,9 +429,13 @@ class Manager:
                     input_id,
                     kind,
                     issue_token=False,
+                    scheduler=scheduler,
+                    memory_gib=memory_gib,
+                    timeout=timeout if target == "slurm" else None,
                 )
                 if (
                     preview_id is not None
+                    or target == "slurm"
                     or input_id is not None
                     or kind == "estimate_ram"
                 ):
@@ -409,6 +493,7 @@ class Manager:
                 "ended": None,
                 "timeout": timeout,
                 "runtime": runtime,
+                "target": target,
                 "resources": resources,
                 "image_hash": image_hash,
                 "batch_id": batch_id,
@@ -446,24 +531,43 @@ class Manager:
                     id + "-input.in", directory / "input.in"
                 )
             self.store.put(task)
-            logger.info(
+            self.logger.info(
                 "Task %s queued: %s for cluster %s (%s)", id, kind, candidate, system
             )
             self.wake.set()
             return task
 
-    def cancel_task(self, id):
+    def validate_target(self, target: str, kind: str) -> None:
+        if target not in ("local", "slurm"):
+            raise NotImplementedError(
+                "Only local and single-node Slurm execution are supported"
+            )
+        if target == "slurm":
+            if not self.scheduler_enabled:
+                raise ValueError(
+                    "Slurm unavailable; use PFAS_EXECUTION=slurm with scheduler commands installed"
+                )
+            if kind not in ("qe", "estimate_ram"):
+                raise ValueError(
+                    "Diagrams and preparation use the dashboard allocation"
+                )
+
+    def cancel_task(self, id: str) -> None:
         with self.guard:
             task = self.store.get(id)
-            if task["status"] == "queued":
+            if task.get("stop_requested"):
+                return
+            if task.get("scheduler") and task["status"] in ("queued", "running"):
+                self.scheduler.cancel(task)
+            elif task["status"] == "queued":
                 self.store.update(id, status="canceled", ended=now())
-                logger.info("Task %s canceled before starting", id)
+                self.logger.info("Task %s canceled before starting", id)
             elif task["status"] == "running" and id in self.running:
-                logger.info("Task %s stop requested", id)
+                self.logger.info("Task %s stop requested", id)
                 self.running[id][1].set()
                 self.store.update(id, stop_requested=True)
 
-    def clear_queue(self):
+    def clear_queue(self) -> dict[str, int]:
         # Hold admission while canceling the snapshot so waiting jobs cannot start.
         with self.guard:
             tasks = self.store.queued()
@@ -471,7 +575,14 @@ class Manager:
                 self.cancel_task(task["id"])
             return {"canceled_count": len(tasks)}
 
-    def resources(self, runtime, cpus, memory_gib, timeout):
+    def resources(
+        self,
+        runtime: str,
+        cpus: int,
+        memory_gib: float,
+        timeout: float | None,
+        target: str = ExecutionMode.LOCAL,
+    ) -> Resources:
         if runtime not in ("native", "apptainer"):
             raise ValueError("Unknown runtime")
         validate_positive(cpus, "CPU count", integer=True)
@@ -479,18 +590,28 @@ class Manager:
         if timeout is not None:
             validate_positive(timeout, "Timeout")
         memory_bytes = int(memory_gib * GIB)
-        if cpus > self.settings["cpus"]:
+        if target == "slurm" and (
+            cpus > MAX_SLURM_PROCESSES or memory_gib > MAX_SLURM_MEMORY_GIB
+        ):
+            raise ValueError("Slurm jobs support at most 256 processes and 65536 GiB")
+        if target != "slurm" and cpus > self.settings["cpus"]:
             raise ValueError("Job CPU count exceeds queue budget")
-        if runtime == "apptainer" and memory_bytes > self.settings["memory_bytes"]:
+        if (
+            target != "slurm"
+            and runtime == "apptainer"
+            and memory_bytes > self.settings["memory_bytes"]
+        ):
             raise ValueError("Job memory limit exceeds queue budget")
         return {
             "cpus": int(cpus),
             "memory_bytes": memory_bytes,
             "timeout": timeout,
-            "hard_memory_limit": runtime == "apptainer",
+            "hard_memory_limit": runtime == "apptainer"
+            and target != "slurm"
+            and not self.config.allocation,
         }
 
-    def configure(self, values):
+    def configure(self, values: dict) -> dict:
         with self.guard:
             settings = {**self.settings, **values}
             validate_positive(settings["concurrency"], "Concurrency", integer=True)
@@ -522,6 +643,8 @@ class Manager:
                     "New budget is below current running reservations; stop jobs or wait for them to finish"
                 )
             for task in self.store.queued():
+                if task.get("target") == "slurm":
+                    continue
                 resource = task.get(
                     "resources", {"cpus": task["processes"], "memory_bytes": 4 * GIB}
                 )
@@ -536,7 +659,7 @@ class Manager:
             self.wake.set()
             return self.settings
 
-    def queue_data(self):
+    def queue_data(self) -> dict:
         tasks = self.store.tasks()
         # No log tails, geometries, or raw input text in queue polling.
         keys = (
@@ -552,6 +675,9 @@ class Manager:
             "ended",
             "runtime",
             "resources",
+            "target",
+            "scheduler",
+            "scheduler_settings",
             "batch_id",
             "position",
             "error",
@@ -570,10 +696,15 @@ class Manager:
             "runtimes": self.runtimes.availability(),
             "batches": self.store.batches(),
             "tasks": [{k: t[k] for k in keys if k in t} for t in tasks],
-            "running_count": len(self.running),
+            "running_count": len(self.running)
+            + sum(
+                t.get("target") == ExecutionMode.SLURM
+                and t["status"] == TaskStatus.RUNNING
+                for t in tasks
+            ),
         }
 
-    def worker(self):
+    def worker(self) -> None:
         while not self.stop.is_set():
             with self.guard:
                 for id, (thread, _, _) in list(self.running.items()):
@@ -584,6 +715,8 @@ class Manager:
                     break
                 if not self.settings["paused"]:
                     for task in self.store.queued():
+                        if task.get("target") == "slurm":
+                            continue
                         # Strict FIFO admission; starts follow the reviewed view order.
                         runtime = task.get("runtime", "native")
                         resources = task.get(
@@ -607,7 +740,11 @@ class Manager:
                             for t in running_tasks
                         ):
                             break
-                        if len(running_tasks) >= self.settings["concurrency"]:
+                        if len(running_tasks) >= (
+                            1
+                            if self.config.allocation
+                            else self.settings["concurrency"]
+                        ):
                             break
                         if (
                             sum(t["resources"]["cpus"] for t in running_tasks)
@@ -642,36 +779,49 @@ class Manager:
             thread.join()
         self.running.clear()
 
-    def execute_attempt(self, task, cancel):
+    def execute_attempt(self, task: TaskRecord, cancel: threading.Event) -> None:
         try:
             self.run(task, cancel)
         except Exception as error:
             # Catch artifact registration/finalization errors too; release the slot.
-            logger.exception("Task %s failed during finalization", task["id"])
+            self.logger.exception("Task %s failed during finalization", task["id"])
             self.store.update(
                 task["id"], status="failed", error=str(error), ended=now()
             )
         finally:
             self.wake.set()
 
-    def run(self, task, cancel=None):
+    def run(self, task: TaskRecord, cancel: threading.Event | None = None) -> None:
         cancel = cancel or threading.Event()
         id = task["id"]
         directory = self.config.artifacts / id
-        logger.info(
+        self.logger.info(
             "Task %s started: %s for cluster %s (%s)",
             id,
             task["kind"],
             task["candidate"],
             task["system"],
         )
-        logger.info(
+        self.logger.info(
             "Task %s logs: stdout=%s stderr=%s",
             id,
             directory / "stdout.log",
             directory / "stderr.log",
         )
         try:
+            if task["kind"] in CALCULATION_KINDS:
+                result = run_calculation(
+                    task,
+                    self.config,
+                    self.runtimes,
+                    cancel,
+                    execute,
+                    on_usage=lambda usage: self.store.update(id, usage=usage),
+                )
+                if self.stop.is_set():
+                    result["status"] = TaskStatus.INTERRUPTED
+                self.store.update(id, **result)
+                return
             candidate = self.candidates[task["candidate"]]
             timeout = task["timeout"]
             if task["kind"] == "diagram":
@@ -711,7 +861,7 @@ class Manager:
                                     request["shared_tfa"] = str(shared)
                                     break
                             except (OSError, KeyError, ValueError):
-                                logger.warning(
+                                self.logger.warning(
                                     "Ignoring unavailable shared TFA from attempt %s",
                                     previous["id"],
                                 )
@@ -730,7 +880,11 @@ class Manager:
                 if task["kind"] not in ("qe", "estimate_ram"):
                     command[0] = "/opt/venv/bin/python"
                 command = self.runtimes.wrap(
-                    command, directory, task["resources"], task["image_hash"]
+                    command,
+                    directory,
+                    task["resources"],
+                    task["image_hash"],
+                    scheduler=task.get("target") == "slurm",
                 )
             entrypoint = directory / "entrypoint.log"
             entrypoint.write_text(
@@ -751,10 +905,10 @@ class Manager:
             }
             self.store.update(id, command=command, artifacts=artifacts)
 
-            def usage(value):
+            def usage(value: dict) -> None:
                 self.store.update(id, usage=value)
 
-            logger.info(
+            self.logger.info(
                 "Task %s entrypoint: %s (cwd=%s)", id, shlex.join(command), directory
             )
             code, status, error = execute(
@@ -766,7 +920,9 @@ class Manager:
                 if task["kind"] not in ("qe", "estimate_ram")
                 else None,
                 on_usage=usage,
-                container=runtime == "apptainer",
+                container=runtime == "apptainer"
+                and not self.config.allocation
+                and task.get("target") != "slurm",
             )
             if status == "failed" and not error and task["kind"] != "estimate_ram":
                 detail = tail(directory / "stderr.log", limit=2000).strip()
@@ -779,65 +935,9 @@ class Manager:
                 "error": error,
                 "ended": now(),
             }
-            if task["kind"] == "estimate_ram":
-                import itertools
-
-                with (
-                    (directory / "stdout.log").open(errors="replace") as stdout,
-                    (directory / "stderr.log").open(errors="replace") as stderr,
-                ):
-                    report, qe_error = ram_reports(itertools.chain(stdout, stderr))
-                values["ram_estimate"] = report
-                if not error and status != "canceled" and code in (0, 255):
-                    if qe_error:
-                        values.update(
-                            status="failed",
-                            error="QE reported an error during RAM estimation",
-                        )
-                    elif report["per_process"] is None:
-                        values.update(
-                            status="failed",
-                            error="QE did not report a per-process RAM estimate",
-                        )
-                    else:
-                        values.update(status="succeeded", error="")
-                if values["status"] == "failed" and not values["error"]:
-                    values["error"] = f"Process exited with code {code}"
-                if self.stop.is_set():
-                    values["status"] = "interrupted"
-            if task["kind"] == "qe":
-                # Retain only scientific markers, bounding memory for long QE output.
-                markers = []
-                with (directory / "stdout.log").open(errors="replace") as stream:
-                    for line in stream:
-                        if any(
-                            m in line
-                            for m in (
-                                "total energy",
-                                "JOB DONE.",
-                                "convergence",
-                                "BFGS Geometry",
-                                "bfgs converged",
-                                "Error in routine",
-                            )
-                        ):
-                            if "total energy" in line:
-                                markers = [
-                                    m for m in markers if "total energy" not in m
-                                ]
-                            markers.append(line)
-                text = "".join(markers)
-                calculation = re.search(
-                    r"calculation\s*=\s*['\"]([^'\"]+)",
-                    (directory / "input.in").read_text(),
-                    re.IGNORECASE,
-                )
-                values["evidence"] = evidence(
-                    text, calculation[1] if calculation else "scf"
-                )
             self.store.update(id, **values)
         except Exception as error:
-            logger.exception("Task %s could not execute", id)
+            self.logger.exception("Task %s could not execute", id)
             self.store.update(id, status="failed", error=str(error), ended=now())
         finally:
             artifacts = {}
@@ -856,22 +956,22 @@ class Manager:
                 if path.is_file():
                     artifacts[name] = self.store.register(id + "-" + name, path)
             result = self.store.update(id, artifacts=artifacts)
-            logger.info(
+            self.logger.info(
                 "Task %s finished: %s (exit=%s)",
                 id,
                 result["status"],
                 result.get("exit_code"),
             )
             if result.get("error"):
-                logger.error("Task %s: %s", id, result["error"])
+                self.logger.error("Task %s: %s", id, result["error"])
 
-    def data(self):
+    def data(self) -> dict:
         from .geometry import prepared_geometries
 
         tasks = self.store.tasks()
         for task in tasks:
 
-            def registered_input(name, task_id=task["id"]):
+            def registered_input(name: str, task_id: str = task["id"]) -> Path | None:
                 path = self.store.artifact(task_id + "-" + name)
                 return Path(path) if path else None
 

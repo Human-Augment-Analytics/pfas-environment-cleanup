@@ -1,9 +1,10 @@
 import csv
 
 from .config import ROOT
+from .execution_models import CandidateRecord
 
 
-def load():
+def load() -> list[CandidateRecord]:
     with (ROOT / "shivani_ml_models/cluster_centers.csv").open(newline="") as stream:
         return [
             {
@@ -16,7 +17,7 @@ def load():
         ]
 
 
-TFA = {
+TFA: CandidateRecord = {
     "id": "tfa",
     "cid": "8442",
     "smiles": "O=C(O)C(F)(F)F",

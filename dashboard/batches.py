@@ -4,35 +4,84 @@ import json
 import logging
 import math
 import uuid
+from typing import TYPE_CHECKING, Unpack
+
+from .execution import (
+    APPLICATION_LOGGER_NAME,
+    MAX_ESTIMATION_RANKS,
+    MAX_SLURM_PROCESSES,
+)
+from .execution_models import BatchReviewRequest, SchedulerOverrides
+
+if TYPE_CHECKING:
+    from .tasks import Manager
 
 from .persistence import now
 from .runtimes import GIB
-
-logger = logging.getLogger("uvicorn.error")
+from .scheduler import settings as scheduler_settings
 
 
 class Batches:
-    def __init__(self, manager):
+    @property
+    def logger(self) -> logging.Logger:
+        return logging.getLogger(APPLICATION_LOGGER_NAME)
+
+    def __init__(self, manager: "Manager") -> None:
         self.manager = manager
 
     def review(
         self,
-        candidates,
-        kind,
-        system="candidate",
-        runtime="native",
-        processes=1,
-        memory_gib=4,
-        timeout=None,
-        retry=False,
-        rerun_completed=False,
-        target="local",
-        issue_tokens=True,
-        **_,
-    ):
+        estimate_processes: list[int] | None = None,
+        **request: Unpack[BatchReviewRequest],
+    ) -> dict:
+        if estimate_processes is None:
+            return self._review(**request)
+        if request.get("kind") != "estimate_ram" or request.get("target") != "slurm":
+            raise ValueError("Process-count groups require Slurm RAM estimation")
+        if (
+            not estimate_processes
+            or len(estimate_processes) > MAX_ESTIMATION_RANKS
+            or len(set(estimate_processes)) != len(estimate_processes)
+            or any(
+                type(n) is not int or not 1 <= n <= MAX_SLURM_PROCESSES
+                for n in estimate_processes
+            )
+        ):
+            raise ValueError("Provide distinct process counts from 1 to 256")
+        reviews = []
+        for rank in estimate_processes:
+            rank_request = request.copy()
+            rank_request["processes"] = rank
+            reviews.append(self._review(**rank_request))
+        result = dict(reviews[0])
+        # Each input is initialized at every selected rank before moving on.
+        result["entries"] = [
+            review["entries"][index]
+            for index in range(len(request["candidates"]))
+            for review in reviews
+        ]
+        result["resources"] = {**result["resources"], "cpus": max(estimate_processes)}
+        result["estimate_processes"] = estimate_processes
+        return result
+
+    def _review(
+        self,
+        candidates: list[str],
+        kind: str,
+        system: str = "candidate",
+        runtime: str = "native",
+        processes: int = 1,
+        memory_gib: float = 4,
+        timeout: float | None = None,
+        retry: bool = False,
+        rerun_completed: bool = False,
+        target: str = "local",
+        issue_tokens: bool = True,
+        scheduler: SchedulerOverrides | None = None,
+        **_: object,
+    ) -> dict:
         manager = self.manager
-        if target != "local":
-            raise NotImplementedError("Slurm execution is not implemented")
+        manager.validate_target(target, kind)
         if kind not in ("diagram", "prepare", "qe", "estimate_ram") or system not in (
             "candidate",
             "complex",
@@ -47,7 +96,7 @@ class Batches:
             raise ValueError("Provide distinct selected candidate IDs")
         if any(id not in manager.candidates for id in candidates):
             raise ValueError("Unknown candidate")
-        logger.info(
+        self.logger.info(
             "Batch preview: reviewing %s selected %s jobs", len(candidates), kind
         )
         timeout = (
@@ -66,8 +115,17 @@ class Batches:
             processes if kind in ("qe", "estimate_ram") else 1,
             memory_gib,
             timeout,
+            target,
         )
-        identity = manager.runtimes.verify() if runtime == "apptainer" else None
+        identity = (
+            (
+                manager.runtimes.image_identity()
+                if target == "slurm"
+                else manager.runtimes.verify()
+            )
+            if runtime == "apptainer"
+            else None
+        )
         molecules = {}
         if kind == "prepare":
             # One bounded environment/SMILES probe, rather than hundreds of child probes.
@@ -108,7 +166,12 @@ print(json.dumps(results))
         pseudo_hashes = {}
         entries = []
         for candidate in candidates:
-            entry = {"candidate": candidate, "status": "eligible", "reason": ""}
+            entry = {
+                "candidate": candidate,
+                "processes": processes,
+                "status": "eligible",
+                "reason": "",
+            }
             owner_system = (
                 system
                 if kind in ("qe", "estimate_ram")
@@ -133,6 +196,8 @@ print(json.dumps(results))
                         reason="Missing pseudopotentials: " + ", ".join(missing),
                     )
             related = related_tasks.get((candidate, kind, owner_system), [])
+            if kind == "estimate_ram":
+                related = [t for t in related if t.get("processes") == processes]
             if entry["status"] == "unavailable":
                 pass
             elif any(t["status"] in ("queued", "running") for t in related):
@@ -144,7 +209,7 @@ print(json.dumps(results))
                             candidate,
                             system,
                             processes,
-                            "local",
+                            target,
                             runtime,
                             kind=kind,
                             issue_token=issue_tokens,
@@ -152,6 +217,9 @@ print(json.dumps(results))
                             if system == "tfa"
                             else prepared_tasks.get(candidate, []),
                             _pseudo_hashes=pseudo_hashes,
+                            scheduler=scheduler,
+                            memory_gib=memory_gib,
+                            timeout=timeout,
                         )
                         entry.update(preview)
                         if not (
@@ -206,7 +274,7 @@ print(json.dumps(results))
                     entry.update(status="unavailable", reason=str(error))
             entries.append(entry)
             if len(entries) % 100 == 0 or len(entries) == len(candidates):
-                logger.info(
+                self.logger.info(
                     "Batch preview: reviewed %s/%s jobs", len(entries), len(candidates)
                 )
         return {
@@ -214,9 +282,13 @@ print(json.dumps(results))
             "resources": resources,
             "image_hash": identity,
             "runtime": runtime,
+            "target": target,
+            "scheduler_settings": scheduler_settings(scheduler, kind)
+            if target == "slurm"
+            else None,
         }
 
-    def submit(self, request):
+    def submit(self, request: dict) -> dict:
         manager = self.manager
         batch_id = request.get("id") or uuid.uuid4().hex
         if not isinstance(batch_id, str) or not 1 <= len(batch_id) <= 100:
@@ -225,13 +297,22 @@ print(json.dumps(results))
             previous = manager.store.batch(batch_id)
             if previous:
                 return previous
-            logger.info("Batch %s: validating selected jobs before queueing", batch_id)
+            self.logger.info(
+                "Batch %s: validating selected jobs before queueing", batch_id
+            )
             review = self.review(**request, issue_tokens=False)
             if review["image_hash"] != request.get("image_hash"):
                 raise ValueError("Container image changed; review the batch again")
-            expected = {e["candidate"]: e for e in request.get("expected", [])}
+            expected = {
+                (e["candidate"], e.get("processes", request.get("processes", 1))): e
+                for e in request.get("expected", [])
+            }
             batch = {
                 "id": batch_id,
+                "accepting": True,
+                "target": request.get("target", "local"),
+                "scheduler": review["scheduler_settings"],
+                "estimate_processes": request.get("estimate_processes"),
                 "created": now(),
                 "kind": request["kind"],
                 "system": request.get("system", "candidate"),
@@ -249,7 +330,7 @@ print(json.dumps(results))
             manager.store.put_batch(batch)
             for position, entry in enumerate(review["entries"]):
                 if entry["status"] == "eligible":
-                    old = expected.get(entry["candidate"])
+                    old = expected.get((entry["candidate"], entry["processes"]))
                     if (
                         not old
                         or old.get("status") != "eligible"
@@ -264,6 +345,14 @@ print(json.dumps(results))
                                 )
                                 or old.get("pseudopotentials")
                                 != entry.get("pseudopotentials")
+                                or (
+                                    request.get("target") == "slurm"
+                                    and (
+                                        old.get("resources") != entry.get("resources")
+                                        or old.get("scheduler_settings")
+                                        != entry.get("scheduler_settings")
+                                    )
+                                )
                             )
                         )
                     ):
@@ -277,11 +366,14 @@ print(json.dumps(results))
                                 request["kind"],
                                 entry["candidate"],
                                 system=request.get("system", "candidate"),
-                                processes=request.get("processes", 1),
+                                processes=entry["processes"],
+                                target=request.get("target", "local"),
+                                scheduler=request.get("scheduler"),
                                 timeout=request.get("timeout"),
                                 expected_hash=entry.get("input_hash"),
                                 preview_id=old.get("preview_id")
                                 if request["kind"] == "estimate_ram"
+                                or request.get("target") == "slurm"
                                 else None,
                                 expected_pseudos=entry.get("pseudopotentials"),
                                 runtime=review["runtime"],
@@ -293,12 +385,13 @@ print(json.dumps(results))
                             batch["task_ids"].append(task["id"])
                             entry = {
                                 "candidate": entry["candidate"],
+                                "processes": entry["processes"],
                                 "status": "queued",
                                 "task_id": task["id"],
                                 "reason": "",
                             }
                         except Exception as error:
-                            logging.getLogger("uvicorn.error").exception(
+                            self.logger.exception(
                                 "Batch %s: cluster %s could not be queued",
                                 batch_id,
                                 entry["candidate"],
@@ -313,21 +406,25 @@ print(json.dumps(results))
                     {
                         k: v
                         for k, v in entry.items()
-                        if k in ("candidate", "status", "task_id", "reason")
+                        if k
+                        in ("candidate", "processes", "status", "task_id", "reason")
                     }
                 )
                 manager.store.put_batch(batch)
                 if (position + 1) % 100 == 0 or position + 1 == len(review["entries"]):
-                    logger.info(
+                    self.logger.info(
                         "Batch %s: accepted %s/%s entries (%s queued)",
                         batch_id,
                         position + 1,
                         len(review["entries"]),
                         len(batch["task_ids"]),
                     )
+            batch["accepting"] = False
+            manager.store.put_batch(batch)
+            manager.wake.set()
             return batch
 
-    def retry(self, id):
+    def retry(self, id: str) -> dict:
         batch = self.manager.store.batch(id)
         if not batch:
             raise ValueError("Unknown batch")
@@ -357,11 +454,14 @@ print(json.dumps(results))
             "memory_gib": resources["memory_bytes"] / GIB,
             "processes": resources["cpus"],
             "timeout": resources["timeout"],
-            "retry": True,
+            "retry": batch.get("target") != "slurm" or batch["kind"] != "estimate_ram",
+            "target": batch.get("target", "local"),
+            "scheduler": batch.get("scheduler"),
+            "estimate_processes": batch.get("estimate_processes"),
         }
 
 
-def validate_positive(value, label, integer=False):
+def validate_positive(value: float, label: str, integer: bool = False) -> None:
     if (
         isinstance(value, bool)
         or not isinstance(value, (float, int))

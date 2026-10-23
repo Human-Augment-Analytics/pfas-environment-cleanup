@@ -1,5 +1,19 @@
+import type { ReactElement } from "react";
+import {
+  SLURM_MODE,
+  DEFAULT_SLURM_PROCESSES,
+  DEFAULT_LOCAL_PROCESSES,
+  ESTIMATION_PROCESS_COUNTS,
+} from "./execution";
 import { useEffect, useState } from "react";
-import { post, BatchRequest, BatchPreview, RuntimeInfo } from "./data";
+import {
+  post,
+  BatchRequest,
+  BatchPreview,
+  RuntimeInfo,
+  SchedulerSettings,
+} from "./data";
+import { SlurmSettings } from "./SlurmSettings";
 import { SlurmExportControls } from "./SlurmExportControls";
 
 export function BatchControls({
@@ -12,7 +26,22 @@ export function BatchControls({
   runtimes?: RuntimeInfo;
   onQueued: () => void;
   initial?: BatchRequest;
-}) {
+}): ReactElement {
+  const slurm = runtimes?.execution?.mode === SLURM_MODE;
+  const [scheduler, setScheduler] = useState<SchedulerSettings>(
+    initial?.scheduler || {},
+  );
+  const [reservation, setReservation] = useState(
+    initial?.target === "slurm" ? String(initial.memory_gib) : "",
+  );
+  const [location, setLocation] = useState(
+    initial?.target || (slurm ? "slurm" : "local"),
+  );
+  const [rankGroup, setRankGroup] = useState(
+    initial?.estimate_processes !== undefined
+      ? Boolean(initial.estimate_processes?.length)
+      : true,
+  );
   const [kind, setKind] = useState(initial?.kind || "prepare");
   const [system, setSystem] = useState(initial?.system || "candidate");
   const [runtime, setRuntime] = useState(
@@ -22,7 +51,12 @@ export function BatchControls({
   const [rerunCompleted, setRerunCompleted] = useState(
     initial?.rerun_completed || false,
   );
-  const [processes, setProcesses] = useState(String(initial?.processes || 1));
+  const [processes, setProcesses] = useState(
+    String(
+      initial?.processes ||
+        (slurm ? DEFAULT_SLURM_PROCESSES : DEFAULT_LOCAL_PROCESSES),
+    ),
+  );
   const [memory, setMemory] = useState(String(initial?.memory_gib || 4));
   const [timeout, setTimeout] = useState(
     initial?.timeout ? String(initial.timeout) : "",
@@ -45,22 +79,50 @@ export function BatchControls({
   }, [busy]);
   const [reviewKey, setReviewKey] = useState("");
   const [submissionID, setSubmissionID] = useState("");
+  const remote =
+    ["qe", "estimate_ram"].includes(kind) && location === SLURM_MODE;
+  const automaticMemory =
+    remote && kind === "qe" && scheduler.memory_mode === "estimate";
+  const estimationProcesses =
+    initial?.estimate_processes || ESTIMATION_PROCESS_COUNTS;
+  const groupedEstimation = remote && kind === "estimate_ram" && rankGroup;
+  const requestedProcesses = groupedEstimation
+    ? Math.max(...estimationProcesses)
+    : Number(processes);
   const request: BatchRequest = {
     candidates: ids,
     kind,
     system,
     runtime,
-    processes: kind === "qe" ? Number(processes) : 1,
-    memory_gib: Number(memory),
+    processes: ["qe", "estimate_ram"].includes(kind)
+      ? requestedProcesses
+      : DEFAULT_LOCAL_PROCESSES,
+    memory_gib: remote
+      ? Number(reservation || (automaticMemory ? DEFAULT_LOCAL_PROCESSES : 0))
+      : Number(memory),
+    target: remote ? "slurm" : "local",
+    scheduler: remote
+      ? {
+          ...scheduler,
+          memory_mode:
+            kind === "estimate_ram"
+              ? "manual"
+              : (scheduler.memory_mode ?? "manual"),
+        }
+      : undefined,
+    estimate_processes: groupedEstimation ? estimationProcesses : undefined,
     timeout: timeout ? Number(timeout) : undefined,
     retry: initial?.retry || false,
     rerun_completed: kind === "estimate_ram" && rerunCompleted,
   };
   const key = JSON.stringify(request);
   const valid =
-    Number(memory) > 0 &&
-    (kind !== "qe" ||
-      (Number.isInteger(Number(processes)) && Number(processes) >= 1)) &&
+    (remote
+      ? automaticMemory || Number(reservation) > 0
+      : Number(memory) > 0) &&
+    (!["qe", "estimate_ram"].includes(kind) ||
+      (Number.isInteger(requestedProcesses) &&
+        requestedProcesses >= DEFAULT_LOCAL_PROCESSES)) &&
     (!timeout || Number(timeout) > 0);
   const current = key === reviewKey ? preview : null;
   async function review() {
@@ -91,6 +153,9 @@ export function BatchControls({
         expected: current.entries.map(
           ({
             candidate,
+            processes,
+            resources,
+            scheduler_settings,
             status,
             input_hash,
             source_hash,
@@ -98,6 +163,9 @@ export function BatchControls({
             pseudopotentials,
           }) => ({
             candidate,
+            processes,
+            resources,
+            scheduler_settings,
             status,
             input_hash,
             source_hash,
@@ -174,26 +242,31 @@ export function BatchControls({
             value={runtime}
             onChange={(e) => setRuntime(e.target.value)}
           >
-            <option value="native">Native · serial, no hard memory cap</option>
+            <option value="native">Native · installed tools</option>
             <option value="apptainer" disabled={!runtimes?.apptainer.available}>
-              Apptainer · hard memory cap
+              Apptainer ·{" "}
+              {runtimes?.execution?.allocation || remote
+                ? "Slurm resources"
+                : "hard memory cap"}
             </option>
           </select>
         </label>
-        {runtime === "apptainer" && (
+        {(runtime === "apptainer" || remote) && !automaticMemory && (
           <label>
-            Memory per job (GiB){" "}
+            Memory {remote ? "reservation" : "per job"} (GiB){" "}
             <input
               aria-label="Memory per job (GiB)"
               type="number"
               min="0.125"
               step="0.125"
-              value={memory}
-              onChange={(e) => setMemory(e.target.value)}
+              value={remote ? reservation : memory}
+              onChange={(e) =>
+                (remote ? setReservation : setMemory)(e.target.value)
+              }
             />
           </label>
         )}
-        {kind === "qe" && (
+        {["qe", "estimate_ram"].includes(kind) && (
           <label>
             Processes per job{" "}
             <input
@@ -201,9 +274,42 @@ export function BatchControls({
               type="number"
               min="1"
               step="1"
-              value={processes}
+              disabled={groupedEstimation}
+              value={groupedEstimation ? String(requestedProcesses) : processes}
               onChange={(e) => setProcesses(e.target.value)}
             />
+          </label>
+        )}
+        {["qe", "estimate_ram"].includes(kind) && (
+          <label>
+            Execution location{" "}
+            <select
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            >
+              <option value="local">Dashboard allocation / local</option>
+              <option value="slurm" disabled={!slurm}>
+                Separate Slurm allocation
+              </option>
+            </select>
+          </label>
+        )}
+        {remote && (
+          <SlurmSettings
+            value={scheduler}
+            kind={kind}
+            onChange={setScheduler}
+          />
+        )}
+        {remote && kind === "estimate_ram" && (
+          <label>
+            <input
+              type="checkbox"
+              checked={rankGroup}
+              onChange={(e) => setRankGroup(e.target.checked)}
+            />{" "}
+            Measure {estimationProcesses.join(", ")} processes in one{" "}
+            {Math.max(...estimationProcesses)}-CPU allocation
           </label>
         )}
         <label>
@@ -245,10 +351,17 @@ export function BatchControls({
           existing estimates. Results appear in the queue and task history.
         </p>
       )}
-      {runtime === "native" && (
+      {remote && (
         <p>
-          Native jobs run one at a time. Their memory is not isolated from WSL;
-          use Apptainer for hard limits.
+          Jobs continue after the dashboard stops. RAM checks run sequentially
+          in one allocation; stopping that job cancels its remaining checks.
+          Completed results are preserved.
+        </p>
+      )}
+      {runtime === "native" && !remote && (
+        <p>
+          Native jobs run one at a time. Their memory shares the dashboard’s
+          resources.
         </p>
       )}
       {!runtimes?.apptainer.available && (
@@ -278,7 +391,9 @@ export function BatchControls({
             {runtime} · {current.resources.cpus} CPU(s) per job ·{" "}
             {current.resources.hard_memory_limit
               ? `${(current.resources.memory_bytes / 1024 ** 3).toFixed(2)} GiB cap`
-              : "No hard memory cap"}{" "}
+              : remote
+                ? `${(current.resources.memory_bytes / 1024 ** 3).toFixed(2)} GiB reservation (Slurm)`
+                : "No separate task memory cap"}{" "}
             ·{" "}
             {current.resources.timeout
               ? `${current.resources.timeout}s timeout`
@@ -300,11 +415,14 @@ export function BatchControls({
           </button>
           <ol className="batch-preview" start={page * 50 + 1}>
             {current.entries.slice(page * 50, (page + 1) * 50).map((entry) => (
-              <li key={entry.candidate}>
+              <li key={`${entry.candidate}-${entry.processes}`}>
                 <a href={`#candidate/${entry.candidate}`}>
                   Cluster {entry.candidate}
                 </a>{" "}
-                · {entry.status}
+                · {entry.processes || 1} processes · {entry.status}
+                {entry.resources &&
+                  ` · ${(entry.resources.memory_bytes / 1024 ** 3).toFixed(2)} GiB reserved`}
+                {entry.memory_estimate && ` · ${entry.memory_estimate.basis}`}
                 {entry.reason && ` · ${entry.reason}`}
                 {entry.input && (
                   <JobInput input={entry.input} command={entry.command} />
@@ -324,7 +442,13 @@ export function BatchControls({
   );
 }
 
-function JobInput({ input, command }: { input: string; command?: string[] }) {
+function JobInput({
+  input,
+  command,
+}: {
+  input: string;
+  command?: string[];
+}): ReactElement {
   const [open, setOpen] = useState(false);
   return (
     <details onToggle={(event) => setOpen(event.currentTarget.open)}>

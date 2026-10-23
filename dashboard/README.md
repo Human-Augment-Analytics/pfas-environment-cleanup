@@ -1,6 +1,6 @@
 # Dashboard state
 
-Updated: 2026-10-16. This document describes the current implementation and the
+Updated: 2026-10-23. This document describes the current implementation and the
 remaining deployment work. See the [full user guide](../docs/dashboard.md) for
 detailed controls and workflows.
 
@@ -9,12 +9,12 @@ detailed controls and workflows.
 | Area | Implemented behavior |
 | --- | --- |
 | Candidate browser | All 1,000 clusters, representative diagrams, tiles and rows, ID filters, descriptor search, sorting, and shared selection. |
-| RAM display | Separate candidate and complex values from successful one-process QE estimates; sorting and filtering by estimates. |
+| RAM display | Candidate and complex values by MPI count; Slurm defaults to total estimates at 16 processes, with sorting and filtering. |
 | Preparation | Generate isolated-candidate, candidate–TFA complex, and neutral TFA inputs without automatically running QE. |
 | Geometry | Inspect prepared inputs and run geometries. |
 | Input versions | Discover external input versions for individual previews and runs. |
-| Local execution | Preview and queue native or Apptainer preparation, QE, and RAM-estimation tasks. |
-| Queue | Persistent attempts and batches, resource budgets, pause, stop, cancellation, retry, log viewing, and artifact downloads. |
+| Execution | Native/Apptainer local tasks; on Slurm, preparation in the dashboard allocation and independent QE jobs with persistent monitoring. |
+| Queue | Persistent attempts and batches, local resource budgets, Slurm job IDs/states, pause, cancellation, retry, logs, and artifacts. |
 | SLURM export | Download selected candidate and complex calculations, copied pseudopotentials, a manifest, and submission scripts as a ZIP. |
 | Static snapshot | Export a browsable snapshot without execution controls. |
 
@@ -57,7 +57,7 @@ support; native jobs have no hard memory cap. Native jobs execute one at a time,
 although an individual QE job can use multiple MPI processes. Verified container
 jobs can overlap within the queue's CPU and memory budgets.
 
-## SLURM workflow currently implemented
+## SLURM ZIP export workflow
 
 1. Sort by **RAM · Complex / Ascending**, check that candidate and complex RAM
    values exist, and select the desired molecules. Selection of the eight lowest
@@ -179,6 +179,7 @@ in a real job before scaling up.
 
 | Setting | Default / purpose |
 | --- | --- |
+| `PFAS_EXECUTION` | `auto`; selects Slurm submission within an allocation when scheduler commands are available. `local` or `slurm` override it. |
 | `PFAS_ARTIFACTS` | `.dashboard/`; includes `tasks.sqlite`, task directories, and artifacts. |
 | `PFAS_QE_INPUTS` | `qe_inputs/`; external input versions. |
 | `PFAS_PSEUDOS` | `qespresso_pipeline/Pseudopotentials/`. |
@@ -204,14 +205,16 @@ than constructing a task manager, whose initialization performs recovery.
 | `inputs.py`, `preparation.py`, `geometry.py` | Input discovery/validation, preparation, RAM parsing, and geometry extraction. |
 | `runtimes.py`, `container_runner.py`, `processes.py`, `cpu.py` | Local launch commands, memory enforcement/accounting, cancellation, and CPU allocation. |
 | `slurm.py` | Reviewed portable SLURM ZIP generation and memory sizing. |
+| `scheduler.py`, `slurm_worker.py`, `calculation.py` | Independent submissions, reconciliation, and shared calculation execution/validation. |
 | `diagram.py`, `export.py` | Diagram generation and static snapshot export. |
 | `../web/frontend/src/` | React UI; `SlurmExportControls.tsx` implements export review/download. |
 | `../web/tests/`, `../web/frontend/tests/` | Backend regressions and frontend tests. |
 
 Important export endpoints are `POST /api/slurm/preview` and
 `POST /api/slurm/export`. The latter downloads the ZIP; neither endpoint submits
-to a scheduler. Local task targets labeled Slurm/Slurm array remain placeholders
-that return HTTP 501.
+to a scheduler. The `slurm` task target submits independent jobs when scheduler support is enabled;
+`slurm-array` remains unsupported. See the [PACE guide](../docs/pace-dashboard.md)
+for grouped 16/4/1 RAM estimation, cancellation, and restart recovery.
 
 ## Validation and remaining work
 
@@ -239,7 +242,7 @@ Still unimplemented or unverified:
 - Resolve and verify the container runtime on PACE ICE.
 - Run the exported launcher and QE successfully in a PACE allocation.
 - Automatic SSH transfer/submission from the dashboard.
-- Remote job monitoring, cancellation, and result import into dashboard history.
+- Validate the new Slurm monitoring, cancellation, and shared-storage result import on PACE.
 - SLURM array export and multi-node MPI.
 - Automatic selection of the eight smallest calculations.
 - Automatic adsorption-energy aggregation from candidate, complex, and TFA runs.

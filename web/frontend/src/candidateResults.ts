@@ -8,6 +8,8 @@ export const ramFields: Record<string, string> = {
 export function withTaskFields(
   candidates: Candidate[],
   tasks: Task[],
+  processes = 1,
+  total = false,
 ): Candidate[] {
   const summaries = new Map<string, NonNullable<Candidate["task_summary"]>>();
   // Do not depend on API or snapshot task ordering. A failed retry never erases a success.
@@ -20,7 +22,7 @@ export function withTaskFields(
     }
     if (
       task.kind === "estimate_ram" &&
-      task.processes === 1 &&
+      task.processes === processes &&
       task.status === "succeeded" &&
       ["candidate", "complex"].includes(task.system) &&
       task.ram_estimate?.per_process &&
@@ -31,11 +33,19 @@ export function withTaskFields(
     summaries.set(task.candidate, summary);
   }
   return candidates.map((candidate) => {
-    const summary = summaries.get(candidate.id) || { ram: {} };
+    const summary = {
+      ...(summaries.get(candidate.id) || { ram: {} }),
+      ram_total: total,
+    };
     const fields = { ...candidate.fields };
     for (const system of ["candidate", "complex"]) {
       const estimate = summary.ram[system]?.ram_estimate;
-      const value = estimate?.per_process;
+      const value = total
+        ? estimate?.total ||
+          (estimate?.per_process
+            ? { bytes: estimate.per_process.bytes * processes }
+            : null)
+        : estimate?.per_process;
       fields[`${system}_ram_per_process_gib`] =
         value && Number.isFinite(value.bytes) && value.bytes >= 0
           ? String(value.bytes / 1024 ** 3)
@@ -76,7 +86,7 @@ export function matchesPreparation(
 export function ramDisplay(candidate: Candidate, system: string): string {
   const raw = candidate.fields[`${system}_ram_per_process_gib`]?.trim();
   return raw && Number.isFinite(Number(raw))
-    ? `${Number(raw).toFixed(0)} GB`
+    ? `${candidate.task_summary?.ram_total && candidate.task_summary.ram[system]?.ram_estimate && !candidate.task_summary.ram[system]?.ram_estimate?.total ? "≤ " : ""}${Number(raw).toFixed(0)} GB`
     : "Unavailable";
 }
 

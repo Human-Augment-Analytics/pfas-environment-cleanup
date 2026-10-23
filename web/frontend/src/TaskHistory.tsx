@@ -37,8 +37,8 @@ export function TaskHistory({
           {t.ram_estimate && (
             <p>
               Est RAM:{" "}
-              {t.processes === 1 && t.ram_estimate.per_process
-                ? `${t.ram_estimate.per_process.value} ${t.ram_estimate.per_process.unit}`
+              {t.ram_estimate.per_process
+                ? `${t.ram_estimate.per_process.value} ${t.ram_estimate.per_process.unit} max per process (${t.processes} processes)${t.ram_estimate.total ? ` · ${t.ram_estimate.total.value} ${t.ram_estimate.total.unit} total` : " · total unavailable"}`
                 : "unavailable"}
             </p>
           )}
@@ -47,9 +47,22 @@ export function TaskHistory({
               {t.runtime} ·{" "}
               {t.resources?.hard_memory_limit
                 ? `${((t.resources?.memory_bytes || 0) / 1024 ** 3).toFixed(2)} GiB hard cap`
-                : "No hard memory cap"}
+                : t.target === "slurm"
+                  ? "Slurm job reservation"
+                  : "No separate task memory cap"}
               {t.usage &&
                 ` · ${(t.usage.peak_memory_bytes / 1024 ** 2).toFixed(1)} MiB measured peak (${t.usage.measurement})`}
+            </p>
+          )}
+          {t.scheduler && (
+            <p>
+              Slurm {t.scheduler.job_id || "submission unresolved"} ·{" "}
+              {t.stop_requested
+                ? "Canceling"
+                : t.scheduler.state === "PENDING"
+                  ? "Waiting for resources"
+                  : t.scheduler.state}{" "}
+              · {t.scheduler.reason}
             </p>
           )}
           {t.error && <p className="error">{t.error}</p>}

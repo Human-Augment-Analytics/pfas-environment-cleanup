@@ -1,5 +1,19 @@
+import type { ReactElement } from "react";
+import {
+  SLURM_MODE,
+  DEFAULT_SLURM_PROCESSES,
+  DEFAULT_LOCAL_PROCESSES,
+} from "./execution";
 import { useState } from "react";
-import { Action, post, Preview, RuntimeInfo, InputVersion } from "./data";
+import {
+  Action,
+  post,
+  Preview,
+  RuntimeInfo,
+  InputVersion,
+  SchedulerSettings,
+} from "./data";
+import { SlurmSettings } from "./SlurmSettings";
 import { GeometryViewer } from "./GeometryViewer";
 export function RunControls({
   candidate,
@@ -13,9 +27,14 @@ export function RunControls({
   candidate: string;
   system: string;
   action: (path: string, body?: Action) => Promise<void>;
-}) {
-  const [processes, setProcesses] = useState("1"),
-    [target, setTarget] = useState("local"),
+}): ReactElement {
+  const slurm = runtimes?.execution?.mode === SLURM_MODE;
+  const [scheduler, setScheduler] = useState<SchedulerSettings>({});
+  const [reservation, setReservation] = useState("");
+  const [processes, setProcesses] = useState(
+      String(slurm ? DEFAULT_SLURM_PROCESSES : DEFAULT_LOCAL_PROCESSES),
+    ),
+    [target, setTarget] = useState(slurm ? "slurm" : "local"),
     [timeout, setTimeout] = useState("");
   const [runtime, setRuntime] = useState(
     runtimes?.apptainer.available ? "apptainer" : "native",
@@ -25,21 +44,40 @@ export function RunControls({
   const [memory, setMemory] = useState("4");
   const [preview, setPreview] = useState<Preview | null>(null),
     [error, setError] = useState("");
+  const automaticMemory =
+    target === SLURM_MODE &&
+    kind === "qe" &&
+    scheduler.memory_mode === "estimate";
   const body: Action = {
     kind,
     ...(inputId ? { input_id: inputId } : {}),
     runtime,
-    memory_gib: Number(memory),
+    memory_gib:
+      target === "slurm"
+        ? Number(reservation || (automaticMemory ? DEFAULT_LOCAL_PROCESSES : 0))
+        : Number(memory),
+    scheduler:
+      target === "slurm"
+        ? {
+            ...scheduler,
+            memory_mode:
+              kind === "estimate_ram"
+                ? "manual"
+                : (scheduler.memory_mode ?? "manual"),
+          }
+        : undefined,
     candidate,
     system,
-    processes: kind === "estimate_ram" ? 1 : Number(processes),
+    processes: Number(processes),
     target,
     ...(timeout ? { timeout: Number(timeout) } : {}),
   };
   const valid =
-    Number(memory) > 0 &&
-    (kind === "estimate_ram" ||
-      (Number.isInteger(Number(processes)) && Number(processes) >= 1)) &&
+    (target === "slurm"
+      ? automaticMemory || Number(reservation) > 0
+      : Number(memory) > 0) &&
+    Number.isInteger(Number(processes)) &&
+    Number(processes) >= 1 &&
     (!timeout || Number(timeout) > 0);
   const changed = () => {
     setPreview(null);
@@ -94,28 +132,34 @@ export function RunControls({
               changed();
             }}
           >
-            <option value="native">Native · serial, no hard memory cap</option>
+            <option value="native">Native · installed tools</option>
             <option value="apptainer" disabled={!runtimes?.apptainer.available}>
-              Apptainer · hard memory cap
+              Apptainer ·{" "}
+              {runtimes?.execution?.allocation || target === "slurm"
+                ? "Slurm resources"
+                : "hard memory cap"}
             </option>
           </select>
         </label>
-        {runtime === "apptainer" && (
-          <label>
-            Memory per job (GiB){" "}
-            <input
-              type="number"
-              min="0.125"
-              step="0.125"
-              value={memory}
-              onChange={(e) => {
-                setMemory(e.target.value);
-                changed();
-              }}
-            />
-          </label>
-        )}
-        {kind === "qe" && (
+        {(runtime === "apptainer" || target === SLURM_MODE) &&
+          !automaticMemory && (
+            <label>
+              Memory {target === "slurm" ? "reservation" : "per job"} (GiB){" "}
+              <input
+                type="number"
+                min="0.125"
+                step="0.125"
+                value={target === "slurm" ? reservation : memory}
+                onChange={(e) => {
+                  (target === "slurm" ? setReservation : setMemory)(
+                    e.target.value,
+                  );
+                  changed();
+                }}
+              />
+            </label>
+          )}
+        {["qe", "estimate_ram"].includes(kind) && (
           <label>
             Processes{" "}
             <input
@@ -139,11 +183,22 @@ export function RunControls({
               changed();
             }}
           >
-            <option value="local">Local</option>
-            <option value="slurm">Slurm (not implemented)</option>
-            <option value="slurm-array">Slurm array (not implemented)</option>
+            <option value="local">Dashboard allocation / local</option>
+            <option value="slurm" disabled={!slurm}>
+              Separate Slurm allocation
+            </option>
           </select>
         </label>
+        {target === "slurm" && (
+          <SlurmSettings
+            value={scheduler}
+            kind={kind}
+            onChange={(value) => {
+              setScheduler(value);
+              changed();
+            }}
+          />
+        )}
         <label>
           Timeout in seconds (
           {kind === "estimate_ram" ? "default 120" : "optional"}){" "}
@@ -175,6 +230,14 @@ export function RunControls({
       {preview && (
         <>
           <pre>{preview.command.join(" ")}</pre>
+          {preview.resources && (
+            <p>
+              Separate Slurm job · {preview.resources.cpus} CPUs ·{" "}
+              {(preview.resources.memory_bytes / 1024 ** 3).toFixed(2)} GiB
+              reservation · {preview.memory_estimate?.basis || "Entered memory"}
+              . Jobs continue when the dashboard stops.
+            </p>
+          )}
           <GeometryViewer
             key={preview.input_hash}
             geometries={{ [system]: preview.geometry }}

@@ -71,14 +71,15 @@ export function CandidateDetail({
                     value={runtime}
                     onChange={(e) => setRuntime(e.target.value)}
                   >
-                    <option value="native">
-                      Native · serial, no hard memory cap
-                    </option>
+                    <option value="native">Native · installed tools</option>
                     <option
                       disabled={!runtimes?.apptainer.available}
                       value="apptainer"
                     >
-                      Apptainer · hard memory cap
+                      Apptainer ·{" "}
+                      {runtimes?.execution?.allocation
+                        ? "dashboard allocation"
+                        : "hard memory cap"}
                     </option>
                   </select>
                 </label>

@@ -29,7 +29,7 @@ class Store:
         )
         self.db.commit()
         for task in self.tasks():
-            if task["status"] == "running":
+            if task["status"] == "running" and task.get("target") != "slurm":
                 self.update(
                     task["id"],
                     status="interrupted",
@@ -41,31 +41,44 @@ class Store:
         # their batch entry was saved. Accepted queued work remains eligible to run.
         recovered_tasks = self.tasks()
         for batch in self.batches():
-            entries = {entry["candidate"]: entry for entry in batch["entries"]}
+            entries = {
+                (entry["candidate"], entry.get("processes", 1)): entry
+                for entry in batch["entries"]
+            }
             task_ids = set(batch["task_ids"])
             for task in recovered_tasks:
                 if task.get("batch_id") == batch["id"]:
                     task_ids.add(task["id"])
-                    entries[task["candidate"]] = {
+                    entries[(task["candidate"], task.get("processes", 1))] = {
                         "candidate": task["candidate"],
+                        "processes": task.get("processes", 1),
                         "status": "queued",
                         "task_id": task["id"],
                         "reason": "",
                     }
-            for candidate in batch["candidates"]:
+            pairs = [
+                (candidate, rank)
+                for candidate in batch["candidates"]
+                for rank in (
+                    batch.get("estimate_processes")
+                    or [batch.get("resources", {}).get("cpus", 1)]
+                )
+            ]
+            for candidate, rank in pairs:
                 entries.setdefault(
-                    candidate,
+                    (candidate, rank),
                     {
                         "candidate": candidate,
                         "status": "unavailable",
                         "reason": "Batch acceptance interrupted; review again",
                     },
                 )
-            batch["entries"] = [entries[id] for id in batch["candidates"]]
+            batch["entries"] = [entries[pair] for pair in pairs]
+            batch["accepting"] = False
             batch["task_ids"] = [
-                entries[id]["task_id"]
-                for id in batch["candidates"]
-                if entries[id].get("task_id") in task_ids
+                entries[pair]["task_id"]
+                for pair in pairs
+                if entries[pair].get("task_id") in task_ids
             ]
             self.put_batch(batch)
 

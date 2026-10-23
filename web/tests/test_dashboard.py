@@ -93,7 +93,7 @@ def test_commands_snapshots_dedup_and_remote(manager):
     assert (directory / "Pseudopotentials/H.UPF").read_text() == "pseudo"
     assert (directory / "Outputs").is_dir()
     manager.cancel_task(task["id"])
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(ValueError, match="Slurm unavailable"):
         manager.queue("qe", "500", target="slurm")
     assert len(manager.store.tasks()) == 2
     with pytest.raises(ValueError):
@@ -234,7 +234,7 @@ def test_task_entrypoint_log_retains_command_hashes_and_artifact(
     monkeypatch.setattr(
         manager.runtimes,
         "wrap",
-        lambda command, *args: ["apptainer", "exec", "image.sif", *command],
+        lambda command, *args, **kwargs: ["apptainer", "exec", "image.sif", *command],
     )
     preview = manager.preview(
         "500", "candidate", 1, "local", runtime, kind="estimate_ram"

@@ -3,6 +3,7 @@ export type Candidate = {
     prepared?: Task;
     latestPreparation?: Task;
     ram: Record<string, Task>;
+    ram_total?: boolean;
   };
   id: string;
   cid: string;
@@ -23,6 +24,13 @@ export type InputVersion = {
 };
 export type RAMValue = { value: string; unit: string; bytes: number };
 export type Task = {
+  target?: string;
+  scheduler?: {
+    job_id: string | null;
+    state: string;
+    reason: string;
+    token: string;
+  };
   version?: string;
   ram_estimate?: { per_process: RAMValue | null; total: RAMValue | null };
   runtime?: string;
@@ -71,6 +79,7 @@ export type Data = {
   tasks: Task[];
 };
 export type Action = {
+  scheduler?: SchedulerSettings;
   input_id?: string;
   preview_id?: string;
   expected_pseudos?: Record<string, string>;
@@ -85,6 +94,8 @@ export type Action = {
   memory_gib?: number;
 };
 export type Preview = {
+  resources?: Resources;
+  memory_estimate?: { basis: string; processes: number };
   command: string[];
   input: string;
   input_hash: string;
@@ -136,7 +147,15 @@ export type RuntimeInfo = Record<
     hard_memory_limit: boolean;
     message?: string;
   }
->;
+> & { execution?: { mode: string; allocation?: string | null } };
+export type SchedulerSettings = {
+  partition?: string;
+  account?: string;
+  qos?: string;
+  walltime_hours?: number;
+  memory_mode?: "manual" | "estimate";
+  headroom_percent?: number;
+};
 export type QueueSettings = {
   paused: boolean;
   concurrency: number;
@@ -144,6 +163,9 @@ export type QueueSettings = {
   cpus: number;
 };
 export type BatchRequest = {
+  target?: string;
+  scheduler?: SchedulerSettings;
+  estimate_processes?: number[];
   candidates: string[];
   kind: string;
   system: string;
@@ -155,6 +177,10 @@ export type BatchRequest = {
   rerun_completed?: boolean;
 };
 export type BatchEntry = {
+  processes?: number;
+  resources?: Resources;
+  scheduler_settings?: SchedulerSettings;
+  memory_estimate?: { basis: string; processes: number };
   source_hash?: string;
   preview_id?: string;
   candidate: string;

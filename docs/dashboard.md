@@ -198,8 +198,9 @@ built by `containers/chemistry.def`; it is not a multi-node launcher.
 that already has IDs. If submission fails partway, use those IDs and the individual
 commands in the script to submit only the remaining jobs. Monitor with
 `squeue -u "$USER"`; run directories contain `pw.out`, `pw.err`, and SLURM logs.
-Exporting queues no dashboard tasks and submits no remote jobs. Remote monitoring
-and result import into the dashboard are not implemented.
+Exporting queues no dashboard tasks and submits no remote jobs. ZIP exports
+are independent of dashboard history. To submit and monitor from the live UI,
+use [Slurm execution](pace-dashboard.md) instead.
 
 Each run gets a new directory with an input captured when queued, immutable
 pseudopotential copies with matching links, and its own `Outputs` directory.
@@ -335,7 +336,8 @@ Batch review displays 50 jobs per page and renders exact input text when its
 details are opened. Preview and submission show elapsed time; server logs report
 review and acceptance progress every 100 entries. Numeric fields can be cleared
 while editing; action buttons wait for valid resource values. RAM estimation
-uses one process; its result is labeled **Est RAM**.
+uses the selected process count; on PACE the grouped option measures 16, 4,
+and 1 processes in one separate allocation. Results are labeled **Est RAM**.
 Completed preparations/diagrams with available artifacts are skipped. QE skips
 only confirmed results with matching input and pseudopotential hashes. Active
 actions are deduplicated. Each selected representative receives a separate
@@ -428,11 +430,11 @@ diagrams to 60 seconds, and QE has no timeout unless configured.
 Memory-limit failures are identified from cgroup OOM evidence, rather than
 assuming every exit 137 means OOM. Container memory accounting includes child
 processes and file cache; native RSS sums may double-count shared pages. Logs
-and partial artifacts survive failures. Slurm submission remains unavailable:
-the shared job specification separates runtime/image from CPU, memory, walltime,
-input snapshots, and outcome fields, ready for a later scheduler adapter. PACE
-MPI compatibility must be tested before introducing cluster execution; the
-legacy scripts document a native QE build separately from this local image.
+and partial artifacts survive failures. On PACE, [Slurm execution](pace-dashboard.md) runs preparation in the dashboard
+allocation and QE in separate jobs, including grouped 16/4/1 RAM checks.
+Apptainer then uses the Slurm allocation's limits. The workstation isolation
+behavior described above remains unchanged. Validate the container MPI launcher
+in your PACE allocation before scaling up.
 
 ### Additional validation
 
@@ -468,8 +470,7 @@ preview. Missing prepared inputs are listed as
 unavailable. Results appear in the queue and individual task history.
 **Review unsuccessful jobs** requires a fresh preview before retrying.
 
-Choose **Run QE** or **Estimate RAM** and select the runtime. QE runs allow a
-process count; dashboard RAM estimates always use one process. Then
+Choose **Run QE** or **Estimate RAM**, select the runtime and process count,
 then preview the input, command, and initial geometry before submission.
 Estimates default to a 120-second timeout; the timeout field overrides it.
 The estimate captures a copy with `&CONTROL nstep=0`, leaving the original
@@ -489,12 +490,15 @@ attempts. New API clients submit the returned `preview_id`, `input_hash` as
 `expected_hash`, and optional `input_id` with their task request. Omitting
 `input_id` retains prepared-default behavior for existing clients.
 
-History displays **Est RAM** for one-process estimates separately from measured process memory.
-Reported MB/GB values are retained and converted to bytes using binary units
-(1024²/1024³). The display uses QE's maximum RAM report from the single process;
-total RAM fields are not displayed. Older estimates using multiple processes
-do not populate the candidate's Est RAM value. Estimates do not contribute energy or
-convergence evidence and do not adjust memory limits. A missing per-process
+History displays **Est RAM** separately from measured process memory, retaining
+the actual MPI count, reported maximum per-process RAM, and reported total RAM.
+MB/GB values are converted using binary units (1024²/1024³). The browser's process
+selector controls display, sorting, and filtering. Slurm mode defaults to total
+RAM at 16 processes; other modes default to maximum per-process RAM at one
+process. Missing process-count results stay unavailable. When a total is absent,
+Slurm display labels maximum per-process RAM × process count as a derived bound.
+Estimates do not contribute energy or convergence evidence and do not adjust
+memory limits automatically. A missing per-process
 report or QE error fails the estimate; cancellation and timeout remain failures
 or canceled attempts. Snapshot exports retain version labels, hashes, and
 estimates while omitting local paths and raw inputs.
@@ -502,3 +506,14 @@ estimates while omitting local paths and raw inputs.
 Run the opt-in native estimate smoke check with
 `PFAS_RAM_SMOKE=1 .venv/bin/python -m pytest web/tests/test_ram_smoke.py -o session_timeout=180`.
 It needs an installed `pw.x` (or `PFAS_PW`) and `H.UPF` under `PFAS_PSEUDOS`.
+
+
+### PACE execution and RAM process counts
+
+On Slurm, preparation and diagrams use the small dashboard allocation, while
+QE defaults to independent scheduler jobs. Bulk RAM estimation can initialize
+selected inputs at 16, 4, and 1 MPI processes sequentially in a single 16-CPU
+job. The browser's RAM selector controls the process count used for display,
+sorting, and filtering; Slurm mode shows total job estimates. Submitted
+scheduler jobs survive dashboard shutdown and reconnect on restart. See the
+[PACE guide](pace-dashboard.md) for settings, lifecycle behavior, and validation.

@@ -247,3 +247,35 @@ test("AG Grid comparator keeps unavailable values last despite descending invers
   assert.equal(numericValue(undefined), null);
   assert.equal(numericValue("0"), 0);
 });
+
+test("RAM display, sorting, and filters use the selected MPI count and total", () => {
+  const tasks = [
+    attempt("1", {
+      processes: 1,
+      ram_estimate: { per_process: ram(20 * 1024 ** 3), total: null },
+    }),
+    attempt("2", {
+      processes: 16,
+      ram_estimate: { per_process: ram(1024 ** 3), total: ram(12 * 1024 ** 3) },
+    }),
+    attempt("3", {
+      candidate: "501",
+      processes: 16,
+      ram_estimate: { per_process: ram(2 * 1024 ** 3), total: null },
+    }),
+  ];
+  const candidates = withTaskFields(
+    [candidate(), candidate("501")],
+    tasks,
+    16,
+    true,
+  );
+  assert.equal(ramDisplay(candidates[0], "candidate"), "12 GB");
+  assert.equal(ramDisplay(candidates[1], "candidate"), "≤ 32 GB");
+  assert.equal(candidates[0].fields.candidate_ram_per_process_gib, "12");
+  assert.equal(candidates[1].fields.candidate_ram_per_process_gib, "32");
+  const fourRanks = withTaskFields([candidate()], tasks, 4, true);
+  assert.equal(ramDisplay(fourRanks[0], "candidate"), "Unavailable");
+  const serial = withTaskFields([candidate()], tasks, 1, true);
+  assert.equal(ramDisplay(serial[0], "candidate"), "≤ 20 GB");
+});

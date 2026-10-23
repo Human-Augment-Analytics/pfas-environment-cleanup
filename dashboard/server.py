@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, StrictInt
 
 from .candidates import TFA, load
 from .config import ROOT, Config
+from .execution_models import SchedulerOverrides
 from .processes import tail
 from .tasks import Manager
 
@@ -27,6 +28,7 @@ class Action(BaseModel):
     expected_pseudos: dict[str, str] | None = None
     runtime: str = "native"
     memory_gib: float = 4
+    scheduler: SchedulerOverrides | None = None
 
 
 class BatchAction(BaseModel):
@@ -37,6 +39,8 @@ class BatchAction(BaseModel):
     runtime: str = "native"
     processes: StrictInt = 1
     memory_gib: float = 4
+    scheduler: SchedulerOverrides | None = None
+    estimate_processes: list[StrictInt] | None = None
     timeout: float | None = None
     retry: bool = False
     rerun_completed: bool = False
@@ -107,6 +111,9 @@ def create_app(config=None):
                 action.runtime,
                 action.input_id,
                 action.kind,
+                scheduler=action.scheduler,
+                memory_gib=action.memory_gib,
+                timeout=action.timeout,
             )
         )
 
@@ -209,6 +216,10 @@ def create_app(config=None):
     @app.post("/api/tasks/{id}/stop")
     def stop(id: str):
         return checked(lambda: manager.cancel_task(id))
+
+    @app.post("/api/tasks/{id}/mark-rejected")
+    def mark_rejected(id: str) -> None:
+        return checked(lambda: manager.scheduler.mark_rejected(manager.store.get(id)))
 
     @app.get("/api/artifacts/{id}")
     def artifact(id: str):

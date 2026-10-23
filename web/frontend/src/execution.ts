@@ -1,0 +1,14 @@
+export const SLURM_MODE = "slurm";
+export const LOCAL_MODE = "local";
+export const DEFAULT_LOCAL_PROCESSES = 1;
+export const DEFAULT_SLURM_PROCESSES = 16;
+export const ESTIMATION_PROCESS_COUNTS = [16, 4, 1];
+export const DEFAULT_ESTIMATION_HOURS = 4;
+export const DEFAULT_QE_HOURS = 18;
+export const MAX_SLURM_HOURS = 168;
+export const DEFAULT_PARTITION = "ice-cpu";
+export const DEFAULT_ACCOUNT = "coc";
+export const DEFAULT_QOS = "coc-ice";
+export const BYTES_PER_GIB = 1024 ** 3;
+export const DEFAULT_HEADROOM_PERCENT = 50;
+export const MAX_HEADROOM_PERCENT = 1000;

@@ -98,6 +98,7 @@ def execute(
                 "NUMEXPR_NUM_THREADS": "1",
             },
         )
+        assert process.stdout is not None and process.stderr is not None
         streams = [
             (process.stdout, out, bytearray()),
             (process.stderr, err, bytearray()),

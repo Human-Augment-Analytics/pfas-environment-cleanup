@@ -514,9 +514,9 @@ def test_worker_finalization_error_releases_slot(manager, monkeypatch):
 
 
 def test_remote_batch_rejected_before_work(manager):
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(ValueError, match="Slurm unavailable"):
         manager.batches.review(**request(["500"], target="slurm"))
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(ValueError, match="Slurm unavailable"):
         manager.queue("prepare", "500", target="slurm")
     assert manager.store.tasks() == []
 

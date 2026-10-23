@@ -356,7 +356,8 @@ def test_apptainer_estimate_path(manager, monkeypatch):
     preview = review(manager, runtime="apptainer")
     task = submit(manager, preview, runtime="apptainer")
 
-    def wrap(command, directory, resources, image_hash):
+    def wrap(command, directory, resources, image_hash, scheduler=False):
+        assert not scheduler
         assert command == ["pw.x", "-in", "input.in"]
         assert resources["timeout"] == 120
         assert image_hash == "image-hash"
