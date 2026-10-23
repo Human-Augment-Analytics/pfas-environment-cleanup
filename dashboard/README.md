@@ -24,6 +24,9 @@ all stages or aggregate adsorption energies.
 
 ## Run locally
 
+For a PACE-hosted dashboard with a local browser, use the
+[Slurm launch and SSH port-forwarding guide](../docs/pace-dashboard.md).
+
 Run these commands from the repository root, with uv and Node/npm installed:
 
 ```bash

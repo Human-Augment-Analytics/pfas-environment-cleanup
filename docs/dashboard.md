@@ -1,5 +1,8 @@
 # PFAS dashboard
 
+To run on a PACE compute node and access it from your local browser, follow the
+[PACE dashboard and SSH tunnel setup](pace-dashboard.md).
+
 From the repository root, with uv and Node/npm installed:
 
 ```bash
