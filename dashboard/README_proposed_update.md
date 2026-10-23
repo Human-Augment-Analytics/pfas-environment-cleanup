@@ -20,6 +20,18 @@ The core operation takes a candidate SMILES string and an output path and
 renders a molecule image using RDKit. Its output is an image the browser can
 show alongside the candidate.
 
+**Core code:** RDKit's `Chem.MolFromSmiles` and `Draw.MolToFile`, executed by
+the chemistry Python interpreter. There is no separate diagram executable.
+The essential operation, from the current
+[diagram implementation](core/chemistry/diagram.py), is:
+
+```python
+molecule = Chem.MolFromSmiles(smiles)
+if molecule is None:
+    raise ValueError("Invalid representative SMILES")
+Draw.MolToFile(molecule, str(output), size=(600, 400))
+```
+
 This needs the chemistry environment, so the operation runs in a subprocess
 rather than importing that environment into the HTTP server. The surrounding
 job code supplies the candidate, chooses the destination, and registers the
@@ -37,6 +49,23 @@ It delegates the scientific preparation to the existing chemistry pipeline:
 - `smiles_to_qe.py`: `run_cif2cell` and the conversion functions already used
   by `prepare_from_smiles`.
 
+**Core code and executables:** `prepare_from_smiles` uses Open Babel's
+`obabel` executable to generate the molecular structure, Python/Pymatgen to
+convert it to CIF, and `cif2cell` to generate QE input. The central sequence in
+the existing [pipeline function](../qespresso_pipeline/run_adsorption_case.py)
+is:
+
+```python
+mol_path = run_obabel(smiles, str(outbase))
+cif_path = mol_to_cif_pymatgen(mol_path, str(outbase), padding=settings["padding"])
+in_path = run_cif2cell(cif_path, str(outbase))
+```
+
+The pipeline then applies its QE settings. For the complex, the dashboard's
+current [preparation adapter](core/chemistry/preparation.py) calls
+`build_molecular_complex_cif`, followed by `run_cif2cell` and `patch_qe_input`.
+These are the existing operations that the proposed job module will retain.
+
 This module is the dashboard's adapter to those functions. It does not
 reimplement their chemistry. Its inputs include the candidate SMILES,
 pseudopotentials, preparation settings, and an optional reusable TFA reference.
@@ -52,6 +81,25 @@ user to review or edit them before choosing the next action.
 The core operation takes a prepared QE input, makes an initialization-only copy,
 and interprets the memory estimates from QE's output. It retains the original
 input separately from the transformed input used for estimation.
+
+**Core executable:** the same `pw.x` used for production calculations. There
+is no separate RAM-estimator binary. The current
+[input transformation](core/chemistry/inputs.py) sets `nstep=0` in the input's
+`&CONTROL` namelist, adding or replacing that assignment while preserving the
+other settings. In a prepared attempt directory, the essential operations are:
+
+```python
+estimation_input = dry_input(source_text)  # Set CONTROL nstep=0.
+```
+
+```bash
+pw.x -in input.in
+```
+
+Here `input.in` contains the transformed input. The selected runtime and MPI
+launcher wrap this command as needed. The current
+[result reader](core/chemistry/results.py) then extracts and validates the RAM
+report from the process logs.
 
 A usable result requires the expected memory report and no disqualifying QE
 error. Initialization-only exit codes, including 255, need this interpretation;
@@ -74,6 +122,28 @@ The core operation runs `pw.x` against an already prepared input and interprets
 its scientific completion evidence. This module owns QE command construction
 and the checks for completion, convergence, and energy evidence. RAM estimation
 reuses its launcher construction.
+
+**Core executable:** Quantum ESPRESSO's `pw.x`. For a single process, the
+scientific command is simply:
+
+```bash
+pw.x -in input.in
+```
+
+For example, the current single-node container MPI launch at 16 processes has
+this shape, with the attempt-directory bindings and thread environment added
+by the runtime helper:
+
+```bash
+apptainer exec [runtime options] "$image" \
+  mpirun --mca plm isolated --mca ras '^slurm' --bind-to none -np 16 \
+  pw.x -in input.in
+```
+
+`[runtime options]` is explanatory notation, not a literal argument. The
+current [command builder](core/jobs/tasks.py) chooses the native or container
+launch; the [MPI helper](core/slurm/export.py) supplies these container MPI
+options. The proposed `qe.py` will own the shared QE command construction.
 
 A successful process or scheduler exit does not by itself establish a converged
 calculation. Output interpretation distinguishes program completion from SCF
