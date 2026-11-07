@@ -630,3 +630,15 @@ main.candidate-page {
   padding: 1rem;
   background: white;
 }
+
+.optimization-chart {
+  margin: 1rem 0;
+  max-width: 40rem;
+}
+.optimization-chart svg {
+  display: block;
+  width: 100%;
+}
+.optimization-table {
+  overflow-x: auto;
+}

@@ -299,8 +299,35 @@ PFAS_SMOKE=1 uv run --locked --no-default-groups --group web --group preparation
   pytest dashboard/test/test_smoke.py -q
 ```
 
-Deferred: relaxed-geometry viewing, automatic workflows, adsorption aggregation,
-Slurm submission, authentication, and a shared live service.
+Deferred: automatic workflows, adsorption aggregation, authentication, and a
+shared live service.
+
+## Optimization progress and continuation
+
+In live task history, expand **Geometry optimization and run statistics** on a
+QE attempt and click **Load statistics**. This reads the saved `stdout.log` on
+demand, including for attempts completed before this feature was installed.
+Energy and total-force plots, an exact sample table, SCF iteration counts, and
+unconverged SCF cycle counts describe the run. Use **Refresh statistics** to
+inspect new output while a job runs. Samples represent converged electronic
+calculations, which can include a final reevaluation; they are not a count of
+accepted BFGS steps. Total force alone does not establish geometry convergence.
+
+The geometry viewer offers the initial input and latest complete printed
+`ATOMIC_POSITIONS` card. To continue a finished or stopped fixed-cell `relax`
+attempt, choose **Latest ATOMIC_POSITIONS from task …** in the run controls'
+**Input version** selector. Preview the geometry, input, resources, and command,
+then submit normally. Missing or unsupported coordinates are rejected during
+preview. Variable-cell `vc-relax` continuation is currently unsupported because
+atomic positions alone do not preserve its optimized cell.
+
+Continuation creates a new attempt with fresh electronic state, preserving the
+original input settings and fixed-coordinate flags. It does not resume saved
+wavefunctions or BFGS history and does not change the source attempt. The usual
+pseudopotential snapshots and preview checks apply, including rejection if the
+selected coordinates change before submission. To install this feature on a
+running PACE dashboard, rebuild the frontend and restart the Python server;
+separate Slurm calculations survive the dashboard restart.
 
 ## Initial geometry viewer
 

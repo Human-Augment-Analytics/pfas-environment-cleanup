@@ -1,4 +1,5 @@
 import { Task, Action } from "./data";
+import { OptimizationDetails } from "./OptimizationDetails";
 export function TaskHistory({
   tasks,
   live,
@@ -79,6 +80,7 @@ export function TaskHistory({
               {String(t.evidence.relaxation_completed)}
             </p>
           )}
+          {live && t.kind === "qe" && <OptimizationDetails task={t} />}
           {live && ["queued", "running"].includes(t.status) && (
             <button onClick={() => action(`tasks/${t.id}/stop`)}>Stop</button>
           )}

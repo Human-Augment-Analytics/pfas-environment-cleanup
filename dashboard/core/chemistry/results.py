@@ -7,6 +7,7 @@ import shlex
 from pathlib import Path
 
 from dashboard.core import execution, models
+from dashboard.core.chemistry import optimization
 from dashboard.core.chemistry.inputs import ram_reports
 from dashboard.core.jobs.persistence import now
 from dashboard.core.jobs.processes import evidence, tail
@@ -92,11 +93,11 @@ def scientific_output(directory: Path) -> str:
     with (directory / execution.STDOUT_LOG_FILE).open(errors="replace") as stream:
         for line in stream:
             if any(marker in line for marker in execution.QE_EVIDENCE_MARKERS):
-                if execution.QE_ENERGY_MARKER in line:
+                if re.search(optimization.ENERGY_PATTERN, line):
                     markers = [
                         marker
                         for marker in markers
-                        if execution.QE_ENERGY_MARKER not in marker
+                        if not re.search(optimization.ENERGY_PATTERN, marker)
                     ]
                 markers.append(line)
     return "".join(markers)

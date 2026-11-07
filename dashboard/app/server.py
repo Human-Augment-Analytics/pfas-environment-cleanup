@@ -11,7 +11,8 @@ from pydantic import BaseModel, Field, StrictInt
 
 from dashboard.core import candidates as candidate_data
 from dashboard.core import config as configuration
-from dashboard.core import models
+from dashboard.core import execution, models
+from dashboard.core.chemistry import optimization
 from dashboard.core.config import Config
 from dashboard.core.jobs.processes import tail
 from dashboard.core.jobs.tasks import Manager
@@ -237,6 +238,14 @@ def artifact(id: str, request: Request) -> FileResponse:
     return FileResponse(path)
 
 
+def task_optimization(id: str, request: Request) -> optimization.Report:
+    manager = manager_for(request)
+    task = checked(lambda: manager.store.get(id))
+    if task["kind"] != execution.TaskKind.QE:
+        raise HTTPException(400, "Optimization statistics require a QE task")
+    return checked(lambda: optimization.report(manager.config.artifacts / task["id"]))
+
+
 ROUTES = (
     ("GET", "/api/data", data),
     ("POST", "/api/preview", preview),
@@ -251,6 +260,7 @@ ROUTES = (
     ("POST", "/api/batches/{id}/cancel", batch_cancel),
     ("GET", "/api/batches/{id}/retry", batch_retry),
     ("GET", "/api/tasks/{id}/logs", task_logs),
+    ("GET", "/api/tasks/{id}/optimization", task_optimization),
     ("POST", "/api/diagrams", bulk),
     ("POST", "/api/tasks/{id}/stop", stop),
     ("POST", "/api/tasks/{id}/mark-rejected", mark_rejected),

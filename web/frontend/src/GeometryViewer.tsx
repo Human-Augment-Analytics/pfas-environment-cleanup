@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
 import { Geometry } from "./data";
 
 const colors: Record<string, string> = {
@@ -22,9 +22,11 @@ const radii: Record<string, number> = {
 
 export function GeometryViewer({
   geometries,
+  optimization = false,
 }: {
   geometries: Record<string, Geometry>;
-}) {
+  optimization?: boolean;
+}): ReactElement | null {
   const systems = Object.keys(geometries);
   const [selected, setSelected] = useState(
     systems.includes("complex") ? "complex" : systems[0],
@@ -118,10 +120,10 @@ export function GeometryViewer({
     return () => observer.disconnect();
   }, [atoms, rotation, zoom]);
   if (!systems.length) return null;
-  function download() {
+  function download(): void {
     if (!atoms) return;
     const xyz =
-      `${atoms.length}\nInitial ${selected} geometry; angstrom; input SHA256 ${geometry.input_hash}\n` +
+      `${atoms.length}\n${optimization ? "Optimization" : "Initial"} ${selected} geometry; angstrom; input SHA256 ${geometry.input_hash}\n` +
       atoms
         .map(
           (a) =>
@@ -132,16 +134,19 @@ export function GeometryViewer({
     const url = URL.createObjectURL(new Blob([xyz], { type: "text/plain" }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${selected}-initial.xyz`;
+    link.download = `${selected}-${optimization ? "geometry" : "initial"}.xyz`;
     link.click();
     URL.revokeObjectURL(url);
   }
   return (
     <section className="geometry-viewer">
-      <h3>Initial geometry</h3>
+      <h3>{optimization ? "Optimization geometry" : "Initial geometry"}</h3>
       <p>
-        Starting coordinates from the selected input, in Å. Drag to rotate; use
-        the zoom controls. Bonds are inferred for display.
+        {optimization
+          ? "Initial input and latest printed coordinates"
+          : "Starting coordinates from the selected input"}
+        , in Å. Drag to rotate; use the zoom controls. Bonds are inferred for
+        display.
       </p>
       <div className="controls">
         <label>
@@ -156,11 +161,15 @@ export function GeometryViewer({
           >
             {systems.map((s) => (
               <option key={s} value={s}>
-                {s === "complex"
-                  ? "Candidate–TFA complex"
-                  : s === "tfa"
-                    ? "Neutral TFA"
-                    : "Isolated candidate"}
+                {s === "initial"
+                  ? "Initial input"
+                  : s === "latest"
+                    ? "Latest printed positions"
+                    : s === "complex"
+                      ? "Candidate–TFA complex"
+                      : s === "tfa"
+                        ? "Neutral TFA"
+                        : "Isolated candidate"}
               </option>
             ))}
           </select>

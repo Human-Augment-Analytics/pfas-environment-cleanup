@@ -11,6 +11,7 @@ from pathlib import Path
 
 from dashboard.core import config as configuration
 from dashboard.core import execution, models
+from dashboard.core.chemistry import optimization
 from dashboard.core.chemistry.inputs import discover, dry_input, validate_references
 from dashboard.core.chemistry.preparation import digest, pseudo_names
 from dashboard.core.chemistry.results import read_calculation_result, write_entrypoint
@@ -202,7 +203,37 @@ class Manager:
             for identifier, (owner, system, path) in discover(
                 self.config.qe_inputs, self.candidates
             ).items()
+        ] + self.continuation_versions()
+
+    def continuation_versions(self) -> list[dict[str, str]]:
+        # Logs are inspected only when previewed, never on every dashboard poll.
+        return [
+            {
+                "input_id": optimization.CONTINUATION_PREFIX + task["id"],
+                "candidate": "tfa" if task["system"] == "tfa" else task["candidate"],
+                "system": task["system"],
+                "label": f"Latest ATOMIC_POSITIONS from task {task['id']}",
+            }
+            for task in self.store.tasks()
+            if task["kind"] == execution.TaskKind.QE
+            and task["status"] not in execution.ACTIVE_TASK_STATUSES
         ]
+
+    def continuation_source(
+        self, candidate: str, system: str, input_id: str
+    ) -> tuple[Path, str]:
+        task = self.store.get(input_id.removeprefix(optimization.CONTINUATION_PREFIX))
+        if (
+            task["kind"] != execution.TaskKind.QE
+            or task["status"] in execution.ACTIVE_TASK_STATUSES
+            or task["system"] != system
+            or (system != "tfa" and task["candidate"] != candidate)
+        ):
+            raise ValueError(
+                "Continuation requires a finished QE task for this candidate/system"
+            )
+        path = self.config.artifacts / task["id"] / execution.INPUT_FILE
+        return path, f"Latest ATOMIC_POSITIONS from task {task['id']}"
 
     def preview(
         self,
@@ -278,6 +309,8 @@ class Manager:
     ) -> tuple[Path, str]:
         if input_id is None:
             return self.input(candidate, system, tasks=tasks), "Prepared default"
+        if input_id.startswith(optimization.CONTINUATION_PREFIX):
+            return self.continuation_source(candidate, system, input_id)
         entry = discover(self.config.qe_inputs, self.candidates).get(input_id)
         owner = "tfa" if system == "tfa" else candidate
         if not entry or entry[:2] != (owner, system):
@@ -316,6 +349,8 @@ class Manager:
         path, label = self.preview_source(candidate, system, input_id, tasks)
         source = path.read_bytes()
         text = source.decode()
+        if input_id and input_id.startswith(optimization.CONTINUATION_PREFIX):
+            text = optimization.continuation(path.parent)
         validate_references(text)
         executed = dry_input(text) if kind == "estimate_ram" else text
         executed_hash = hashlib.sha256(executed.encode()).hexdigest()
