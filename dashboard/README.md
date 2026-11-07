@@ -1,251 +1,390 @@
-# Dashboard state
+# Dashboard architecture
 
-Updated: 2026-10-23. This document describes the current implementation and the
-remaining deployment work. See the [full user guide](../docs/dashboard.md) for
-detailed controls and workflows.
+**Draft for review: proposed organization, not yet implemented.** This document
+walks through the intended modules from the inside out: first the work they do,
+then the machinery supporting that work, and finally the interfaces around it.
+The paths below describe the proposed layout. No code has moved as part of this
+README update. The [current implementation writeup](../docs/dashboard-architecture.md)
+provides background on the preceding refactor.
 
-## Current capabilities
+## Start with the work: four job kinds
 
-| Area | Implemented behavior |
-| --- | --- |
-| Candidate browser | All 1,000 clusters, representative diagrams, tiles and rows, ID filters, descriptor search, sorting, and shared selection. |
-| RAM display | Candidate and complex values by MPI count; Slurm defaults to total estimates at 16 processes, with sorting and filtering. |
-| Preparation | Generate isolated-candidate, candidate–TFA complex, and neutral TFA inputs without automatically running QE. |
-| Geometry | Inspect prepared inputs and run geometries. |
-| Input versions | Discover external input versions for individual previews and runs. |
-| Execution | Native/Apptainer local tasks; on Slurm, preparation in the dashboard allocation and independent QE jobs with persistent monitoring. |
-| Queue | Persistent attempts and batches, local resource budgets, Slurm job IDs/states, pause, cancellation, retry, logs, and artifacts. |
-| SLURM export | Download selected candidate and complex calculations, copied pseudopotentials, a manifest, and submission scripts as a ZIP. |
-| Static snapshot | Export a browsable snapshot without execution controls. |
+The dashboard lets a user generate diagrams, prepare chemistry inputs, estimate
+memory, and run Quantum ESPRESSO. Each job kind gets one named Python module in
+`core/jobs`. The user requests these actions separately; preparation does not
+automatically trigger estimation or production calculations.
 
-Browsing does not start calculations. Preparation, RAM estimation, and production
-QE runs are separate actions. The dashboard does not automatically orchestrate
-all stages or aggregate adsorption energies.
+### Diagram generation — `core/jobs/diagram.py`
 
-## Run locally
+The core operation takes a candidate SMILES string and an output path and
+renders a molecule image using RDKit. Its output is an image the browser can
+show alongside the candidate.
 
-For a PACE-hosted dashboard with a local browser, use the
-[Slurm launch and SSH port-forwarding guide](../docs/pace-dashboard.md).
+This needs the chemistry environment, so the operation runs in a subprocess
+rather than importing that environment into the HTTP server. The surrounding
+job code supplies the candidate, chooses the destination, and registers the
+image as an artifact. On PACE, the subprocess runs within the dashboard's
+allocation.
 
-Run these commands from the repository root, with uv and Node/npm installed:
+### Input preparation — `core/jobs/preparation.py`
 
-```bash
-# Browsing, diagrams, and the web server:
-uv run --no-default-groups --group web python -m dashboard
+The core operation turns a candidate description into prepared structures and
+QE inputs for the isolated candidate, candidate–TFA complex, and TFA reference.
+It delegates the scientific preparation to the existing chemistry pipeline:
 
-# Include the chemistry tools needed for preparing inputs:
-uv run --no-default-groups --group web --group preparation python -m dashboard
-```
+- `run_adsorption_case.py`: `get_mode_settings`, `prepare_from_smiles`,
+  `build_molecular_complex_cif`, and `patch_qe_input`.
+- `smiles_to_qe.py`: `run_cif2cell` and the conversion functions already used
+  by `prepare_from_smiles`.
 
-Open `http://localhost:8000`. The launcher installs the locked frontend
-dependencies, builds the frontend, and starts FastAPI. `--dev` starts Vite for
-frontend development. Restart the backend after Python changes; rebuild/reload
-the frontend when using the production launcher.
+This module is the dashboard's adapter to those functions. It does not
+reimplement their chemistry. Its inputs include the candidate SMILES,
+pseudopotentials, preparation settings, and an optional reusable TFA reference.
+Its outputs are prepared input files, structures, and preparation provenance.
 
-For local container execution, build and configure the image explicitly:
+The supporting job code creates the attempt directory, starts the chemistry
+subprocess, and registers the resulting files. Preparation runs locally or
+inside the dashboard allocation. It ends with inspectable inputs, allowing the
+user to review or edit them before choosing the next action.
 
-```bash
-mkdir -p .container-build
-apptainer build --fakeroot .container-build/chemistry.sif containers/chemistry.def
-export PFAS_APPTAINER_IMAGE="$PWD/.container-build/chemistry.sif"
-uv run --no-default-groups --group web python -m dashboard
-```
+### RAM estimation — `core/jobs/ram_estimation.py`
 
-The definition builds QE 7.6 with Open MPI. Its image test performs a small
-two-process initialization. Local Apptainer jobs require verified memory-limit
-support; native jobs have no hard memory cap. Native jobs execute one at a time,
-although an individual QE job can use multiple MPI processes. Verified container
-jobs can overlap within the queue's CPU and memory budgets.
+The core operation takes a prepared QE input, makes an initialization-only copy,
+and interprets the memory estimates from QE's output. It retains the original
+input separately from the transformed input used for estimation.
 
-## SLURM ZIP export workflow
+A usable result requires the expected memory report and no disqualifying QE
+error. Initialization-only exit codes, including 255, need this interpretation;
+they cannot be classified using the exit code alone. For multi-rank Slurm
+estimates, the reported MPI process count must match the requested count.
 
-1. Sort by **RAM · Complex / Ascending**, check that candidate and complex RAM
-   values exist, and select the desired molecules. Selection of the eight lowest
-   values is currently manual.
-2. Choose **Export SLURM batch · candidate + complex**.
-3. Review process count, memory sizing, walltime, partition, account, and QOS.
-4. Preview the exact inputs and calculated memory requests, then download the ZIP.
-5. Transfer the ZIP and the separately built SIF to the cluster, extract the ZIP,
-   and run `bash submit.sh /absolute/path/to/chemistry.sif` from the extracted
-   `pfas-slurm-batch/` directory once the cluster runtime is available.
+The module owns that input transformation and result validation. It reuses the
+QE launcher rather than defining a second execution engine. The surrounding
+batch code can request several MPI counts and associate each result with the
+input and rank count that produced it.
 
-Eight selected molecules produce **16 separate jobs**: an isolated candidate and
-a TFA complex for each. **Include one isolated TFA reference** adds a seventeenth
-job. It is optional in the export; its energy is needed when calculating
-adsorption energies from complex and isolated-system results.
+On Slurm, grouped checks normally run sequentially at 16, 4, and 1 MPI processes
+in one allocation sized for the largest count. Each check has its own result.
+A failed check does not prevent later checks, and retry selects unsuccessful
+input/rank combinations.
 
-The ZIP contains:
+### Production QE — `core/jobs/qe.py`
 
-```text
-pfas-slurm-batch/
-  README.txt
-  manifest.json
-  submit.sh
-  run.sbatch
-  runs/
-    <candidate>-candidate/
-      input.in
-      Pseudopotentials/
-      Outputs/
-    <candidate>-complex/
-      ...
-    tfa-tfa/                 # Only when requested
-      ...
-```
+The core operation runs `pw.x` against an already prepared input and interprets
+its scientific completion evidence. This module owns QE command construction
+and the checks for completion, convergence, and energy evidence. RAM estimation
+reuses its launcher construction.
 
-The image is deliberately not included in the ZIP. Each calculation uses its
-own directory and copies of the referenced pseudopotentials. Export uses the
-latest successful prepared inputs, including accepted edits to those files;
-the external input-version selector is not part of bulk SLURM export.
+A successful process or scheduler exit does not by itself establish a converged
+calculation. Output interpretation distinguishes program completion from SCF
+convergence and, where applicable, geometry optimization completion.
 
-Default scheduling values are **8 MPI processes**, **18 hours**, partition
-`ice-cpu`, account `coc`, and QOS `coc-ice`. They are editable defaults, not a
-confirmation that a particular PACE allocation currently accepts them. Blank
-partition/account/QOS fields omit the corresponding submission flags.
+The surrounding code supplies captured inputs, pseudopotentials, resource
+requests, and the selected runtime. It launches the command locally or submits
+it to Slurm, then passes the output back for interpretation.
 
-Each job requests one node, one launcher task, and N CPUs with
-`--ntasks=1 --cpus-per-task=N`. Inside the container, Open MPI launches N ranks
-with one thread per rank. Generated launcher options select Open MPI 4's local
-isolated launcher, disable its Slurm resource discovery, and disable MPI binding.
-This is a single-node container MPI design, not a multi-node launcher.
+Running a prepared input does not invoke the complete adsorption CLI. That CLI
+combines preparation and execution and could regenerate an edited input. The
+dashboard preserves those separate actions and does not automatically aggregate
+adsorption energies.
 
-`submit.sh` calls `sbatch` once per calculation and records accepted IDs in
-`jobs.tsv`. It refuses to repeat submission if that file is nonempty. After a
-partial submission failure, inspect those IDs and submit only the remaining
-commands manually. Each run directory receives `pw.out`, `pw.err`, SLURM logs,
-and QE scratch data under `Outputs/`.
+## Shared chemistry support
 
-### Automatic RAM sizing
+The jobs need to agree on what an input contains before they can preview,
+capture, or run it.
 
-Automatic sizing is the default, with **50% headroom**, rounding up to whole
-GiB, and a minimum reservation of 1 GiB. Memory is requested with `--mem` for
-each job independently.
+`core/chemistry/inputs.py` owns shared input discovery, validation,
+pseudopotential-name parsing, and hashing. RAM-specific transformations and
+report interpretation belong to the RAM job module. Generic utilities move
+here from preparation so callers can use them without depending on that job.
 
-Only successful RAM estimates matching the calculation's source-input and
-pseudopotential hashes qualify. The newest usable estimate at the selected MPI
-count is preferred over a one-process estimate:
+`core/chemistry/geometry.py` reads coordinates for input previews and result
+inspection. It interprets existing files without executing scientific work.
 
-- For matching MPI counts, use QE's reported total; if absent, multiply its
-  maximum per-process estimate by that matching process count.
-- Otherwise, use a one-process estimate directly as the **total job baseline**,
-  preferring its total report and falling back to its per-process report.
-  **Do not multiply this serial baseline by the requested MPI count.**
-- Add the selected headroom, then round up. A 12 GiB baseline with the default
-  50% headroom requests 18 GiB for either an 8-rank or a 16-rank job.
+Both modules support job behavior and read-only browsing. Neither owns a queue,
+launches a workflow at import time, or duplicates scientific preparation.
 
-These are planning estimates, not measured peak usage or guaranteed memory
-bounds. The browser's historical RAM display can remain populated even when
-an estimate no longer matches the input being exported. Preview shows the
-estimate source, sizing basis, and reservation. **Manual** sizing instead uses
-one entered memory value for every exported job.
+## Turning job behavior into recorded attempts
 
-Changes to inputs, pseudopotentials, settings, or the selected estimate after
-preview require another preview before download. Any unavailable calculation
-blocks the complete ZIP; the UI lists reasons beside the download button.
+The four job modules describe the work. Shared infrastructure gives each
+requested attempt a lifecycle, an execution location, and a durable record.
 
-During the initial export attempt, the optional TFA input existed but had no RAM
-estimate. That blocked automatic export when TFA was included. Uncheck the TFA
-reference and preview again to export only candidate/complex jobs, estimate TFA
-from its entry, or explicitly select manual memory. This was a missing estimate,
-not a permanent inability to run TFA.
+### Task manager and batches
 
-### PACE runtime issue still open
+`core/jobs/manager.py` accepts requests, validates previews, captures reviewed
+inputs, and coordinates task state. It replaces the less descriptive
+`tasks.py` name. Job-specific commands and interpretation move into the four
+job modules; shared admission and lifecycle behavior stay here.
 
-The exported `run.sbatch` currently invokes **`apptainer` by name**. There is no
-automatic Singularity fallback or module-load command in that script.
-`PFAS_APPTAINER` configures the local dashboard adapter; it does not rewrite the
-exported cluster launcher.
+Captured input and pseudopotential copies let a queued calculation use exactly
+what the user reviewed, even if source files change while it waits. Hashes
+identify those copies and let estimate selection check provenance.
 
-The last reported check on `login-ice-gnr-1` was:
+`core/jobs/batches.py` applies existing review, submission, cancellation, and
+retry behavior to selections of tasks. A batch groups user actions; it does
+not automatically chain preparation, estimation, and production into a new
+scientific pipeline.
+
+### Runtimes and local execution
+
+A job kind identifies the work. A runtime identifies its executable environment:
+native tools or Apptainer. An execution target identifies whether the dashboard
+manages the process locally or submits an independent Slurm allocation.
+
+`core/runtimes/local.py` constructs runtime commands and determines local
+resource limits. `core/runtimes/cpu.py` applies CPU affinity to local
+subprocesses. `core/runtimes/container.py` verifies and supervises workstation
+container memory isolation.
+
+`core/jobs/processes.py` launches local commands, drains timestamped logs,
+samples memory, and handles Stop, timeouts, and cleanup. These functions preserve
+responsiveness and release resources when a process or observer fails.
+Diagram and preparation jobs on PACE use this local path inside the dashboard
+allocation. Independent Slurm QE jobs bypass the local process monitor and
+workstation cgroup supervisor.
+
+### Independent Slurm jobs
+
+`core/slurm/scheduler.py` submits and observes independent allocations.
+`core/slurm/export.py` constructs ordinary job scripts and the existing portable
+ZIP exports. Live and exported jobs reuse the container MPI launcher.
 
 ```text
-module spider apptainer
-Lmod: Unable to find: "apptainer".
+accepted task → sbatch → Apptainer → image MPI → pw.x
+                  ↑                              ↓
+             squeue/sacct                logs and exit markers
+                  └──── dashboard imports ───────┘
 ```
 
-This establishes that the module lookup failed in that session. It does not
-establish whether a container executable is already on PATH, is provided under
-another module name, or is available on the allocated compute node. The next
-deployment check is to inspect `command -v apptainer`, `command -v singularity`,
-and the supported runtime/module setup on ICE, then validate it in a compute-node
-allocation. Do not assume `module load apptainer` will work.
+Native jobs use the corresponding native QE command. New submissions start the
+calculation directly: they do not launch a dashboard Python worker or access
+SQLite on the compute node. Slurm owns scheduling, allocation, job lifetime,
+and resource enforcement.
 
-Actual PACE execution remains unverified in this development session. A ZIP
-download or accepted `sbatch` submission does not establish successful QE
-execution. Confirm runtime startup, MPI rank count, convergence, and `JOB DONE`
-in a real job before scaling up.
+The script checks captured input checksums and writes small start/finish
+markers. The dashboard imports output after an attempt finishes. Markers also
+allow it to import individual RAM checks while the shared allocation continues.
 
-## Persistence and configuration
+Submission intent and a unique job name are persisted before invoking `sbatch`.
+If its response is lost, the dashboard searches for that job instead of
+submitting another expensive calculation. Independent jobs can continue while
+the dashboard is stopped and be reconnected on restart.
 
-| Setting | Default / purpose |
-| --- | --- |
-| `PFAS_EXECUTION` | `auto`; selects Slurm submission within an allocation when scheduler commands are available. `local` or `slurm` override it. |
-| `PFAS_ARTIFACTS` | `.dashboard/`; includes `tasks.sqlite`, task directories, and artifacts. |
-| `PFAS_QE_INPUTS` | `qe_inputs/`; external input versions. |
-| `PFAS_PSEUDOS` | `qespresso_pipeline/Pseudopotentials/`. |
-| `PFAS_CHEM_PYTHON` | Override the chemistry subprocess interpreter. |
-| `PFAS_PW`, `PFAS_MPI` | Local native QE and MPI executable overrides. |
-| `PFAS_APPTAINER` | Local container executable override, default `apptainer`. |
-| `PFAS_APPTAINER_IMAGE` | Local built SIF path; no default configured image. |
-| `PFAS_PREPARE_TIMEOUT` | Preparation timeout in seconds, default 900. |
+### Results and persistence
 
-Queue settings, batches, and task history persist in SQLite. Waiting local work
-can resume on restart; previously running attempts become interrupted and need
-explicit retry. Back up the artifact directory together with its database.
-Reading state for inspection should use a read-only SQLite connection rather
-than constructing a task manager, whose initialization performs recovery.
+`core/jobs/results.py` assembles common exit/error records and provenance logs.
+Scientific interpretation stays in `qe.py` and `ram_estimation.py`, keeping a
+single dispatcher from becoming the home for every job's rules.
 
-## Source map
+`core/jobs/persistence.py` stores task history, queue settings, batches,
+artifacts, and scheduler identifiers in SQLite. Recovery reconnects independent
+Slurm work; previously running local attempts are interrupted and require an
+explicit retry. Runtime state remains under the configured artifact directory,
+with repository `.dashboard/` as the default.
 
-| Location | Responsibility |
-| --- | --- |
-| `app/` | HTTP application and CLI adapters. Parsers live in `get_parser()` and pass keyword arguments to core entry points. |
-| `core/main.py`, `core/config.py`, `core/execution.py`, `core/models.py` | Startup, configuration, namespaced constants, and record types. |
-| `core/chemistry/` | Adapter to existing pipeline preparation functions, input validation, geometry, and reading QE output. |
-| `core/jobs/` | Existing local queue, batch review, SQLite history, and local process control. |
-| `core/runtimes/` | Native/Apptainer commands and workstation CPU/memory isolation. |
-| `core/slurm/` | Existing ZIP exporter, direct job scripts, and scheduler monitoring. |
-| `test/` | Dashboard regression tests and opt-in chemistry/container smoke checks. |
-| `../web/frontend/` | React UI and frontend tests. |
+`core/models.py` describes shared records. `core/execution.py` provides
+namespaced constants and status enums. `core/config.py` owns explicit paths
+and configuration. These modules describe the existing system rather than
+introducing another execution framework.
 
-New Slurm jobs execute `apptainer exec ... mpirun ... pw.x` directly. They do
-not invoke a Python compute worker or pass a dashboard manifest to the compute
-node. The tiny top-level `slurm_worker.py` entry point is only compatibility for
-scripts submitted by the previous version; see the
-[architecture writeup](../docs/dashboard-architecture.md) for removal criteria.
+## Interfaces around the work
 
-The `slurm` task target submits independent jobs when scheduler support is
-enabled; `slurm-array` remains unsupported. The ZIP preview/export endpoints
-remain available and never submit jobs. See the [PACE guide](../docs/pace-dashboard.md)
-for grouped RAM estimation, cancellation, and restart recovery.
+### Python HTTP and command-line adapters
 
-## Validation and remaining work
+`app/web/server.py` owns the FastAPI application factory, HTTP request models,
+route adapters, and error translation. It calls core functions for validation,
+chemistry, task management, and results. Core job modules do not import the
+HTTP server or frontend.
 
-Previous implementation-session checks passed: **32 SLURM export tests**, frontend
-build, and Python lint. An earlier broader dashboard run passed 132 tests with
-8 skipped, before the final memory-sizing changes. The container launcher also
-started eight MPI ranks locally; that check was not a PACE QE production run.
-These are historical results, not checks rerun for this documentation update.
+`app/web/cli.py` parses serve/export options. `app/jobs` contains diagram and
+preparation subprocess adapters plus temporary legacy-worker compatibility.
+`app/runtimes` contains the CPU and container-supervisor adapters.
 
-Relevant checks from the repository root:
+Each CLI constructs its parser in `get_parser()` and passes parsed options as
+explicit keyword arguments into a keyword-only core `main(*, ...)`. Core never
+parses command-line arguments or reads `sys.argv`. A direct `pw.x` command needs
+no additional Python job CLI.
 
-```bash
-.venv/bin/python -m pytest dashboard/test/test_slurm_export.py -q
-.venv/bin/python -m pytest dashboard/test -q
-.venv/bin/ruff check dashboard dashboard/test/test_slurm_export.py
-npm --prefix web/frontend run build
-npm --prefix web/frontend test
+### Frontend and browsing
+
+The React interface lives under `web/frontend`. Candidate browsing, filtering,
+selection, geometry inspection, task history, and run controls call the HTTP
+API. Candidate loading lives in `core/candidates.py`; the web interface presents
+that data and the records produced by the jobs.
+
+Reading data does not queue calculations. Diagram generation is a separate
+lightweight job for missing images. Preparation, RAM estimation, and production
+QE require their own requested actions.
+
+All TSX, TypeScript, CSS, HTML, npm configuration, and frontend tests stay in
+frontend directories, outside the Python `app` and `core` trees.
+
+### Web startup, snapshots, and exports
+
+`core/web/main.py` orchestrates startup and static export.
+`core/web/snapshot.py` assembles read-only browser data from existing candidate
+records and artifacts. Neither starts chemistry work to populate an export.
+
+- Development starts Vite and the Python API, with Vite proxying API requests.
+- Live serving builds the frontend and serves it through FastAPI alongside
+  the API routes.
+- Static export builds snapshot mode and assembles the exported dataset with
+  the page. Execution controls are unavailable in that mode.
+- Pages CI packages the snapshot frontend and dataset without a running server.
+
+The ZIP exporter serves a different purpose: it packages selected prepared
+inputs, pseudopotentials, and submission scripts for manual cluster submission.
+Downloading a ZIP does not submit jobs.
+
+## Proposed file tree
+
+The tree makes the four job kinds visible while keeping their shared execution
+support and interfaces separate. Package initializer files are omitted below.
+
+```text
+dashboard/
+  README.md
+  __main__.py                  public python -m dashboard entry point
+  slurm_worker.py              temporary compatibility for old submitted jobs
+
+  app/                         Python interface adapters
+    jobs/
+      diagram.py
+      preparation.py
+      legacy_worker.py
+    runtimes/
+      cpu.py
+      container.py
+    web/
+      cli.py
+      server.py
+
+  core/                        Python implementation
+    jobs/
+      diagram.py               molecule image generation
+      preparation.py           adapter to existing preparation pipeline
+      ram_estimation.py        initialization-only inputs and memory results
+      qe.py                    QE commands and scientific completion checks
+      manager.py               shared task admission and lifecycle
+      batches.py               bulk actions and selective retry
+      persistence.py           SQLite records and recovery
+      processes.py             local subprocess monitoring and cleanup
+      results.py               common results and provenance logs
+    chemistry/
+      inputs.py                shared input validation, discovery, and hashes
+      geometry.py              coordinate parsing and previews
+    runtimes/
+      local.py                 native/container commands and local limits
+      cpu.py                   CPU-affinity implementation
+      container.py             workstation memory supervisor
+    slurm/
+      scheduler.py             submission, polling, cancellation, recovery
+      export.py                direct shell scripts and portable ZIPs
+      legacy_worker.py         old manifest translation
+    web/
+      main.py                  live startup and static-export workflow
+      snapshot.py              read-only browser dataset
+    candidates.py
+    config.py
+    execution.py
+    models.py
+
+  web/                         frontend source and exported web assets
+    frontend/
+      src/                     React, TypeScript, and CSS
+      tests/                   frontend tests
+      index.html
+      package.json
+      package-lock.json
+      tsconfig.json
+      vite.config.js
+    snapshot/                  exported dataset and images
+    public/                    assembled standalone static site
+
+  test/                        Python regression and integration tests
 ```
 
-In the restricted agent environment, FastAPI's in-process test client previously
-required execution outside the sandbox to avoid hanging.
+### Source versus generated state
 
-Still unimplemented or unverified:
+Paths below are relative to `dashboard` unless explicitly marked otherwise.
 
-- Resolve and verify the container runtime on PACE ICE.
-- Run the exported launcher and QE successfully in a PACE allocation.
-- Automatic SSH transfer/submission from the dashboard.
-- Validate the new Slurm monitoring, cancellation, and shared-storage result import on PACE.
-- SLURM array export and multi-node MPI.
-- Automatic selection of the eight smallest calculations.
-- Automatic adsorption-energy aggregation from candidate, complex, and TFA runs.
+| Location | Contents and treatment |
+| --- | --- |
+| `app/`, `core/`, `test/` | Python source and tests. |
+| `web/frontend/src/`, `web/frontend/tests/` | Frontend source and tests. |
+| Frontend package manifests and build configuration | Tracked dependency/build definitions. |
+| `web/frontend/node_modules/`, `web/frontend/dist/`, caches | Ignored installed dependencies and generated builds. |
+| `web/snapshot/` | Exported browser dataset; preserve existing tracking/ignore policy during the move. |
+| `web/public/` | Ignored generated standalone site; an explicit export destination can override this location. |
+| Repository `.dashboard/` by default | Runtime database, captured inputs, logs, and artifacts; configurable with `PFAS_ARTIFACTS`. |
+
+Frontend moves do not change database schemas, configured artifact paths, or
+existing task-directory layouts.
+
+## Why the supporting pieces remain
+
+| Supporting component | Reason it exists |
+| --- | --- |
+| Shared input and geometry readers | Jobs and browsing need consistent interpretation of the same files. |
+| Manager and batches | Accepted tasks need queueing, resource admission, bulk actions, and selective retry. |
+| Persistence | Tasks and scheduler IDs must survive dashboard restarts. |
+| Local process helpers | Local work needs cancellation, timeouts, logs, and cleanup. |
+| Runtime helpers | The same job can use native tools or an image without duplicating its behavior. |
+| Slurm adapter | Independent jobs need submission, status reporting, cancellation, and reconciliation. |
+| Result helpers | Attempts share exit/provenance fields while their scientific checks differ. |
+| HTTP and frontend adapters | Users need to inspect inputs and explicitly request work. |
+| ZIP and static exporters | Preserve existing manual-submission and read-only publication workflows. |
+
+Local resource management, ZIP export, and static publication are existing
+product features rather than requirements for a minimal Slurm submit button.
+The proposed organization retains them without adding new layers of execution.
+
+## Compatibility and adoption
+
+The proposed changes move repository-level `web` into `dashboard/web` and rename
+internal Python modules. Update imports, subprocess paths, static serving,
+export destinations, npm commands, ignore rules, CI, and the PACE launcher
+together when implementing them.
+
+Preserve `python -m dashboard`, existing HTTP routes and payloads, persisted
+job kinds (`diagram`, `prepare`, `estimate_ram`, `qe`), and runtime artifacts.
+The proposed Uvicorn factory becomes
+`dashboard.app.web.server:create_app`. Internal imports adopt the new names;
+there is no forwarding module for every moved file and no database migration.
+
+Old submitted scripts may still invoke `python -m dashboard.slurm_worker`.
+Retain that entry point and its legacy adapter until those queued/running jobs
+have drained. Retain legacy result reading until no unimported old results
+remain. New jobs continue to use direct shell launches.
+
+## Adding code within this organization
+
+Start with the behavior being added. For a new job kind, put its specific input,
+command, and result rules in one clearly named `core/jobs` module. Connect it to
+the existing lifecycle and reuse the runtime and scheduler functions. Do not
+create a new queue or duplicate scientific preparation.
+
+Add an `app/jobs` parser only when a subprocess entry point is necessary. For
+an HTTP action, put request/response adaptation in `app/web`, call core for the
+work, and add frontend controls under `web/frontend/src`.
+
+Keep functions short and typed, constants namespaced, and logical phases
+explained with leading comments. The architecture walkthrough should introduce
+each module's core work before explaining its dependencies and wrappers.
+
+## Validation before adopting the layout
+
+- Run the existing Python suite, lint, formatting checks, and type checks.
+- Verify moved parsers dispatch keywords correctly and imports start no work.
+- Check the PACE application-factory import and launcher shell syntax.
+- Run frontend tests, formatting checks, and live/snapshot builds.
+- Verify live static serving, snapshot export, and Pages artifact locations.
+- Search maintained source and configuration for obsolete paths.
+- Preserve coverage for grouped RAM checks, partial failures, timeouts,
+  checksums, cancellation, and submission/restart recovery.
+
+Local checks cannot establish the actual PACE runtime and MPI configuration;
+those still require a real cluster allocation. The
+[user guide](../docs/dashboard.md) and [PACE guide](../docs/pace-dashboard.md)
+remain the operational references and will need their paths updated when the
+proposed code moves are implemented.

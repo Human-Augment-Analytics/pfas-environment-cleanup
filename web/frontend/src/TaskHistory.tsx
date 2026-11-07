@@ -24,6 +24,9 @@ export function TaskHistory({
             {t.kind} · {t.system} · {t.status}
           </strong>
           <p>
+            Task ID: <code>{t.id}</code>
+          </p>
+          <p>
             {t.created}{" "}
             {t.elapsed_seconds !== undefined &&
               `· ${t.elapsed_seconds.toFixed(1)} seconds`}{" "}
