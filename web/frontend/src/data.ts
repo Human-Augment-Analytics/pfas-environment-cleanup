@@ -23,14 +23,38 @@ export type InputVersion = {
   label: string;
 };
 export type RAMValue = { value: string; unit: string; bytes: number };
+export type SchedulerRecord = {
+  job_id: string | null;
+  state: string;
+  reason: string;
+  token: string;
+};
+export type ChainEvent = {
+  timestamp: string;
+  action: string;
+  error: string;
+  detail: string;
+  outcome: string;
+  enabled?: boolean;
+  paused?: boolean;
+  active_task_id?: string | null;
+  dispatcher?: SchedulerRecord | null;
+};
+export type ComputeChainState = {
+  events: ChainEvent[];
+  enabled: boolean;
+  paused: boolean;
+  active_task_id: string | null;
+  dispatcher: SchedulerRecord | null;
+  last_attempt: string | null;
+  error: string;
+};
 export type Task = {
+  owner?: string;
+  scheduler_settings?: SchedulerSettings;
   target?: string;
-  scheduler?: {
-    job_id: string | null;
-    state: string;
-    reason: string;
-    token: string;
-  };
+  scheduler?: SchedulerRecord;
+  chain_dispatchers?: SchedulerRecord[];
   version?: string;
   ram_estimate?: { per_process: RAMValue | null; total: RAMValue | null };
   runtime?: string;
@@ -206,6 +230,8 @@ export type Batch = BatchRequest & {
   task_ids: string[];
 };
 export type QueueData = {
+  chain: ComputeChainState;
+  ordered_ids: string[];
   cpu_capacity: number;
   settings: QueueSettings;
   runtimes: RuntimeInfo;

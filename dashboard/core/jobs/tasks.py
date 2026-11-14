@@ -1,3 +1,4 @@
+import getpass
 import hashlib
 import json
 import logging
@@ -21,11 +22,13 @@ from dashboard.core.jobs.persistence import Store, now
 from dashboard.core.jobs.processes import execute, tail
 from dashboard.core.runtimes.cpu import compute_cpus
 from dashboard.core.runtimes.local import Runtimes, memory_ceiling
+from dashboard.core.slurm.chaining import Chain
 from dashboard.core.slurm.scheduler import Scheduler
 from dashboard.core.slurm.scheduler import settings as scheduler_settings
 
 QUEUE_FIELDS = (
     "id",
+    "owner",
     "kind",
     "candidate",
     "system",
@@ -39,6 +42,7 @@ QUEUE_FIELDS = (
     "resources",
     "target",
     "scheduler",
+    "chain_dispatchers",
     "scheduler_settings",
     "batch_id",
     "position",
@@ -60,17 +64,24 @@ class Manager:
         return logging.getLogger(execution.APPLICATION_LOGGER_NAME)
 
     def __init__(
-        self, config: Config, candidates: dict[str, models.CandidateRecord]
+        self,
+        config: Config,
+        candidates: dict[str, models.CandidateRecord],
+        *,
+        recover: bool = True,
     ) -> None:
         self.config, self.candidates = config, candidates
         self.scheduler_enabled = config.scheduler_enabled
         config.artifacts.mkdir(parents=True, exist_ok=True)
-        self.store = Store(config.artifacts / "tasks.sqlite")
+        self.store = Store(
+            config.artifacts / configuration.TASK_DATABASE_FILE, recover=recover
+        )
         self.chem_env = self.chemistry_environment()
         # Initialize shared synchronization before adapters and their threads.
         self.initialize_state()
         self.runtimes = Runtimes(config)
         self.batches, self.scheduler = Batches(self), Scheduler(self)
+        self.chain = Chain(self)
         self.settings = self.restore_settings()
         self.thread = threading.Thread(target=self.worker, daemon=True)
         self.scheduler_thread = threading.Thread(
@@ -88,7 +99,7 @@ class Manager:
 
     def initialize_state(self) -> None:
         self.wake, self.stop = threading.Event(), threading.Event()
-        self.guard = threading.RLock()
+        self.guard = self.store.mutation_lock
         self.running = {}
         self.previews = {}
 
@@ -660,6 +671,7 @@ class Manager:
         # This is the persisted record's schema; no I/O occurs while assembling it.
         task.update(
             id=uuid.uuid4().hex,
+            owner=getpass.getuser(),
             status="queued",
             created=now(),
             started=None,
@@ -757,6 +769,16 @@ class Manager:
             for task in tasks:
                 self.cancel_task(task["id"])
             return {"canceled_count": len(tasks)}
+
+    def remove_waiting(self, id: str) -> None:
+        # A stale browser view must never turn removal into active-job cancellation.
+        with self.guard:
+            task = self.store.get(id)
+            if task["status"] != execution.TaskStatus.QUEUED or task.get("scheduler"):
+                raise ValueError("Task was selected for execution; refresh the queue")
+            if task.get("target") != execution.ExecutionMode.SLURM:
+                raise ValueError("Only waiting Slurm tasks can be removed here")
+            self.store.update(id, status=execution.TaskStatus.CANCELED, ended=now())
 
     def validate_resource_budget(
         self, runtime: str, cpus: int, memory_gib: float, target: str
@@ -860,6 +882,8 @@ class Manager:
         tasks = self.store.tasks()
         # No log tails, geometries, or raw input text in queue polling.
         return {
+            "chain": self.chain.data(),
+            "ordered_ids": self.store.ordered_ids(),
             "settings": self.settings,
             "cpu_capacity": len(compute_cpus()),
             "runtimes": self.runtimes.availability(),

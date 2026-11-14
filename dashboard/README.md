@@ -1,5 +1,9 @@
 # Dashboard architecture
 
+For the implemented sequential Slurm queue, see the
+[compute chaining guide](../docs/compute-chaining.md) and its
+[repository architecture assessment](../docs/compute-chaining-assessment.md).
+
 **Draft for review: proposed organization, not yet implemented.** This document
 walks through the intended modules from the inside out: first the work they do,
 then the machinery supporting that work, and finally the interfaces around it.

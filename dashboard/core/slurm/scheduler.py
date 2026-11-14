@@ -28,6 +28,7 @@ SETTINGS_KEYS = (
     "memory_mode",
     "headroom_percent",
 )
+CONFIRMED_REJECTION_REASON = "Operator confirmed Slurm rejected this submission"
 MAX_HEADROOM_PERCENT = 1000
 SQUEUE_FORMAT = "--format=%i|%.64j|%T|%R"
 SACCT_FORMAT = "--format=JobIDRaw,JobName%64,State%40,ExitCode"
@@ -221,6 +222,12 @@ def reconcile_record(
     stored: models.SchedulerRecord, states: JobStates, names: JobNames
 ) -> models.SchedulerRecord:
     record = stored.copy()
+    if (
+        record["job_id"] is None
+        and record["state"] == execution.SlurmState.FAILED
+        and record["reason"] == CONFIRMED_REJECTION_REASON
+    ):
+        return record
     if record["job_id"] is None:
         matches = names.get(execution.SLURM_JOB_PREFIX + record["token"], set())
         if len(matches) == 1:
@@ -349,6 +356,8 @@ class Scheduler:
         return waiting
 
     def submit_waiting(self) -> None:
+        if self.manager.store.chain()["enabled"]:
+            return
         waiting = self.waiting_tasks()
         submissions = 0
         while (
@@ -369,9 +378,11 @@ class Scheduler:
                 waiting = [task for task in waiting if task not in group]
             submissions += int(self.submit_group(group))
 
-    def submit_group(self, tasks: list[models.TaskRecord]) -> bool:
+    def submit_group(
+        self, tasks: list[models.TaskRecord], *, chain: bool = False
+    ) -> bool:
         try:
-            self.submit(tasks)
+            self.submit(tasks, chain=chain)
             return True
         except (OSError, ValueError) as error:
             # Setup failures have no Slurm job to reconcile or cancel.
@@ -386,11 +397,22 @@ class Scheduler:
             return False
 
     def claim_submission(
-        self, tasks: list[models.TaskRecord], record: models.SchedulerRecord
+        self,
+        tasks: list[models.TaskRecord],
+        record: models.SchedulerRecord,
+        *,
+        chain: bool = False,
     ) -> bool:
         manager = self.manager
-        with manager.guard:
-            if manager.settings["paused"] or manager.stop.is_set():
+        with manager.store.mutation_lock:
+            if manager.store.chain()["enabled"] and not chain:
+                return False
+            paused = (
+                manager.store.chain()["paused"]
+                if chain
+                else manager.store.settings(manager.settings)["paused"]
+            )
+            if paused or manager.stop.is_set():
                 return False
             for task in tasks:
                 current = manager.store.get(task["id"])
@@ -409,7 +431,11 @@ class Scheduler:
                 manager.store.update(task["id"], scheduler=record, artifacts=artifacts)
         return True
 
-    def submit(self, tasks: list[models.TaskRecord]) -> None:
+    def submit(self, tasks: list[models.TaskRecord], *, chain: bool = False) -> None:
+        with self.manager.store.mutation_lock:
+            self.submit_locked(tasks, chain=chain)
+
+    def submit_locked(self, tasks: list[models.TaskRecord], *, chain: bool) -> None:
         token = uuid.uuid4().hex
         directory = self.manager.config.artifacts / (
             execution.SLURM_DIRECTORY_PREFIX + token
@@ -426,7 +452,7 @@ class Scheduler:
             submitted=now(),
             command=arguments,
         )
-        if not self.claim_submission(tasks, record):
+        if not self.claim_submission(tasks, record, chain=chain):
             return
         self.run_submission(record)
         for task in tasks:
@@ -471,12 +497,19 @@ class Scheduler:
         )
 
     def poll(self, force: bool = False) -> None:
+        with self.manager.store.mutation_lock:
+            self.poll_locked(force)
+
+    def poll_locked(self, force: bool) -> None:
         if (
             not force
             and time.monotonic() - self.last_poll < execution.SLURM_POLL_SECONDS
         ):
             return
         self.last_poll = time.monotonic()
+        chain = self.manager.store.chain()
+        if chain["enabled"] or chain["dispatcher"]:
+            self.manager.chain.monitor()
         tasks = self.active_tasks()
         if not tasks:
             return
@@ -501,6 +534,10 @@ class Scheduler:
             )
 
     def cancel(self, task: models.TaskRecord) -> None:
+        with self.manager.store.mutation_lock:
+            self.cancel_locked(self.manager.store.get(task["id"]))
+
+    def cancel_locked(self, task: models.TaskRecord) -> None:
         token = task["scheduler"]["token"]
         # Estimation attempts share an allocation. Stop all unfinished checks,
         # preserving the results of checks that have already completed.
@@ -518,6 +555,10 @@ class Scheduler:
 
     def mark_rejected(self, task: models.TaskRecord) -> None:
         """Allow an explicit retry after the user confirms submission rejection."""
+        with self.manager.store.mutation_lock:
+            self.mark_rejected_locked(self.manager.store.get(task["id"]))
+
+    def mark_rejected_locked(self, task: models.TaskRecord) -> None:
         record = task.get("scheduler")
         if (
             not record
@@ -534,8 +575,13 @@ class Scheduler:
         # confirmation. Never invoke this recovery path automatically.
         for member in self.active_tasks():
             if member["scheduler"]["token"] == record["token"]:
+                rejected = member["scheduler"].copy()
+                rejected.update(
+                    state=execution.SlurmState.FAILED, reason=CONFIRMED_REJECTION_REASON
+                )
                 self.manager.store.update(
                     member["id"],
+                    scheduler=rejected,
                     status=execution.TaskStatus.FAILED,
                     ended=now(),
                     error="Submission marked rejected by user; preview and retry",

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Batch, BatchRequest, QueueData, post } from "./data";
 import { BatchControls } from "./BatchControls";
+import { ComputeChain } from "./ComputeChain";
 
 export function QueueView() {
   const [data, setData] = useState<QueueData | null>(null);
@@ -56,6 +57,7 @@ export function QueueView() {
       await load();
     } catch (e) {
       setError(String(e));
+      await load();
     } finally {
       setPending(null);
     }
@@ -83,7 +85,10 @@ export function QueueView() {
     )
     .reduce((total, t) => total + (t.resources?.memory_bytes || 0), 0);
   const attempts = data.tasks.filter(
-    (t) => t.batch_id || ["running", "queued"].includes(t.status),
+    (t) =>
+      t.batch_id ||
+      Boolean(t.chain_dispatchers?.length) ||
+      ["running", "queued"].includes(t.status),
   );
   const currentJobPage = Math.min(
     jobPage,
@@ -97,8 +102,10 @@ export function QueueView() {
     <section>
       <h1>Job queue</h1>
       <p role="status">
-        {data.settings.paused ? "Paused" : "Accepting jobs"} ·{" "}
-        {data.running_count} running ·{" "}
+        {data.settings.paused
+          ? "Local queue paused"
+          : "Local queue accepting jobs"}{" "}
+        · {data.running_count} running ·{" "}
         {active.filter((t) => t.status === "queued").length} queued ·{" "}
         {(reserved / 1024 ** 3).toFixed(2)} GiB reserved
       </p>
@@ -109,7 +116,7 @@ export function QueueView() {
             mutate("queue/settings", { paused: !data.settings.paused })
           }
         >
-          {data.settings.paused ? "Resume queue" : "Pause queue"}
+          {data.settings.paused ? "Resume local queue" : "Pause local queue"}
         </button>
         <button
           disabled={
@@ -182,9 +189,10 @@ export function QueueView() {
       {notice && <p role="status">{notice}</p>}
       {error && (
         <p className="error" role="alert">
-          {error}
+          Queue request error: {error}
         </p>
       )}
+      <ComputeChain data={data} pending={pending !== null} mutate={mutate} />
       {retry && (
         <BatchControls
           key={JSON.stringify(retry)}
@@ -346,7 +354,21 @@ export function QueueView() {
                   ". Check Slurm for this job name before marking rejected; a delayed reply can mean the job was accepted."}
               </p>
             )}
-            {t.error && <p className="error">{t.error}</p>}
+            {Boolean(t.chain_dispatchers?.length) && (
+              <details>
+                <summary>Chain dispatcher history</summary>
+                <ul>
+                  {t.chain_dispatchers?.map((dispatcher, index) => (
+                    <li key={`${dispatcher.token}-${index}`}>
+                      Job {dispatcher.job_id || "submission unresolved"} ·{" "}
+                      {dispatcher.state}
+                      {dispatcher.reason && ` · ${dispatcher.reason}`}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+            {t.error && <p className="error">Job error: {t.error}</p>}
             <div className="controls">
               {["queued", "running"].includes(t.status) && (
                 <button

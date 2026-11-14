@@ -15,6 +15,7 @@ QE_INPUTS_ENV = "PFAS_QE_INPUTS"
 PW_ENV = "PFAS_PW"
 MPI_ENV = "PFAS_MPI"
 PREPARE_TIMEOUT_ENV = "PFAS_PREPARE_TIMEOUT"
+TASK_DATABASE_FILE = "tasks.sqlite"
 
 
 def preparation_python() -> str:

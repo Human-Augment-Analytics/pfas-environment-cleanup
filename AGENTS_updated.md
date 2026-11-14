@@ -35,3 +35,17 @@ were confirmed during the PACE dashboard refactor.
   5–10 lines. Split orchestration, I/O, validation, and result handling into
   focused helpers. Document a concrete reason in the docstring only for a
   genuine exception that cannot be sensibly split.
+
+Updated 2026-11-14 during compute chaining work:
+
+- Complete and record a repository-specific architecture assessment before
+  implementing a substantial scheduling change. Clearly separate existing
+  capabilities, missing pieces, and cluster policy assumptions.
+- Adapt existing task persistence, queue controls and Slurm submission paths;
+  avoid a parallel queue, new database, resident dispatcher or workflow engine.
+- Keep Slurm chaining recoverable without the dashboard server. Persist external
+  submission intent first, reconcile uncertain outcomes, and serialize queue
+  mutations across processes before selecting or submitting work.
+- Keep compute failures separate from orchestration failures. Continue a chain
+  after terminal compute outcomes, but never automatically retry ambiguous
+  submissions or failed calculations.

@@ -1,11 +1,69 @@
+import fcntl
 import json
 import sqlite3
 import threading
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import cast
+from types import TracebackType
+from typing import Self, TextIO, cast
 
 from dashboard.core import models
+
+CHAIN_KEY = "chain"
+ORDER_KEY = "slurm_order"
+LOCK_SUFFIX = ".lock"
+PROCESS_LOCKS: dict[str, "MutationLock"] = {}
+REGISTRY_GUARDS: dict[str, threading.Lock] = {}
+REGISTRY_GUARD_KEY = "mutation_locks"
+
+
+class MutationLock:
+    """Serialize threads and processes, retaining flock through nested entries."""
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        self.guard = threading.RLock()
+        self.depth = 0
+        self.descriptor: TextIO | None = None
+
+    def __enter__(self) -> Self:
+        self.guard.acquire()
+        try:
+            if self.depth == 0:
+                self.descriptor = self.path.open("a+")
+                fcntl.flock(self.descriptor.fileno(), fcntl.LOCK_EX)
+            self.depth += 1
+            return self
+        except BaseException:
+            if self.descriptor is not None:
+                self.descriptor.close()
+                self.descriptor = None
+            self.guard.release()
+            raise
+
+    def __exit__(
+        self,
+        kind: type[BaseException] | None,
+        error: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        self.depth -= 1
+        try:
+            if self.depth == 0 and self.descriptor is not None:
+                self.descriptor.close()
+                self.descriptor = None
+        finally:
+            self.guard.release()
+
+
+def mutation_lock(path: Path) -> MutationLock:
+    key = str(path.resolve())
+    # setdefault atomically publishes one guard under CPython; construct at runtime.
+    guard = REGISTRY_GUARDS.setdefault(REGISTRY_GUARD_KEY, threading.Lock())
+    with guard:
+        if key not in PROCESS_LOCKS:
+            PROCESS_LOCKS[key] = MutationLock(Path(key + LOCK_SUFFIX))
+        return PROCESS_LOCKS[key]
 
 
 def now() -> str:
@@ -13,14 +71,18 @@ def now() -> str:
 
 
 class Store:
-    def __init__(self, path: Path) -> None:
-        self.lock = threading.RLock()
+    def __init__(self, path: Path | str, *, recover: bool = True) -> None:
+        path = Path(path)
+        self.mutation_lock = mutation_lock(path)
+        self.lock = self.mutation_lock
         self.db = sqlite3.connect(path, check_same_thread=False)
-        self.create_schema()
-        self.recover_running()
-        recovered_tasks = self.tasks()
-        for batch in self.batches():
-            self.recover_batch(batch, recovered_tasks)
+        with self.mutation_lock:
+            self.create_schema()
+            if recover:
+                self.recover_running()
+                recovered_tasks = self.tasks()
+                for batch in self.batches():
+                    self.recover_batch(batch, recovered_tasks)
 
     def create_schema(self) -> None:
         """Keep the schema's linear SQL declarations together; no recovery runs here."""
@@ -211,5 +273,77 @@ class Store:
             )
         return settings
 
+    def metadata(self, key: str, defaults: dict) -> dict:
+        with self.lock:
+            row = self.db.execute(
+                "SELECT data FROM settings WHERE id=?", (key,)
+            ).fetchone()
+            return {**defaults, **(json.loads(row[0]) if row else {})}
+
+    def set_metadata(self, key: str, value: dict) -> dict:
+        with self.lock, self.db:
+            self.db.execute(
+                "INSERT OR REPLACE INTO settings VALUES (?, ?)",
+                (key, json.dumps(value)),
+            )
+        return value
+
+    def chain(self) -> models.ChainState:
+        return cast(
+            models.ChainState,
+            self.metadata(
+                CHAIN_KEY,
+                {
+                    "enabled": False,
+                    "paused": True,
+                    "active_task_id": None,
+                    "dispatcher": None,
+                    "last_attempt": None,
+                    "error": "",
+                    "events": [],
+                },
+            ),
+        )
+
+    def set_chain(self, values: models.ChainUpdate) -> models.ChainState:
+        with self.lock:
+            return cast(
+                models.ChainState,
+                self.set_metadata(CHAIN_KEY, {**self.chain(), **values}),
+            )
+
+    def ordered_ids(self) -> list[str]:
+        with self.lock:
+            eligible = [
+                task["id"]
+                for task in reversed(self.tasks())
+                if task["status"] == "queued"
+                and task.get("target") == "slurm"
+                and not task.get("scheduler")
+            ]
+            saved = self.metadata(ORDER_KEY, {"ids": []})["ids"]
+            return [key for key in saved if key in eligible] + [
+                key for key in eligible if key not in saved
+            ]
+
+    def reorder(self, ids: list[str], expected: list[str]) -> list[str]:
+        with self.lock:
+            if self.ordered_ids() != expected:
+                raise ValueError("Queue changed; refresh before reordering")
+            if len(ids) != len(set(ids)) or set(ids) != set(expected):
+                raise ValueError(
+                    "Order must contain every waiting Slurm task exactly once"
+                )
+            self.set_metadata(ORDER_KEY, {"ids": ids})
+            return self.ordered_ids()
+
     def queued(self) -> list[models.TaskRecord]:
-        return [t for t in reversed(self.tasks()) if t["status"] == "queued"]
+        with self.lock:
+            tasks = [t for t in reversed(self.tasks()) if t["status"] == "queued"]
+            ordered = iter(self.get(key) for key in self.ordered_ids())
+            return [
+                next(ordered)
+                if task.get("target") == "slurm" and not task.get("scheduler")
+                else task
+                for task in tasks
+            ]

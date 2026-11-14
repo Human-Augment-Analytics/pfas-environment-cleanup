@@ -80,6 +80,11 @@ class Batches:
     def validate_process_counts(
         self, estimate_processes: list[int], request: models.BatchReviewRequest
     ) -> None:
+        if self.manager.store.chain()["enabled"]:
+            raise ValueError(
+                "Grouped RAM allocations are unavailable in chain mode; "
+                "deselect the grouped measurement option and preview one process count"
+            )
         if request.get("kind") != "estimate_ram" or request.get("target") != "slurm":
             raise ValueError("Process-count groups require Slurm RAM estimation")
         if (

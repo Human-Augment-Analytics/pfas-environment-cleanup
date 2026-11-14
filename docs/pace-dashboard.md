@@ -6,6 +6,12 @@ browser uses your local computer; Python, preparation, QE, and saved artifacts
 use PACE. The dashboard keeps diagrams and preparation in its own allocation,
 and submits QE and RAM estimation to independent Slurm allocations.
 
+An optional [editable sequential Slurm chain](compute-chaining.md) advances those
+computations using short dependency dispatcher jobs after the dashboard closes.
+Enable it explicitly after confirming compute-node submission permissions and
+shared-filesystem locking on your deployment. The guide includes recovery and
+target-cluster acceptance checks.
+
 ## 1. Prepare a PACE checkout
 
 For your account, connect with:

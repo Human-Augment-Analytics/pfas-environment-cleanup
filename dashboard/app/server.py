@@ -59,6 +59,20 @@ class QueueSettings(BaseModel):
     memory_bytes: StrictInt | None = None
 
 
+class ChainSettings(BaseModel):
+    enabled: bool | None = None
+    paused: bool | None = None
+
+
+class QueueOrder(BaseModel):
+    ids: list[str]
+    expected: list[str]
+
+
+class DispatcherRejection(BaseModel):
+    token: str
+
+
 class SlurmExport(BaseModel):
     candidates: list[str]
     include_tfa: bool = False
@@ -175,6 +189,33 @@ def queue_clear(request: Request) -> dict:
     return manager.clear_queue()
 
 
+def chain_settings(settings: ChainSettings, request: Request) -> models.ChainState:
+    manager = manager_for(request)
+    return checked(
+        lambda: manager.chain.configure(**settings.model_dump(exclude_none=True))
+    )
+
+
+def chain_recover(request: Request) -> models.ChainState:
+    return checked(lambda: manager_for(request).chain.recover())
+
+
+def queue_order(order: QueueOrder, request: Request) -> list[str]:
+    store = manager_for(request).store
+    return checked(lambda: store.reorder(order.ids, order.expected))
+
+
+def queue_remove(id: str, request: Request) -> None:
+    return checked(lambda: manager_for(request).remove_waiting(id))
+
+
+def dispatcher_rejected(
+    action: DispatcherRejection, request: Request
+) -> models.ChainState:
+    chain = manager_for(request).chain
+    return checked(lambda: chain.mark_dispatcher_rejected(action.token))
+
+
 def batch_cancel(id: str, request: Request) -> dict[str, str]:
     manager = manager_for(request)
     with manager.guard:
@@ -257,6 +298,11 @@ ROUTES = (
     ("GET", "/api/queue", queue_view),
     ("POST", "/api/queue/settings", queue_settings),
     ("POST", "/api/queue/clear", queue_clear),
+    ("POST", "/api/queue/chain", chain_settings),
+    ("POST", "/api/queue/recover", chain_recover),
+    ("POST", "/api/queue/order", queue_order),
+    ("POST", "/api/queue/tasks/{id}/remove", queue_remove),
+    ("POST", "/api/queue/dispatcher/rejected", dispatcher_rejected),
     ("POST", "/api/batches/{id}/cancel", batch_cancel),
     ("GET", "/api/batches/{id}/retry", batch_retry),
     ("GET", "/api/tasks/{id}/logs", task_logs),

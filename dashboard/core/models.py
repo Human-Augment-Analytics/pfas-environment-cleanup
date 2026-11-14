@@ -29,6 +29,38 @@ class SchedulerRecord(TypedDict):
     command: list[str]
 
 
+class ChainEvent(TypedDict):
+    timestamp: str
+    action: str
+    error: str
+    detail: str
+    outcome: str
+    enabled: bool
+    paused: bool
+    active_task_id: str | None
+    dispatcher: SchedulerRecord | None
+
+
+class ChainState(TypedDict):
+    enabled: bool
+    paused: bool
+    active_task_id: str | None
+    dispatcher: SchedulerRecord | None
+    last_attempt: str | None
+    error: str
+    events: list[ChainEvent]
+
+
+class ChainUpdate(TypedDict, total=False):
+    enabled: bool
+    paused: bool
+    active_task_id: str | None
+    dispatcher: SchedulerRecord | None
+    last_attempt: str | None
+    error: str
+    events: list[ChainEvent]
+
+
 class MemoryUsage(TypedDict):
     current_memory_bytes: int
     peak_memory_bytes: int
@@ -69,6 +101,8 @@ class TaskResult(TypedDict, total=False):
 
 class TaskRecord(TypedDict):
     id: str
+    owner: NotRequired[str]
+    chain_dispatchers: NotRequired[list[SchedulerRecord]]
     kind: str
     candidate: str
     system: str

@@ -353,9 +353,11 @@ export function BatchControls({
       )}
       {remote && (
         <p>
-          Jobs continue after the dashboard stops. RAM checks run sequentially
-          in one allocation; stopping that job cancels its remaining checks.
-          Completed results are preserved.
+          Submitted jobs continue after the dashboard stops. Grouped RAM checks
+          require independent Slurm mode and share one allocation; stopping it
+          cancels remaining checks. For a sequential chain, deselect grouped
+          measurement and choose one process count. Completed results are
+          preserved.
         </p>
       )}
       {runtime === "native" && !remote && (

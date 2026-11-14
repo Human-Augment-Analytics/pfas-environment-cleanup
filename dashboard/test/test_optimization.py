@@ -63,6 +63,7 @@ def test_statistics_and_latest_geometry(tmp_path: Path) -> None:
         {"energy_ry": -10.5, "total_force_ry_bohr": 0.02, "scf_iterations": 12},
         {"energy_ry": -10.6, "total_force_ry_bohr": 0.0002, "scf_iterations": 4},
     ]
+    assert report["latest_geometry"] is not None
     assert report["latest_geometry"]["atoms"][1]["position"] == [0.7, 0, 0]
     assert report["force_threshold_ry_bohr"] == 0.001
     assert report["energy_threshold_ry"] == 0.0001
