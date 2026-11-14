@@ -718,10 +718,11 @@ def test_chain_rejects_grouped_ram_review_and_submission(
     manager: Manager, slurm: Slurm, processes: list[int]
 ) -> None:
     request = grouped_ram_request()
-    preview = manager.batches.review(**request, estimate_processes=processes)
+    request["estimate_processes"] = processes
+    preview = manager.batches.review(**request)
     manager.chain.configure(enabled=True, paused=True)
     with pytest.raises(ValueError, match="Grouped RAM.*chain mode"):
-        manager.batches.review(**request, estimate_processes=processes)
+        manager.batches.review(**request)
     with pytest.raises(ValueError, match="Grouped RAM.*chain mode"):
         manager.batches.submit(
             {
@@ -740,7 +741,8 @@ def test_pending_group_blocks_chain_enable_and_retains_independent_grouping(
 ) -> None:
     processes = [16, 4, 1]
     request = grouped_ram_request()
-    preview = manager.batches.review(**request, estimate_processes=processes)
+    request["estimate_processes"] = processes
+    preview = manager.batches.review(**request)
     batch = manager.batches.submit(
         {
             **request,

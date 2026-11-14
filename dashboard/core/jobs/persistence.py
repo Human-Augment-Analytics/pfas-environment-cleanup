@@ -114,44 +114,87 @@ class Store:
                     error="Server restarted; retry explicitly",
                 )
 
+    def entry_identity(
+        self, candidate: str, system: str, processes: int
+    ) -> tuple[str, str, int]:
+        return candidate, system, processes
+
+    def recovery_identity(
+        self, entry: dict | models.TaskRecord, batch: dict
+    ) -> tuple[str, str, int]:
+        return self.entry_identity(
+            entry["candidate"],
+            entry.get("system", batch.get("system", "candidate")),
+            entry.get("processes", 1),
+        )
+
+    def batch_has_system_entries(self, batch: dict) -> bool:
+        return bool(batch.get("estimate_systems")) or any(
+            "system" in entry for entry in batch["entries"]
+        )
+
+    def recovered_task_entry(self, task: models.TaskRecord, batch: dict) -> dict:
+        entry = {
+            "candidate": task["candidate"],
+            "processes": task.get("processes", 1),
+            "status": "queued",
+            "task_id": task["id"],
+            "reason": "",
+        }
+        # Old batches without system fields retain their original entry schema.
+        if self.batch_has_system_entries(batch):
+            entry["system"] = task.get("system", batch.get("system", "candidate"))
+        return entry
+
     def recovered_entries(self, batch: dict, tasks: list[models.TaskRecord]) -> dict:
         entries = {
-            (entry["candidate"], entry.get("processes", 1)): entry
-            for entry in batch["entries"]
+            self.recovery_identity(entry, batch): entry for entry in batch["entries"]
         }
         # Tasks may have committed before their batch entry was saved.
         for task in tasks:
             if task.get("batch_id") == batch["id"]:
-                entries[(task["candidate"], task.get("processes", 1))] = {
-                    "candidate": task["candidate"],
-                    "processes": task.get("processes", 1),
-                    "status": "queued",
-                    "task_id": task["id"],
-                    "reason": "",
-                }
+                entries[self.recovery_identity(task, batch)] = (
+                    self.recovered_task_entry(task, batch)
+                )
         return entries
 
-    def batch_pairs(self, batch: dict) -> list[tuple[str, int]]:
+    def unavailable_entry(
+        self, candidate: str, system: str, processes: int, batch: dict
+    ) -> dict:
+        entry = {
+            "candidate": candidate,
+            "status": "unavailable",
+            "reason": "Batch acceptance interrupted; review again",
+        }
+        # Legacy single-rank entries omitted both system and process count.
+        if self.batch_has_system_entries(batch):
+            entry.update(system=system, processes=processes)
+        elif batch.get("estimate_processes"):
+            entry["processes"] = processes
+        return entry
+
+    def batch_pairs(self, batch: dict) -> list[tuple[str, str, int]]:
         ranks = batch.get("estimate_processes") or [
             batch.get("resources", {}).get("cpus", 1)
         ]
+        systems = batch.get("estimate_systems") or [batch.get("system", "candidate")]
         return [
-            (candidate, rank) for candidate in batch["candidates"] for rank in ranks
+            (candidate, system, rank)
+            for candidate in batch["candidates"]
+            for system in systems
+            for rank in ranks
         ]
 
     def recover_batch(self, batch: dict, tasks: list[models.TaskRecord]) -> None:
         entries = self.recovered_entries(batch, tasks)
         pairs = self.batch_pairs(batch)
         # Preserve accepted work and explicitly flag entries lost during acceptance.
-        for candidate, rank in pairs:
-            entries.setdefault(
-                (candidate, rank),
-                {
-                    "candidate": candidate,
-                    "status": "unavailable",
-                    "reason": "Batch acceptance interrupted; review again",
-                },
-            )
+        for candidate, system, rank in pairs:
+            identity = self.entry_identity(candidate, system, rank)
+            if identity not in entries:
+                entries[identity] = self.unavailable_entry(
+                    candidate, system, rank, batch
+                )
         batch["entries"] = [entries[pair] for pair in pairs]
         batch["accepting"] = False
         known = set(batch["task_ids"]) | {

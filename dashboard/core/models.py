@@ -147,6 +147,8 @@ class CandidateRecord(TypedDict):
 
 
 class BatchReviewRequest(TypedDict, total=False):
+    estimate_systems: list[str] | None
+    estimate_processes: list[int] | None
     candidates: list[str]
     kind: str
     system: str

@@ -190,6 +190,7 @@ export type BatchRequest = {
   target?: string;
   scheduler?: SchedulerSettings;
   estimate_processes?: number[];
+  estimate_systems?: string[];
   candidates: string[];
   kind: string;
   system: string;
@@ -201,6 +202,7 @@ export type BatchRequest = {
   rerun_completed?: boolean;
 };
 export type BatchEntry = {
+  system?: string;
   processes?: number;
   resources?: Resources;
   scheduler_settings?: SchedulerSettings;

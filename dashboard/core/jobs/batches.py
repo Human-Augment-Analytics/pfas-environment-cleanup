@@ -28,7 +28,8 @@ print(json.dumps(results))
 PROGRESS_INTERVAL = 100
 MAX_BATCH_CANDIDATES = 1001
 MAX_BATCH_ID_LENGTH = 100
-BATCH_ENTRY_FIELDS = ("candidate", "processes", "status", "task_id", "reason")
+BATCH_ENTRY_FIELDS = ("candidate", "system", "processes", "status", "task_id", "reason")
+PAIRED_ESTIMATION_SYSTEMS = ("candidate", "complex")
 
 
 @dataclass
@@ -55,27 +56,66 @@ class Batches:
 
     def review(
         self,
-        estimate_processes: list[int] | None = None,
         **request: Unpack[models.BatchReviewRequest],
     ) -> dict:
-        if estimate_processes is None:
+        estimate_processes = request.pop("estimate_processes", None)
+        estimate_systems = request.pop("estimate_systems", None)
+        if estimate_systems is not None:
+            self.validate_estimate_systems(estimate_systems, request)
+        if estimate_processes is not None:
+            self.validate_process_counts(estimate_processes, request)
+        if estimate_processes is None and estimate_systems is None:
             return self._review(**request)
-        self.validate_process_counts(estimate_processes, request)
-        reviews = []
-        for rank in estimate_processes:
-            rank_request = request.copy()
-            rank_request["processes"] = rank
-            reviews.append(self._review(**rank_request))
+        return self.review_groups(request, estimate_processes, estimate_systems)
+
+    def review_groups(
+        self,
+        request: models.BatchReviewRequest,
+        estimate_processes: list[int] | None,
+        estimate_systems: list[str] | None,
+    ) -> dict:
+        ranks = estimate_processes or [request.get("processes", 1)]
+        systems = estimate_systems or [request.get("system", "candidate")]
+        reviews = [
+            self.review_combination(request, system, rank)
+            for system in systems
+            for rank in ranks
+        ]
+        # Keep every selected system and rank together for each candidate.
         result = dict(reviews[0])
-        # Each input is initialized at every selected rank before moving on.
         result["entries"] = [
             review["entries"][index]
             for index in range(len(request["candidates"]))
             for review in reviews
         ]
-        result["resources"] = {**result["resources"], "cpus": max(estimate_processes)}
+        result["resources"] = {**result["resources"], "cpus": max(ranks)}
         result["estimate_processes"] = estimate_processes
+        result["estimate_systems"] = estimate_systems
         return result
+
+    def review_combination(
+        self, request: models.BatchReviewRequest, system: str, processes: int
+    ) -> dict:
+        grouped_request = request.copy()
+        grouped_request["system"] = system
+        grouped_request["processes"] = processes
+        return self._review(**grouped_request)
+
+    def validate_estimate_systems(
+        self, systems: list[str], request: models.BatchReviewRequest
+    ) -> None:
+        if self.manager.store.chain()["enabled"]:
+            raise ValueError(
+                "Paired RAM allocations are unavailable in chain mode; preview one system"
+            )
+        if request.get("kind") != "estimate_ram" or request.get("target") != "slurm":
+            raise ValueError("System groups require Slurm RAM estimation")
+        if (
+            not systems
+            or len(set(systems)) != len(systems)
+            or any(system not in PAIRED_ESTIMATION_SYSTEMS for system in systems)
+        ):
+            raise ValueError("Provide distinct estimation systems: candidate, complex")
 
     def validate_process_counts(
         self, estimate_processes: list[int], request: models.BatchReviewRequest
@@ -263,6 +303,7 @@ class Batches:
         entry = {
             "candidate": candidate,
             "processes": data.request["processes"],
+            "system": data.request["system"],
             "status": "eligible",
             "reason": "",
         }
@@ -385,6 +426,7 @@ class Batches:
             "target": request.get("target", "local"),
             "scheduler": review["scheduler_settings"],
             "estimate_processes": request.get("estimate_processes"),
+            "estimate_systems": request.get("estimate_systems"),
             "created": now(),
             "kind": request["kind"],
             "system": request.get("system", "candidate"),
@@ -420,7 +462,7 @@ class Batches:
         return {
             "kind": request["kind"],
             "candidate": entry["candidate"],
-            "system": request.get("system", "candidate"),
+            "system": entry.get("system", request.get("system", "candidate")),
             "processes": entry["processes"],
             "target": request.get("target", "local"),
             "scheduler": request.get("scheduler"),
@@ -445,6 +487,7 @@ class Batches:
             batch["task_ids"].append(task["id"])
             return {
                 "candidate": entry["candidate"],
+                "system": entry.get("system", request.get("system", "candidate")),
                 "processes": entry["processes"],
                 "status": "queued",
                 "task_id": task["id"],
@@ -458,6 +501,8 @@ class Batches:
             )
             return {
                 "candidate": entry["candidate"],
+                "system": entry.get("system", request.get("system", "candidate")),
+                "processes": entry["processes"],
                 "status": "unavailable",
                 "reason": str(error),
             }
@@ -480,12 +525,19 @@ class Batches:
         expected = {
             (
                 entry["candidate"],
+                entry.get("system", request.get("system", "candidate")),
                 entry.get("processes", request.get("processes", 1)),
             ): entry
             for entry in request.get("expected", [])
         }
         for position, entry in enumerate(review["entries"]):
-            old = expected.get((entry["candidate"], entry["processes"]))
+            old = expected.get(
+                (
+                    entry["candidate"],
+                    entry.get("system", request.get("system", "candidate")),
+                    entry["processes"],
+                )
+            )
             accepted = self.accept_entry(request, entry, old, batch, position)
             batch["entries"].append(
                 {
@@ -567,6 +619,7 @@ class Batches:
             "target": batch.get("target", "local"),
             "scheduler": batch.get("scheduler"),
             "estimate_processes": batch.get("estimate_processes"),
+            "estimate_systems": batch.get("estimate_systems"),
         }
 
 

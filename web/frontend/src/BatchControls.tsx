@@ -11,6 +11,10 @@ import {
 import { SlurmSettings } from "./SlurmSettings";
 import { SlurmExportControls } from "./SlurmExportControls";
 
+const ESTIMATE_RAM = "estimate_ram";
+const COMBINED_SYSTEM = "both";
+const ESTIMATE_SYSTEMS = ["candidate", "complex"];
+
 export function BatchControls({
   ids,
   runtimes,
@@ -38,7 +42,11 @@ export function BatchControls({
       : true,
   );
   const [kind, setKind] = useState(initial?.kind || "prepare");
-  const [system, setSystem] = useState(initial?.system || "candidate");
+  const [system, setSystem] = useState(
+    ESTIMATE_SYSTEMS.every((name) => initial?.estimate_systems?.includes(name))
+      ? COMBINED_SYSTEM
+      : initial?.system || "candidate",
+  );
   const [runtime, setRuntime] = useState(
     initial?.runtime ||
       (runtimes?.apptainer.available ? "apptainer" : "native"),
@@ -89,7 +97,11 @@ export function BatchControls({
   const request: BatchRequest = {
     candidates: ids,
     kind,
-    system,
+    system: system === COMBINED_SYSTEM ? ESTIMATE_SYSTEMS[0] : system,
+    estimate_systems:
+      remote && kind === ESTIMATE_RAM && system === COMBINED_SYSTEM
+        ? ESTIMATE_SYSTEMS
+        : undefined,
     runtime,
     processes: ["qe", "estimate_ram"].includes(kind)
       ? requestedProcesses
@@ -123,7 +135,8 @@ export function BatchControls({
     (!["qe", "estimate_ram"].includes(kind) ||
       (Number.isInteger(requestedProcesses) &&
         requestedProcesses >= execution.DEFAULT_LOCAL_PROCESSES)) &&
-    (!timeout || Number(timeout) > 0);
+    (!timeout || Number(timeout) > 0) &&
+    (system !== COMBINED_SYSTEM || remote);
   const current = key === reviewKey ? preview : null;
   async function review() {
     setOperation(`Reviewing ${ids.length} selected jobs`);
@@ -153,6 +166,7 @@ export function BatchControls({
         expected: current.entries.map(
           ({
             candidate,
+            system,
             processes,
             resources,
             scheduler_settings,
@@ -163,6 +177,7 @@ export function BatchControls({
             pseudopotentials,
           }) => ({
             candidate,
+            system,
             processes,
             resources,
             scheduler_settings,
@@ -197,12 +212,18 @@ export function BatchControls({
           const [k, s] = e.target.value.split("/");
           setKind(k);
           setSystem(s);
+          if (k === ESTIMATE_RAM && s === COMBINED_SYSTEM) {
+            setLocation(execution.SLURM_MODE);
+          }
         }}
       >
         <option value="diagram/candidate">Generate missing diagrams</option>
         <option value="prepare/candidate">Prepare missing inputs</option>
         <option value="qe/candidate">Run QE · isolated candidate</option>
         <option value="qe/complex">Run QE · TFA complex</option>
+        <option value="estimate_ram/both" disabled={!slurm}>
+          Estimate RAM · candidate + complex (one Slurm allocation)
+        </option>
         <option value="estimate_ram/candidate">
           Estimate RAM · isolated candidate
         </option>
@@ -355,9 +376,16 @@ export function BatchControls({
         <p>
           Submitted jobs continue after the dashboard stops. Grouped RAM checks
           require independent Slurm mode and share one allocation; stopping it
-          cancels remaining checks. For a sequential chain, deselect grouped
-          measurement and choose one process count. Completed results are
-          preserved.
+          cancels remaining checks. Candidate + complex checks run sequentially
+          in the same one-node allocation. CPU and memory reservations use the
+          maximum required by any check, not the sum. For a sequential chain,
+          choose a single system and deselect grouped measurement. Completed
+          results are preserved.
+        </p>
+      )}
+      {system === COMBINED_SYSTEM && !remote && (
+        <p role="status">
+          Choose Separate Slurm allocation for paired RAM checks.
         </p>
       )}
       {runtime === "native" && !remote && (
@@ -417,11 +445,12 @@ export function BatchControls({
           </button>
           <ol className="batch-preview" start={page * 50 + 1}>
             {current.entries.slice(page * 50, (page + 1) * 50).map((entry) => (
-              <li key={`${entry.candidate}-${entry.processes}`}>
+              <li key={`${entry.candidate}-${entry.system}-${entry.processes}`}>
                 <a href={`#candidate/${entry.candidate}`}>
                   Cluster {entry.candidate}
                 </a>{" "}
-                · {entry.processes || 1} processes · {entry.status}
+                · {entry.system || request.system} · {entry.processes || 1}{" "}
+                processes · {entry.status}
                 {entry.resources &&
                   ` · ${(entry.resources.memory_bytes / 1024 ** 3).toFixed(2)} GiB reserved`}
                 {entry.memory_estimate && ` · ${entry.memory_estimate.basis}`}

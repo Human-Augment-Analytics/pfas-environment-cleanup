@@ -49,3 +49,8 @@ Updated 2026-11-14 during compute chaining work:
 - Keep compute failures separate from orchestration failures. Continue a chain
   after terminal compute outcomes, but never automatically retry ambiguous
   submissions or failed calculations.
+
+- For RAM estimation, offer isolated candidate and TFA complex checks together,
+  run sequentially in one Slurm allocation. Preserve individual inputs, outcomes
+  and RAM results. Show shared allocations with their individual checks nested
+  underneath, rather than presenting every check as a separate node request.

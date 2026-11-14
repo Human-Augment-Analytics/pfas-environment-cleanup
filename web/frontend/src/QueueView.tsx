@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Batch, BatchRequest, QueueData, post } from "./data";
 import { BatchControls } from "./BatchControls";
+import { AllocationView } from "./AllocationView";
 import { ComputeChain } from "./ComputeChain";
 
 export function QueueView() {
@@ -205,6 +206,10 @@ export function QueueView() {
           }}
         />
       )}
+      <AllocationView
+        tasks={data.tasks}
+        sharedWaitingEstimates={!data.chain.enabled}
+      />
       <h2>Batches</h2>
       {!data.batches.length && (
         <p>
@@ -233,7 +238,9 @@ export function QueueView() {
           return (
             <article key={batch.id}>
               <strong>
-                {batch.kind} · {batch.system} · {batch.runtime}
+                {batch.kind} ·{" "}
+                {batch.estimate_systems?.join(" + ") || batch.system} ·{" "}
+                {batch.runtime}
               </strong>
               <p>
                 {batch.created} · {batch.candidates.length} selected
@@ -483,8 +490,9 @@ function BatchEntries({
           />
           <ol start={page * 50 + 1}>
             {batch.entries.slice(page * 50, (page + 1) * 50).map((e) => (
-              <li key={`${e.candidate}-${e.processes}`}>
-                Cluster {e.candidate} · {e.processes || 1} processes ·{" "}
+              <li key={`${e.candidate}-${e.system}-${e.processes}`}>
+                Cluster {e.candidate} · {e.system || batch.system} ·{" "}
+                {e.processes || 1} processes ·{" "}
                 {statuses.get(e.task_id || "") || e.status}
                 {e.reason && ` · ${e.reason}`}
               </li>

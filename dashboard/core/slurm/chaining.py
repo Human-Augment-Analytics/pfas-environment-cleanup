@@ -141,7 +141,9 @@ class Chain:
         for task in self.manager.scheduler.waiting_tasks():
             batch_id = task.get("batch_id")
             batch = self.manager.store.batch(batch_id) if batch_id else None
-            if batch and batch.get("estimate_processes"):
+            if batch and (
+                batch.get("estimate_processes") or batch.get("estimate_systems")
+            ):
                 raise ValueError(
                     "Finish or remove grouped RAM batches before enabling chaining; "
                     "queue individual process counts for a chain"

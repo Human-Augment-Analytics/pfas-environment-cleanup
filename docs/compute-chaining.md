@@ -167,3 +167,26 @@ Node tests and formatting checks. These tests do not establish actual PACE polic
 Slurm availability from compute nodes, or shared-filesystem locking semantics.
 Target-cluster acceptance remains pending; only login-node `sbatch` availability
 has been confirmed by the user.
+
+## Paired RAM estimation and shared allocations
+
+In the batch controls, select **Estimate RAM · Candidate + TFA complex** to
+measure both prepared systems in one Slurm allocation. The checks run
+sequentially. You can use one process count or the existing grouped process-count
+measurements. Each system/count has its own input snapshot, status, logs and RAM
+result. A failed check does not prevent the remaining checks from running.
+
+The allocation reserves the largest CPU and memory request among its sequential
+checks, rather than adding their requests together. All checks share the
+allocation's walltime limit. Stopping an allocation cancels its unfinished checks;
+completed results remain available. Retrying an unsuccessful batch rechecks both
+systems and skips matching successful estimates unless explicitly rerun.
+
+The queue's allocation overview shows one shared allocation with its individual
+checks nested below it. Submitted groups show the common Slurm job ID; waiting
+groups show their batch association until submitted. Detailed task history remains
+available separately.
+
+Paired and grouped RAM allocations currently require independent Slurm mode.
+The sequential chain still accepts individual-system, individual-process-count
+tasks. Finish or remove pending paired/grouped batches before enabling a chain.

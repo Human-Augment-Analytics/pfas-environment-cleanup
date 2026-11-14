@@ -44,6 +44,7 @@ class BatchAction(BaseModel):
     memory_gib: float = 4
     scheduler: models.SchedulerSettings | None = None
     estimate_processes: list[StrictInt] | None = None
+    estimate_systems: list[str] | None = None
     timeout: float | None = None
     retry: bool = False
     rerun_completed: bool = False
