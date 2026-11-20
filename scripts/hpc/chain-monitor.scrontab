@@ -1,0 +1,12 @@
+# Example only: replace every /absolute/path below before adding this entry
+# to your existing scrontab with scrontab -e. Do not replace unrelated entries.
+# Use the same interpreter, repository, config and Unix identity as the dispatcher.
+# Confirm partition/account/QOS and minimum resources on the target cluster.
+#SCRON --job-name=pfas-chain-monitor
+#SCRON --nodes=1 --ntasks=1 --cpus-per-task=1
+#SCRON --mem=256M --time=00:05:00
+#SCRON --partition=ice-cpu --account=coc --qos=coc-ice
+#SCRON --chdir=/absolute/path/to/pfas-environment-cleanup
+#SCRON --output=/absolute/path/to/pfas-environment-cleanup/.dashboard/chain-monitor.log
+#SCRON --open-mode=append
+0 */3 * * * /absolute/path/to/python -m dashboard.app.recover --config /absolute/path/to/saved-dispatcher/config.json

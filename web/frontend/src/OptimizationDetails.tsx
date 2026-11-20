@@ -1,6 +1,8 @@
 import { useState, type ReactElement } from "react";
 import type { Geometry, Task } from "./data";
 import { GeometryViewer } from "./GeometryViewer";
+import { ContinuationControls } from "./ContinuationControls";
+import * as execution from "./execution";
 
 type Step = {
   energy_ry: number;
@@ -181,6 +183,9 @@ export function OptimizationDetails({ task }: { task: Task }): ReactElement {
   return (
     <details className="optimization-details">
       <summary>Geometry optimization and run statistics</summary>
+      {task.target === execution.SLURM_MODE && (
+        <ContinuationControls task={task} />
+      )}
       <button disabled={loading} onClick={load}>
         {loading
           ? "Reading output…"

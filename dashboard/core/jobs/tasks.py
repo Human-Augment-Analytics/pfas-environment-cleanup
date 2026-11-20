@@ -28,6 +28,9 @@ from dashboard.core.slurm.scheduler import settings as scheduler_settings
 
 QUEUE_FIELDS = (
     "id",
+    "continuation_policy",
+    "continuation_parent",
+    "continuation_error",
     "owner",
     "kind",
     "candidate",
@@ -483,6 +486,8 @@ class Manager:
         input_id: str | None = None,
         preview_id: str | None = None,
         scheduler: models.SchedulerSettings | None = None,
+        _continuation_policy: models.ContinuationPolicy | None = None,
+        _continuation_parent: str | None = None,
     ) -> dict:
         """Keep the existing API options; delegate validation, snapshots, and persistence."""
         request = models.TaskRequest(
@@ -503,7 +508,7 @@ class Manager:
             preview_id=preview_id,
             scheduler=scheduler,
         )
-        return self.queue_request(request)
+        return self.queue_request(request, _continuation_policy, _continuation_parent)
 
     def default_timeout(self, kind: str, timeout: float | None) -> float | None:
         if timeout is not None:
@@ -573,7 +578,12 @@ class Manager:
             )
             raise
 
-    def queue_request(self, request: models.TaskRequest) -> dict:
+    def queue_request(
+        self,
+        request: models.TaskRequest,
+        continuation_policy: models.ContinuationPolicy | None = None,
+        continuation_parent: str | None = None,
+    ) -> dict:
         request = self.normalize_request(request)
         resources = self.resources(
             request["runtime"],
@@ -591,6 +601,9 @@ class Manager:
             self.preparation_preflight(request)
             preview = self.queued_preview(request)
             task = self.new_task(request, resources, identity)
+            if continuation_policy is not None:
+                task["continuation_policy"] = continuation_policy
+                task["continuation_parent"] = continuation_parent
             self.accept_task(task, preview, request["preview_id"])
             return task
 

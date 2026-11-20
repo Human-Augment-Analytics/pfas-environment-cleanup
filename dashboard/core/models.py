@@ -1,5 +1,7 @@
 """Persisted execution records; existing task JSON remains backwards compatible."""
 
+from __future__ import annotations
+
 from typing import Literal, NotRequired, TypedDict
 
 
@@ -101,6 +103,10 @@ class TaskResult(TypedDict, total=False):
 
 class TaskRecord(TypedDict):
     id: str
+    continuation_policy: NotRequired[ContinuationPolicy]
+    continuation_parent: NotRequired[str]
+    continuation_error: NotRequired[str]
+    source: NotRequired[dict[str, str]]
     owner: NotRequired[str]
     chain_dispatchers: NotRequired[list[SchedulerRecord]]
     kind: str
@@ -137,6 +143,11 @@ class TaskRecord(TypedDict):
     evidence: NotRequired[Evidence]
     ram_estimate: NotRequired[RAMReport]
     usage: NotRequired[MemoryUsage]
+
+
+class ContinuationPolicy(TypedDict):
+    remaining: int
+    pipeline_hash: str
 
 
 class CandidateRecord(TypedDict):

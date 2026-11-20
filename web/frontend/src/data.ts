@@ -50,6 +50,9 @@ export type ComputeChainState = {
   error: string;
 };
 export type Task = {
+  continuation_policy?: { remaining: number; pipeline_hash: string };
+  continuation_parent?: string;
+  continuation_error?: string;
   owner?: string;
   scheduler_settings?: SchedulerSettings;
   target?: string;

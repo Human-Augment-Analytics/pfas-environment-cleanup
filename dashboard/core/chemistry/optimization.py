@@ -1,5 +1,6 @@
 """Inspect saved QE relaxations and reuse complete, fixed-cell coordinate cards."""
 
+import math
 import re
 from collections.abc import Iterable, Iterator
 from pathlib import Path
@@ -16,8 +17,15 @@ FORCE_PATTERN = rf"Total force\s*=\s*({NUMBER_PATTERN})"
 SCF_PATTERN = r"convergence has been achieved in\s+(\d+)\s+iterations"
 FAILED_SCF_MARKER = "convergence NOT achieved"
 FIXED_CELL_CALCULATION = "relax"
-RESTART_PATTERN = r"\brestart_mode\s*=\s*(['\"])[^'\"]*\1"
-FRESH_RESTART_ASSIGNMENT = "restart_mode='from_scratch'"
+RESTART_MODE_KEY = "restart_mode"
+FRESH_RESTART_MODE = "from_scratch"
+EMPTY_ELECTRONS_BLOCK = "\n&ELECTRONS\n/\n"
+SYSTEM_NAMELIST = "system"
+ELECTRONS_NAMELIST = "electrons"
+FRESH_ELECTRONIC_SETTINGS = {"startingpot": "atomic", "startingwfc": "atomic+random"}
+JOB_DONE_MARKER = "JOB DONE."
+RELAXATION_MARKERS = ("End of BFGS Geometry Optimization", "bfgs converged")
+ERROR_MARKER = "Error in routine"
 COORDINATE_FIELDS = geometry.CELL_DIMENSIONS + 1
 
 
@@ -31,6 +39,10 @@ class Output(TypedDict):
     steps: list[Step]
     positions: list[str]
     failed_scf_cycles: int
+    job_done: bool
+    relaxation_completed: bool
+    qe_error: bool
+    partial_positions: bool
 
 
 class Report(TypedDict):
@@ -62,7 +74,8 @@ def position_rows(lines: Iterator[str], count: int) -> list[str]:
             return []
         try:
             for value in values[1 : geometry.CELL_DIMENSIONS + 1]:
-                geometry.number(value)
+                if not math.isfinite(geometry.number(value)):
+                    return []
         except ValueError:
             return []
         rows.append(line)
@@ -90,18 +103,45 @@ def record_scf(line: str, output: Output, iterations: int | None) -> int | None:
 
 def read_output(lines: Iterable[str], count: int) -> Output:
     """Stream large logs, retaining SCF summaries and only the latest full card."""
-    output: Output = {"steps": [], "positions": [], "failed_scf_cycles": 0}
+    output = empty_output()
     iterations = None
     stream = iter(lines)
     for line in stream:
         iterations = record_scf(line, output, iterations)
-        if (
-            count
-            and line.strip().upper().startswith(POSITIONS_CARD)
-            and (rows := position_rows(stream, count))
-        ):
-            output["positions"] = [line.strip(), *rows]
+        record_completion(line, output)
+        if count and line.strip().upper().startswith(POSITIONS_CARD):
+            record_positions(line, stream, count, output)
     return output
+
+
+def empty_output() -> Output:
+    return {
+        "steps": [],
+        "positions": [],
+        "failed_scf_cycles": 0,
+        "job_done": False,
+        "relaxation_completed": False,
+        "qe_error": False,
+        "partial_positions": False,
+    }
+
+
+def record_completion(line: str, output: Output) -> None:
+    output["job_done"] |= JOB_DONE_MARKER in line
+    output["qe_error"] |= ERROR_MARKER in line
+    output["relaxation_completed"] |= any(
+        marker.lower() in line.lower() for marker in RELAXATION_MARKERS
+    )
+
+
+def record_positions(
+    line: str, stream: Iterator[str], count: int, output: Output
+) -> None:
+    # Manual preview may reuse an older full card; automation rejects a partial tail.
+    rows = position_rows(stream, count)
+    output["partial_positions"] = not bool(rows)
+    if rows:
+        output["positions"] = [line.strip(), *rows]
 
 
 def original_positions(text: str) -> tuple[list[str], int, int]:
@@ -145,19 +185,52 @@ def replace_positions(text: str, positions: list[str]) -> str:
 
 def fresh_start(text: str) -> str:
     start, end, _ = inputs.control_span(text)
+    body = fresh_assignment(text[start:end], RESTART_MODE_KEY, FRESH_RESTART_MODE)
+    return fresh_electrons(text[:start] + body + text[end:])
+
+
+def fresh_electrons(text: str) -> str:
+    """Explicitly avoid file-based density/wavefunctions in fresh directories."""
+    clean = inputs.mask(text)
+    blocks = list(re.finditer(r"&electrons\b", clean, re.IGNORECASE))
+    if not blocks:
+        # QE reads SYSTEM before ELECTRONS; insert after SYSTEM when omitted.
+        _, system_end = namelist_span(text, SYSTEM_NAMELIST)
+        insertion = system_end + 1
+        return fresh_electrons(
+            text[:insertion] + EMPTY_ELECTRONS_BLOCK + text[insertion:]
+        )
+    start, end = namelist_span(text, ELECTRONS_NAMELIST)
     body = text[start:end]
-    # Mask comments so a commented restart assignment cannot hide the real one.
-    matches = list(
-        re.finditer(RESTART_PATTERN, inputs.mask(body, strings=False), re.IGNORECASE)
-    )
-    if len(matches) > 1:
-        raise ValueError("Multiple restart_mode assignments")
-    if matches:
-        match = matches[0]
-        body = body[: match.start()] + FRESH_RESTART_ASSIGNMENT + body[match.end() :]
-    else:
-        body = f"\n {FRESH_RESTART_ASSIGNMENT},\n" + body
+    for name, value in FRESH_ELECTRONIC_SETTINGS.items():
+        body = fresh_assignment(body, name, value)
     return text[:start] + body + text[end:]
+
+
+def namelist_span(text: str, name: str) -> tuple[int, int]:
+    clean = inputs.mask(text)
+    blocks = list(re.finditer(rf"&{name}\b", clean, re.IGNORECASE))
+    if len(blocks) != 1:
+        raise ValueError(f"Continuation requires exactly one &{name.upper()} block")
+    start = blocks[0].end()
+    end = clean.find("/", start)
+    if end < 0 or "&" in clean[start:end]:
+        raise ValueError(f"Malformed &{name.upper()} block")
+    return start, end
+
+
+def fresh_assignment(body: str, name: str, value: str) -> str:
+    matches = list(re.finditer(rf"\b{name}\s*=", inputs.mask(body), re.IGNORECASE))
+    assignment = f"{name}='{value}'"
+    if not matches:
+        return f"\n {assignment},\n" + body
+    if len(matches) != 1:
+        raise ValueError(f"Multiple {name} assignments")
+    match = matches[0]
+    quoted = re.match(r"\s*(['\"])[^'\"]*\1", body[match.end() :])
+    if not quoted:
+        raise ValueError(f"Malformed {name} assignment")
+    return body[: match.start()] + assignment + body[match.end() + quoted.end() :]
 
 
 def inspect(directory: Path) -> tuple[str, Output]:

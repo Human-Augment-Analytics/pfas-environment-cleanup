@@ -1,5 +1,20 @@
 # Compute chaining architecture assessment
 
+## Output-driven continuation assessment (2026-11-20)
+
+Coordinate extraction, immutable fresh task directories, preview validation and
+process-shared queue locking already exist. Electronic checkpoint integrity cannot
+be established from the presence of a save directory. Automatic continuation will
+therefore use complete fixed-cell coordinate cards and explicit fresh electronic
+initialization, never copy checkpoint data. Opt-in policies belong to existing
+task records and successors retain their policy before admission is committed.
+Recovery must search persisted successor provenance before creating another task.
+Only known timeouts or clean, unconverged step-limit exits qualify automatically;
+failed SCF, cancellation, missing output and other uncertain outcomes need review.
+Input, pseudopotential, image and pipeline code changes invalidate authorization.
+The existing one-shot recovery path can also serve periodic Slurm cron allocations;
+installation and cluster support remain deployment steps.
+
 ## Existing capabilities
 
 `dashboard/core/jobs/tasks.py:Manager` accepts immutable input snapshots, validates

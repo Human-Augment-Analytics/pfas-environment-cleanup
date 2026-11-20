@@ -1,4 +1,6 @@
 export const SLURM_MODE = "slurm";
+export const MAX_CONTINUATIONS = 10;
+export const DEFAULT_CONTINUATIONS = 2;
 export const LOCAL_MODE = "local";
 export const DEFAULT_LOCAL_PROCESSES = 1;
 export const DEFAULT_SLURM_PROCESSES = 16;

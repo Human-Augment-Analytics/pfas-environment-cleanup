@@ -1,5 +1,18 @@
 # Running project coding preferences
 
+Updated 2026-11-20 during output-driven continuation work:
+
+- Treat coordinate continuation and electronic checkpoint restart as separate
+  operations. Automatic continuations use complete coordinates, fresh electronic
+  initialization and new empty output directories; checkpoint file presence is
+  not proof of a usable restart.
+- Keep output inspection, next-input preparation and queue submission separate so
+  pipeline changes and new job types can reuse the existing queue.
+- Make automatic continuation opt-in, bounded and duplicate-safe; require review
+  for ambiguous output or changed pipeline/input/runtime identities.
+- Reuse one-shot chain recovery for periodic dispatcher health checks; do not add
+  another resident dispatcher or parallel scheduling framework.
+
 Updated 2026-10-23. These preferences supplement the project's AGENTS.md and
 were confirmed during the PACE dashboard refactor.
 

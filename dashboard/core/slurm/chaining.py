@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, cast
 
 from dashboard.core import config as configuration
 from dashboard.core import execution, models
+from dashboard.core.jobs import continuation
 from dashboard.core.jobs.persistence import now
 from dashboard.core.slurm import scheduler
 
@@ -63,17 +64,31 @@ def load_config(path: Path) -> configuration.Config:
     return configuration.Config(**values)
 
 
-def main(*, config: Path, predecessor: str) -> None:
+def main(*, config: Path, predecessor: str | None = None) -> None:
     from dashboard.core.jobs.tasks import Manager
 
     # sbatch exports the sanitized runtime environment; preserve this job's identity.
     manager = Manager(load_config(config), {}, recover=False)
     try:
+        restore_candidates(manager)
         state = manager.chain.recover(predecessor=predecessor)
         if state["error"]:
             raise RuntimeError(state["error"])
     finally:
         manager.store.db.close()
+
+
+def restore_candidates(manager: "Manager") -> None:
+    # Use saved candidate identities so offline continuation survives catalog edits.
+    for task in manager.store.tasks():
+        source = task.get("source")
+        if source:
+            manager.candidates[task["candidate"]] = models.CandidateRecord(
+                id=task["candidate"],
+                cid=source["cid"],
+                smiles=source["smiles"],
+                fields={},
+            )
 
 
 def write_dispatch_script(directory: Path, predecessor: str) -> Path:
@@ -414,6 +429,8 @@ class Chain:
             return
         if self.dispatcher_blocks(predecessor):
             return
+        if task:
+            continuation.advance(self.manager, task)
         self.start_next()
 
     def start_next(self) -> None:

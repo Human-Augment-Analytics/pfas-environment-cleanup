@@ -14,6 +14,7 @@ from dashboard.core import config as configuration
 from dashboard.core import execution, models
 from dashboard.core.chemistry import optimization
 from dashboard.core.config import Config
+from dashboard.core.jobs import continuation
 from dashboard.core.jobs.processes import tail
 from dashboard.core.jobs.tasks import Manager
 
@@ -63,6 +64,10 @@ class QueueSettings(BaseModel):
 class ChainSettings(BaseModel):
     enabled: bool | None = None
     paused: bool | None = None
+
+
+class ContinuationSettings(BaseModel):
+    limit: StrictInt = Field(ge=0, le=continuation.MAX_CONTINUATIONS)
 
 
 class QueueOrder(BaseModel):
@@ -288,6 +293,12 @@ def task_optimization(id: str, request: Request) -> optimization.Report:
     return checked(lambda: optimization.report(manager.config.artifacts / task["id"]))
 
 
+def task_continuation(
+    id: str, body: ContinuationSettings, request: Request
+) -> models.TaskRecord:
+    return checked(lambda: continuation.configure(manager_for(request), id, body.limit))
+
+
 ROUTES = (
     ("GET", "/api/data", data),
     ("POST", "/api/preview", preview),
@@ -308,6 +319,7 @@ ROUTES = (
     ("GET", "/api/batches/{id}/retry", batch_retry),
     ("GET", "/api/tasks/{id}/logs", task_logs),
     ("GET", "/api/tasks/{id}/optimization", task_optimization),
+    ("POST", "/api/tasks/{id}/continuation", task_continuation),
     ("POST", "/api/diagrams", bulk),
     ("POST", "/api/tasks/{id}/stop", stop),
     ("POST", "/api/tasks/{id}/mark-rejected", mark_rejected),

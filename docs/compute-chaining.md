@@ -1,5 +1,90 @@
 # Editable sequential Slurm queue
 
+## Safe output-driven continuation
+
+Automatic continuation is disabled by default. In a Slurm QE task's history,
+open **Geometry optimization and run statistics → Automatic coordinate
+continuation**, review the task's input/resources, set a maximum number of further
+jobs (1–10), and authorize. Enable/resume the sequential chain. This authorization
+applies when that task is the active predecessor; it does not scan historical jobs
+or independent-mode jobs. For a historical/downloaded run, prepare a new input as
+described below, preview/queue it normally, then authorize that new task if desired.
+
+The dispatcher classifies output as converged, incomplete, failed or uncertain.
+Only a scheduler-confirmed timeout or a completed allocation with exit code zero
+and `JOB DONE` can continue automatically, and only for incomplete fixed-cell
+`relax` output with completed SCF samples and valid complete coordinates.
+QE errors, failed SCF cycles, a truncated latest coordinate card, cancellation,
+missing output, and other scheduler failures require review. A total-force value
+alone never proves convergence. Converged calculations create no successor.
+
+Every successor uses a new task directory and an empty `Outputs` directory.
+Only coordinates and original constraints are reused; no `.save`, density,
+wavefunction or BFGS checkpoint files are copied. Input explicitly sets
+`restart_mode='from_scratch'`, `startingpot='atomic'` and
+`startingwfc='atomic+random'`, overriding explicit file-based electronic settings.
+This intentionally gives up electronic/BFGS restart acceleration. QE documents
+that electronic restart requires a clean stop and matching processor layout;
+file presence alone does not establish integrity:
+[QE restart_mode reference](https://www.quantum-espresso.org/Doc/INPUT_PW.html#restart_mode).
+
+Successors preserve process count, runtime, memory, timeout, partition/account/QOS
+and calculation settings. They enter the end of the existing editable queue.
+Their parent ID and decremented allowance are committed with admission. Recovery
+searches persisted QE input provenance, including manually queued continuations,
+before creating another successor. An accepted or canceled successor consumes
+that parent transition; recovery never creates a replacement automatically.
+
+Changes to the admitted source input, pseudopotentials or image require a new
+reviewed task. Changes to Python pipeline code require review and explicit
+reauthorization. A blocked continuation records its reason on the task and chain;
+unrelated new jobs can still be queued. Set the parent's allowance to zero and
+Recover to skip its continuation and advance waiting work. Disabling a parent's
+policy does not cancel an already accepted child or change its inherited policy;
+pause the chain and edit/cancel that child explicitly.
+
+To inspect downloaded output without a dashboard or Slurm connection:
+
+```bash
+.venv/bin/python -m dashboard.app.continuation /path/to/downloaded-task
+.venv/bin/python -m dashboard.app.continuation /path/to/downloaded-task --output /tmp/continued.in
+```
+
+The second command refuses to overwrite a file and only prepares output classified
+as incomplete with valid coordinates. It submits nothing. Place the input in the
+configured input-version directory for its candidate/system (for example
+`qe_inputs/500/complex.continued.in`), then preview and queue it through the usual
+run controls. Do not run it in the downloaded checkpoint directory.
+
+The API equivalent of task authorization is
+`POST /api/tasks/{task_id}/continuation` with `{"limit": 2}`; use zero to disable.
+The allowance and review reason are included in queue/history task records.
+
+## Optional periodic recovery
+
+Run the same recovery operation without starting the web server:
+
+```bash
+/path/to/dashboard/python -m dashboard.app.recover --config /path/to/saved-dispatcher/config.json
+```
+
+Use an existing dispatcher's immutable `config.json` from its recorded scheduler
+directory (`.dashboard/slurm-<token>/config.json`), retained for the monitor's
+lifetime. It identifies the shared artifact database and runtime paths. Recovery
+reconstructs candidate identities from saved task records and preserves local
+task state. It respects pause/disable settings and uncertain-submission blocks,
+and may submit the next compute job or a replacement dispatcher when appropriate.
+It records the attempt in the chain audit; blocked recovery exits nonzero.
+
+[`scripts/hpc/chain-monitor.scrontab`](../scripts/hpc/chain-monitor.scrontab)
+provides a three-hour template. Replace its paths and verify cluster resource and
+account settings, manually test the recovery command, then add its entry using
+`scrontab -e` while preserving existing entries. Nothing installs it automatically.
+The cluster must enable Slurm cron and allow these allocations to query accounting
+and submit jobs. Scheduled checks remain subject to queue delays, so three hours
+is an intended interval rather than a guaranteed deadline. See the
+[official scrontab reference](https://slurm.schedmd.com/scrontab.html).
+
 The dashboard can advance its existing Slurm task queue through short Slurm
 `afterany` dispatcher allocations. Enable this mode explicitly in **Job queue →
 Sequential Slurm chain**. Independent Slurm submission remains the default for
@@ -50,8 +135,9 @@ submission and is allowed only once the active compute/dispatcher pair has
 finished. Clearing the existing queue retains its existing cancellation semantics;
 use individual waiting-list removal when you only want to edit unscheduled work.
 
-The fixed v1 policy continues after terminal compute outcomes. It never retries
-failed calculations automatically. Review unsuccessful batch jobs with the
+The default policy continues queued work after terminal compute outcomes without
+retrying failed calculations. Explicitly authorized coordinate continuation adds
+bounded fresh jobs under the policy above. Review other unsuccessful batch jobs with the
 existing retry control, or open the candidate, preview and submit a new attempt.
 Queued/running remain the existing task statuses; submitting/pending and terminal
 scheduler outcomes are recorded in the task's Slurm record. A paused chain holds
@@ -109,7 +195,8 @@ requests one CPU, 256 MiB and five minutes, inheriting the computation's
 partition/account/QOS. Check that those values satisfy cluster minimums.
 `sbatch`, monitoring/accounting access and cancellation all run as the submitting
 Unix identity. Recovery needs the same access. GPU requests, parallel chains,
-automatic retries, priorities, DAGs and resource optimization are outside v1.
+electronic checkpoint restarts, unbounded retries, priorities, DAGs and resource
+optimization are outside this implementation.
 
 Grouped RAM measurements retain their existing shared-allocation behavior in
 independent Slurm mode. They are unavailable in chain mode: deselect grouped
